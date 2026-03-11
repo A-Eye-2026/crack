@@ -132,25 +132,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 
-    // TODO: 파이어베이스 콘솔에서 발급받은 실제 설정값으로 변경해야 합니다. (로컬호스트도 동작함)
-    const firebaseConfig = {
-        apiKey: "AIzaSyCaXrLeoGs1nbGtwnc1a5RrzB2PNgyAWp0",
-        authDomain: "aiport260206.firebaseapp.com",
-        projectId: "aiport260206",
-        storageBucket: "aiport260206.firebasestorage.app",
-        messagingSenderId: "314711204809",
-        appId: "1:314711204809:web:a7e15fe6645ea1db347e18",
-        measurementId: "G-5B0WVSZ190"
-    };
-
-    // Firebase 초기화 (설정값이 있는 경우만 실행)
-    let auth, provider;
-    if (firebaseConfig.apiKey !== "YOUR_API_KEY_HERE") {
-        const app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        provider = new GoogleAuthProvider();
-    }
-
     const gBtn = document.getElementById('googleLoginBtn');
 
     // 로그인 클릭 이벤트
