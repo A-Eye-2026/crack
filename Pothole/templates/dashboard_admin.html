@@ -1,0 +1,182 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+<div class="py-4">
+  <h1 class="display-6 fw-bold text-body-emphasis">포트홀 관리자 대시보드</h1>
+  <p class="text-muted mb-4">실시간 신고 현황을 확인하고 처리 상태를 관리하세요.</p>
+</div>
+
+<!-- 통계 카드 4개 -->
+<div class="row g-4 mb-4 row-cols-2 row-cols-lg-4">
+
+  <div class="col">
+    <div class="card shadow-sm text-center">
+      <div class="card-body">
+        <h2 class="fw-bold" id="total-count">0</h2>
+        <p class="text-muted small mb-0">전체 신고</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card shadow-sm border-warning text-center">
+      <div class="card-body">
+        <h2 class="fw-bold text-warning" id="pending-count">0</h2>
+        <p class="text-muted small mb-0">검토 대기</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card shadow-sm border-success text-center">
+      <div class="card-body">
+        <h2 class="fw-bold text-success" id="accepted-count">0</h2>
+        <p class="text-muted small mb-0">자동 승인</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card shadow-sm border-info text-center">
+      <div class="card-body">
+        <h2 class="fw-bold text-info" id="done-count">0</h2>
+        <p class="text-muted small mb-0">처리 완료</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 신고 목록 -->
+<div class="card shadow-sm mb-5">
+  <div class="card-body">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="card-title mb-0">📋 신고 목록</h5>
+      <button class="btn btn-outline-primary btn-sm" onclick="loadReports()">↻ 새로고침</button>
+    </div>
+
+    <div id="report-list">
+      <div class="text-center text-muted py-5">
+        <div style="font-size:2rem;">📭</div>
+        신고 데이터를 불러오는 중...
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 토스트 알림 -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+  <div id="toast" class="toast align-items-center text-bg-success border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body">
+        🔔 새 신고 접수! <span id="toast-body"></span>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto"
+              data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── 테스트용 더미 데이터 ──
+  let reports = [
+    { id: 1, label: 'pothole', confidence: 0.92, status: 'auto_accepted', latitude: 37.5665, longitude: 126.9780, created_at: '2024-03-09 14:32', file_path: 'uploads/sample1.jpg' },
+    { id: 2, label: 'pothole', confidence: 0.67, status: 'pending',       latitude: 37.5512, longitude: 126.9882, created_at: '2024-03-09 15:10', file_path: 'uploads/sample2.jpg' },
+    { id: 3, label: 'pothole', confidence: 0.88, status: 'done',          latitude: 37.5790, longitude: 126.9770, created_at: '2024-03-09 13:05', file_path: 'uploads/sample3.jpg' }
+  ];
+
+  function getConfBadge(conf) {
+    if (conf >= 0.8) return `<span class="badge bg-success">${(conf*100).toFixed(0)}%</span>`;
+    if (conf >= 0.5) return `<span class="badge bg-warning text-dark">${(conf*100).toFixed(0)}%</span>`;
+    return `<span class="badge bg-danger">${(conf*100).toFixed(0)}%</span>`;
+  }
+
+  function getStatusBadge(status) {
+    const map = {
+      'auto_accepted': '<span class="badge bg-success">✅ 자동승인</span>',
+      'pending':       '<span class="badge bg-warning text-dark">⏳ 검토대기</span>',
+      'done':          '<span class="badge bg-info text-white">🔵 처리완료</span>',
+      'confirmed':     '<span class="badge bg-primary">📌 확정</span>',
+      'in_progress':   '<span class="badge bg-secondary">🔧 조치중</span>',
+      'ai_rejected':   '<span class="badge bg-danger">❌ 인식오류</span>',
+      'review_pending':'<span class="badge bg-warning text-dark">🔍 재검토</span>'
+    };
+    return map[status] || `<span class="badge bg-secondary">${status}</span>`;
+  }
+
+  function renderCard(r) {
+    return `
+      <div class="card mb-3 shadow-sm" id="card-${r.id}">
+        <div class="card-body">
+          <div class="row align-items-center">
+
+            <div class="col">
+              <div class="text-muted small mb-1">#${r.id} · ${r.created_at}</div>
+              <h6 class="fw-bold mb-1">${r.label}</h6>
+              <div class="text-muted small">
+                📍 ${r.latitude}, ${r.longitude}<br>
+                📁 ${r.file_path}
+              </div>
+              <div class="mt-2">
+                AI 신뢰도: ${getConfBadge(r.confidence)}
+                &nbsp; 상태: ${getStatusBadge(r.status)}
+              </div>
+            </div>
+
+            <div class="col-auto">
+              ${r.status === 'pending' || r.status === 'review_pending' ? `
+                <button class="btn btn-success btn-sm me-1"
+                        onclick="updateStatus(${r.id}, 'confirmed')">✅ 승인</button>
+                <button class="btn btn-danger btn-sm"
+                        onclick="updateStatus(${r.id}, 'ai_rejected')">❌ 반려</button>
+              ` : r.status === 'confirmed' ? `
+                <button class="btn btn-secondary btn-sm me-1"
+                        onclick="updateStatus(${r.id}, 'in_progress')">🔧 조치시작</button>
+              ` : r.status === 'in_progress' ? `
+                <button class="btn btn-info btn-sm text-white"
+                        onclick="updateStatus(${r.id}, 'done')">✔ 완료처리</button>
+              ` : ''}
+            </div>
+
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function updateStats() {
+    document.getElementById('total-count').textContent    = reports.length;
+    document.getElementById('pending-count').textContent  = reports.filter(r => r.status === 'pending' || r.status === 'review_pending').length;
+    document.getElementById('accepted-count').textContent = reports.filter(r => r.status === 'auto_accepted' || r.status === 'confirmed').length;
+    document.getElementById('done-count').textContent     = reports.filter(r => r.status === 'done').length;
+  }
+
+  function loadReports() {
+    // TODO: fetch('/report/list') 로 교체
+    const list = document.getElementById('report-list');
+    if (reports.length === 0) {
+      list.innerHTML = '<div class="text-center text-muted py-5"><div style="font-size:2rem">📭</div>신고 내역이 없어요</div>';
+      return;
+    }
+    list.innerHTML = reports.map(renderCard).join('');
+    updateStats();
+  }
+
+  function updateStatus(id, newStatus) {
+    // TODO: Flask API 호출로 교체
+    const r = reports.find(r => r.id === id);
+    if (r) { r.status = newStatus; loadReports(); }
+  }
+
+  function showToast(report) {
+    document.getElementById('toast-body').textContent =
+      `${report.label} · 신뢰도 ${(report.confidence*100).toFixed(0)}%`;
+    const toast = new bootstrap.Toast(document.getElementById('toast'));
+    toast.show();
+  }
+
+  loadReports();
+</script>
+
+{% endblock %}

@@ -25,13 +25,35 @@
                         <a class="nav-link" href="/filesboard">자료실(파일게시판)</a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="scoreDropdown" role="button" data-bs-toggle="dropdown">
-                            성적관리
+                        <a class="nav-link dropdown-toggle" href="#" id="itemDropdown" role="button" data-bs-toggle="dropdown">
+                            상품 관리
                         </a>
                         <ul class="dropdown-menu shadow">
-                            {# 1. user 권한 사용자만 볼 수 있는 메뉴 #}
-                            {% if session.get('user_role') == 'user' %}
+                            <li><a class="dropdown-item" href="/items">상품목록</a></li>
+                            <li><a class="dropdown-item" href="/cart">장바구니</a></li>
+                            <li><a class="dropdown-item" href="/orders">주문내역</a></li>
+
+                            {# 관리자나 매니저만 상품을 등록할 수 있게 제한 #}
+                            {% if session.get('user_role') in ('admin', 'manager') %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><h6 class="dropdown-header">관리자 메뉴</h6></li>
+                                <li><a class="dropdown-item" href="/items/register">신규 상품 등록</a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="scoreDropdown" role="button" data-bs-toggle="dropdown">
+                            학습관리
+                        </a>
+                        <ul class="dropdown-menu shadow">
+                            {# 1. 모든 로그인 사용자가 볼 수 있는 메뉴 #}
+                            {% if session.get('user_id') %}
                                 <li><a class="dropdown-item" href="/score/my">내 성적 조회</a></li>
+                                <li><a class="dropdown-item" href="/ai-detect">내 ai 객체 탐지</a></li>
+                                <li><a class="dropdown-item" href="/ai-detect/video">영상 객체 탐지</a></li>
+
                             {% endif %}
 
                             {# 2. 관리자/매니저만 볼 수 있는 메뉴 #}
@@ -43,6 +65,27 @@
                             {% endif %}
                         </ul>
                     </li>
+                    <li class="nav-item dropdown">
+                         <a class="nav-link dropdown-toggle" href="#" id="potholeDropdown" role="button" data-bs-toggle="dropdown">
+                            포트홀 제보
+                        </a>
+                        <ul class="dropdown-menu shadow">
+                            {# 1. 모든 로그인 사용자가 볼 수 있는 메뉴 #}
+                            {% if session.get('user_id') %}
+                                <li><a class="dropdown-item" href="/report_pothole"> 포트홀 제보 </a></li>
+                                <li><a class="dropdown-item" href="/dashboard_user"> 나의 제보 관리 </a></li>
+
+                            {% endif %}
+                            {# 2. 관리자/매니저만 볼 수 있는 메뉴 #}
+                            {% if session.get('user_role') in ('admin', 'manager') %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><h6 class="dropdown-header">관리자 메뉴</h6></li>
+                                <li><a class="dropdown-item" href="/dashboard_admin"> 포트홀 민원관리  </a></li>
+                                <li><a class="dropdown-item" href="/data_pothole"> 포트홀 통계 </a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+
                 </ul>
                 <ul class="navbar-nav">
                     {% if session.get('user_id') %}
@@ -69,7 +112,6 @@
     </nav>
 
     <div class="container">
-        <!-- 본문 영역으로 다른 파일이 이 레이아웃을 겹쳐 보이게 처리하는 용도 -->
         {% block content %}{% endblock %}
     </div>
 
