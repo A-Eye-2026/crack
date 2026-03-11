@@ -1,0 +1,385 @@
+{% extends 'ml_layout.html' %}
+
+{% block ml_content %}
+<div class="session-panel active" id="session7">
+    <div class="session-card">
+        <h3>🎯 세션 7: 로지스틱 회귀 (분류)</h3>
+        <div id="s7-sigmoid-intro" class="text-center my-4"></div>
+
+        <div class="bridge-box mt-4">
+            <h4>🎯 시그모이드(Sigmoid) 함수의 마법</h4>
+            <div class="insight-box" style="background: #f3f0ff; border-left: 5px solid #7950f2;">
+                <p>어떤 큰 숫자가 들어와도 0~1 사이로 압축해줍니다. </p>
+                <div class="text-center py-2">
+                    <div class="katex-render">
+                        $$ \phi(z) = \frac{1}{1 + e^{-z}} $$
+                    </div>
+                </div>
+                <p class="mb-0 extra-small">결과가 0.5보다 크면 양성(1), 작으면 음성(0)으로 판단합니다.</p>
+            </div>
+
+            <!-- 시그모이드 값 대조 표 추가 -->
+            <div class="table-responsive mt-3">
+                <table class="table table-bordered text-center mb-0" style="background: #fff; font-size: 0.95rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>선형 점수 ($z$)</th>
+                            <th>계산 결과 ($e^{-z}$)</th>
+                            <th>분모 ($1 + e^{-z}$)</th>
+                            <th>최종 확률 ($\phi(z)$)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>-5.0</td>
+                            <td>148.41</td>
+                            <td>149.41</td>
+                            <td>0.007 (0.7%)</td>
+                        </tr>
+                        <tr>
+                            <td>0.0</td>
+                            <td>1.00</td>
+                            <td>2.00</td>
+                            <td>0.500 (50.0%)</td>
+                        </tr>
+                        <tr>
+                            <td>5.0</td>
+                            <td>0.006</td>
+                            <td>1.006</td>
+                            <td>0.993 (99.3%)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="theory-box mt-4">
+            <h4>7-1. 확률로 유추하기</h4>
+            <p>이름은 '회귀'지만 실제로는 <strong>분류</strong> 알고리즘입니다. 선형 회귀처럼 직선을 학습한 뒤, 그 결과를 0과 1 사이의 확률로 변환해주는
+                <strong>시그모이드(Sigmoid)</strong> 함수를 통과시킵니다.
+            </p>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 0 — 데이터 준비 및 전처리</h5>
+            <pre><span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+<span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> <span class="func">train_test_split</span>
+<span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> <span class="func">StandardScaler</span>
+
+<span class="comment"># 웹에서 데이터를 가져와 특성(길이, 높이, 두께, 무게 등)과 타겟(어종)으로 나눕니다.</span>
+fish = pd.<span class="func">read_csv</span>(<span class="string">'https://bit.ly/fish_csv_data'</span>)
+fish_input = fish[[<span class="string">'Weight'</span>,<span class="string">'Length'</span>,<span class="string">'Diagonal'</span>,<span class="string">'Height'</span>,<span class="string">'Width'</span>]].to_numpy()
+fish_target = fish[<span class="string">'Species'</span>].to_numpy()
+
+train_input, test_input, train_target, test_target = <span class="func">train_test_split</span>(
+    fish_input, fish_target, random_state=<span class="number">42</span>
+)
+
+<span class="comment"># 3강에서 배운 표준화 처리를 반드시 거쳐야 합니다!</span>
+ss = <span class="func">StandardScaler</span>()
+ss.<span class="func">fit</span>(train_input)
+train_scaled = ss.<span class="func">transform</span>(train_input)
+test_scaled = ss.<span class="func">transform</span>(test_input)</pre>
+            <div class="code-desc"><strong>핵심:</strong> 로지스틱 회귀도 선형 방정식($z = w_1x_1 + w_2x_2 + \dots + b$)을 사용하므로,
+                <strong>스케일링(표준화)</strong>이 필수적입니다.
+            </div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ① — 시그모이드 함수 직접 구현</h5>
+            <pre><span class="keyword">import</span> numpy <span class="keyword">as</span> np
+
+<span class="comment"># 시그모이드(로지스틱) 함수 수식입니다.</span>
+z = np.<span class="func">arange</span>(-<span class="number">5</span>, <span class="number">5</span>, <span class="number">0.1</span>)
+phi = <span class="number">1</span> / (<span class="number">1</span> + np.<span class="func">exp</span>(-z))</pre>
+            <div class="code-desc"><strong>핵심:</strong> 어떤 값이든 0과 1 사이로 매핑하여 '확률'처럼 해석할 수 있게 합니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ② — 이진 분류 확률 확인</h5>
+            <pre><span class="comment"># 처음 5개 샘플에 대한 예측 확률을 출력합니다.</span>
+<span class="func">print</span>(lr.<span class="func">predict_proba</span>(train_scaled[:<span class="number">5</span>]))</pre>
+            <div class="code-desc"><strong>핵심:</strong> <code>predict_proba</code>는 [음성 확률, 양성 확률] 형태로 값을 반환합니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ③ — 로지스틱 회귀로 분류하기</h5>
+            <pre><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> <span class="func">LogisticRegression</span>
+
+lr = <span class="func">LogisticRegression</span>()
+lr.<span class="func">fit</span>(train_scaled, train_target)</pre>
+            <div class="code-desc"><strong>핵심:</strong> 이름은 회귀지만 분류 모델입니다. 직선을 찾고 시그모이드를 씌우는 방식이죠.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ④ — 결정 함수 (z값) 확인</h5>
+            <pre><span class="comment"># 시그모이드 함수에 들어가기 전의 원시 점수(z)입니다.</span>
+decisions = lr.<span class="func">decision_function</span>(train_scaled[:<span class="number">5</span>])
+<span class="func">print</span>(decisions)</pre>
+            <div class="code-desc"><strong>핵심:</strong> z값이 크면 확률이 1에 가까워지고, 작으면 0에 가까워집니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ⑤ — 다중 분류와 소프트맥스</h5>
+            <pre><span class="comment"># 7종 생선을 분류할 때는 '소프트맥스' 함수를 사용합니다.</span>
+<span class="comment"># 모든 클래스의 확률 합이 1이 되도록 만듭니다.</span></pre>
+            <div class="code-desc"><strong>핵심:</strong> 이진 분류는 시그모이드, 다중 분류는 소프트맥스가 담당합니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ⑥ — 규제 조절 (C 매개변수)</h5>
+            <pre><span class="comment"># 로지스틱 회귀는 기본적으로 L2 규제가 적용됩니다.</span>
+lr = <span class="func">LogisticRegression</span>(C=<span class="number">20</span>, max_iter=<span class="number">1000</span>)</pre>
+            <div class="code-desc"><strong>핵심:</strong> <code>C</code>는 규제의 역수입니다. 값이 작을수록 규제가 강해지고, 크면 약해집니다.</div>
+        </div>
+
+        <div class="bridge-box mt-5">
+            <h4>🧪 시그모이드(Sigmoid) 실험실</h4>
+            <div class="sigmoid-card">
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <label class="small fw-bold mb-2">가중치 (w)</label>
+                        <input type="range" id="lab-w" min="-5" max="5" value="1" step="0.1"
+                            oninput="updateSigmoidLab()" class="form-range">
+                        <div class="text-center mt-2"><span id="lab-w-val" class="badge bg-secondary">1.0</span></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="small fw-bold mb-2">절편 (b)</label>
+                        <input type="range" id="lab-b" min="-5" max="5" value="0" step="0.1"
+                            oninput="updateSigmoidLab()" class="form-range">
+                        <div class="text-center mt-2"><span id="lab-b-val" class="badge bg-secondary">0.0</span></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="small fw-bold mb-2">입력값 (x)</label>
+                        <input type="range" id="lab-x" min="-5" max="5" value="2" step="0.1"
+                            oninput="updateSigmoidLab()" class="form-range">
+                        <div class="text-center mt-2"><span id="lab-x-val" class="badge bg-secondary">2.0</span></div>
+                    </div>
+                </div>
+                <div class="mt-5 p-4 border rounded-4 bg-light text-center"
+                    style="border: 2px solid white !important; box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);">
+                    <div class="small text-muted mb-2">
+                        <div class="katex-render">$z = w \times x + b$</div>
+                    </div>
+                    <div class="h5 mb-4">계산된 선형 점수(z): <span id="lab-z-calc" class="text-primary fw-bold"
+                            style="font-family: var(--font-code);">2.00</span></div>
+                    <div class="display-4 fw-bold mb-2" style="color: var(--ml-primary);"><span
+                            id="lab-prob-val">88.1%</span>
+                    </div>
+                    <div class="progress mb-4" style="height: 12px; border-radius: 50px; background: #eee;">
+                        <div id="lab-prob-bar" class="progress-bar"
+                            style="width: 88.1%; background: linear-gradient(90deg, var(--ml-primary), var(--ml-primary-light));">
+                        </div>
+                    </div>
+                    <div id="lab-decision" class="badge bg-success rounded-pill px-4 py-2 fw-bold">판정: 양성 (Class 1)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="theory-box mt-5">
+            <h4>7-2. 결정 경계 (Decision Boundary)</h4>
+            <p>로지스틱 회귀는 데이터를 나누는 <strong>경계선</strong>을 찾습니다. 이 경계선을 기준으로 한쪽은 'A 클래스', 다른 한쪽은 'B 클래스'가 될 확률이 높아집니다.</p>
+            <div class="insight-box" style="background: #fff8f0; border-left: 5px solid #f39c12;">
+                <p class="mb-0">다중 분류(7종 생선)의 경우, 각 어종마다 별도의 경계선을 만들어 가장 확률이 높은 쪽으로 최종 판정합니다.</p>
+            </div>
+            <div class="insight-box mt-4 mb-4" style="background: #fdf5e6; border-left: 5px solid #d35400;">
+                <p><strong>💡 학계 노트: 어떻게 직선으로 곡선을 분류하나요?</strong></p>
+                <p class="small mb-0">로지스틱 회귀 모델의 결정 경계는 수학적으로 $z = 0$이 되는 '직선(또는 평면)'입니다. 하지만 우리가 6강에서 배운 <strong>특성
+                        공학(PolynomialFeatures)</strong>을 적용하여 특성을 제곱하거나 곱해서 넘겨주면, 모델 관점에서는 직선이지만 우리 눈(원래 특성 공간)에는 둥글고
+                    복잡한 <strong>비선형 곡선</strong> 형태의 경계선이 그려지게 됩니다.</p>
+            </div>
+
+            <div class="text-center mt-4 mb-5">
+                <div id="s7-decision-viz"></div>
+            </div>
+
+            <div class="code-box">
+                <h5>💻 코드 ② — 로지스틱 회귀 모델 훈련</h5>
+                <pre><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> <span class="func">LogisticRegression</span>
+<span class="comment"># C는 규제의 역수 (낮을수록 규제가 강함)</span>
+lr = <span class="func">LogisticRegression</span>(C=<span class="number">20</span>, max_iter=<span class="number">1000</span>)
+lr.<span class="func">fit</span>(train_scaled, train_target)</pre>
+                <div class="code-desc"><strong>핵심:</strong> 다중 분류 시 내부적으로는 클래스마다 이진 분류를 수행(OvR)합니다.</div>
+            </div>
+
+            <div class="code-box">
+                <h5>💻 코드 ③ — 다중 분류 가중치(coef_)와 절편(intercept_) 확인</h5>
+                <pre><span class="func">print</span>(lr.<span class="func">coef_</span>.<span class="func">shape</span>, lr.<span class="func">intercept_</span>.<span class="func">shape</span>)
+<span class="comment"># (7, 5) (7,) -> 7개 어종마다 5개의 특성 가중치와 1개의 절편을 가짐</span></pre>
+                <div class="code-desc"><strong>핵심:</strong> 각 생선마다 독립적인 '이진 분류기(직선의 방정식)'를 하나씩 가지고 있음을 의미합니다
+                    (One-vs-Rest 방식).</div>
+            </div>
+
+            <div class="text-center mt-4">
+                <div id="s7-coef-viz"></div>
+            </div>
+
+            <div class="theory-box mt-5">
+                <h4>7-3. 결정 트리로 가기 전, 하이퍼파라미터 튜닝</h4>
+                <p>로지스틱 회귀도 릿지 회귀처럼 <strong>L2 규제</strong>를 기본 내장하고 있습니다. 규제를 조절하는 매개변수가 바로 <code>C</code> 입니다.</p>
+                <div class="insight-box" style="background: #eef2f5; border-left: 5px solid #34495e;">
+                    <p><strong>💡 학계 노트: 왜 $\alpha$가 아니고 C인가요?</strong></p>
+                    <p class="small mb-0"><code>scikit-learn</code>의 로지스틱 회귀는 오종 알고리즘인 '서포트 벡터 머신(SVM)' 라이브러리의 규약을 따랐기
+                        때문입니다. $\alpha$(알파)는 값이 클수록 규제가 강해지지만, <strong>C는 $1/\alpha$의 개념이므로 작을수록 규제가 강해집니다.</strong> 모델의
+                        '탐욕도'를 억제하는 고삐라고 생각하면 쉽습니다.</p>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <div id="s7-hyperparam-viz"></div>
+            </div>
+
+            <div class="theory-box mt-5">
+                <h4>7-4. 손실 함수 (Log Loss)</h4>
+                <p>분류 알고리즘이 "틀렸을 때 치르는 벌금"입니다. 예측 확률이 정답에서 멀어질수록 벌점이 기하급수적으로 늘어나도록 수식을 디자인했습니다.</p>
+                <div class="text-center mt-4">
+                    <div id="s7-log-loss-viz"></div>
+                </div>
+                <div class="insight-box mt-3" style="background: #e8f8f5; border-left: 5px solid #1abc9c;">
+                    <p class="small mb-0"><strong>💡 개발자 노트:</strong> 이 로그 손실(교차 엔트로피 손실)은 인공지능과 딥러닝에서 모델을 훈련시킬 때 가장 널리
+                        쓰이는 표준 벌점 체계입니다. 벌점이 무한대로 발산할 수 있기 때문에 모델이 "확실하게 틀린 예측"을 하는 것을 극도로 기피하게 만듭니다.</p>
+                </div>
+            </div>
+
+            <div class="lab-box mt-5">
+                <h4 class="mb-4"><i class="bi bi-robot me-2"></i> 실전 — 어종 vs 어종 데스매치 (이진 분류 결정 경계 시뮬레이션)</h4>
+                <p class="small text-muted mb-4">어떤 종과 어떤 종을 구분하는 경계선을 구하고 싶나요? 선택 후 시뮬레이션을 실행해보세요.</p>
+                <div class="row g-3 mb-4 justify-content-center">
+                    <div class="col-md-4">
+                        <select id="s7-species-1" class="form-select border-2">
+                            <option value="0" selected>🐟 도미 (Bream)</option>
+                            <option value="1">🐠 잉어 (Roach)</option>
+                            <option value="2">🐟 백어 (Whitefish)</option>
+                            <option value="3">🐠 파키 (Parkki)</option>
+                            <option value="4">🐟 농어 (Perch)</option>
+                            <option value="5">🐠 강꼬치 (Pike)</option>
+                            <option value="6">🐟 빙어 (Smelt)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1 text-center align-self-center">
+                        <span class="fs-4 fw-bold text-danger">VS</span>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="s7-species-2" class="form-select border-2">
+                            <option value="0">🐟 도미 (Bream)</option>
+                            <option value="1">🐠 잉어 (Roach)</option>
+                            <option value="2">🐟 백어 (Whitefish)</option>
+                            <option value="3">🐠 파키 (Parkki)</option>
+                            <option value="4">🐟 농어 (Perch)</option>
+                            <option value="5">🐠 강꼬치 (Pike)</option>
+                            <option value="6" selected>🐟 빙어 (Smelt)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="text-center mb-3">
+                    <button class="btn-predict px-4 py-2" onclick="runRandomBinary7()">
+                        <i class="bi bi-lightning-charge-fill me-2"></i> 결정 경계 탐색
+                    </button>
+                </div>
+                <!-- 바이너리 분류 결과 표시 영역 -->
+                <div id="binary-result-7" class="mt-4 text-center"></div>
+            </div>
+
+            <div class="lab-box mt-5">
+                <h4 class="mb-4"><i class="bi bi-fish-fill me-2"></i> 실전 — 7종 생선 분류기 (다중 분류)</h4>
+                <div class="input-group-ml mb-4">
+                    <div class="form-group flex-fill mx-2">
+                        <label class="d-flex justify-content-between small fw-bold">
+                            <span>길이</span>
+                            <span class="slider-val-badge"><span id="s7-length-val">30.0</span>cm</span>
+                        </label>
+                        <input type="range" id="s7-length" class="form-range" value="30" min="5" max="50" step="0.1"
+                            oninput="document.getElementById('s7-length-val').innerText = parseFloat(this.value).toFixed(1)">
+                    </div>
+                    <div class="form-group flex-fill mx-2">
+                        <label class="d-flex justify-content-between small fw-bold">
+                            <span>높이</span>
+                            <span class="slider-val-badge"><span id="s7-height-val">10.0</span>cm</span>
+                        </label>
+                        <input type="range" id="s7-height" class="form-range" value="10" min="2" max="25" step="0.1"
+                            oninput="document.getElementById('s7-height-val').innerText = parseFloat(this.value).toFixed(1)">
+                    </div>
+                    <div class="form-group flex-fill mx-2">
+                        <label class="d-flex justify-content-between small fw-bold">
+                            <span>두께</span>
+                            <span class="slider-val-badge"><span id="s7-thickness-val">6.0</span>cm</span>
+                        </label>
+                        <input type="range" id="s7-thickness" class="form-range" value="6" min="1" max="15" step="0.1"
+                            oninput="document.getElementById('s7-thickness-val').innerText = parseFloat(this.value).toFixed(1)">
+                    </div>
+                    <div class="form-group flex-fill mx-2">
+                        <label class="d-flex justify-content-between small fw-bold">
+                            <span>무게</span>
+                            <span class="slider-val-badge"><span id="s7-weight-val">500</span>g</span>
+                        </label>
+                        <input type="range" id="s7-weight" class="form-range" value="500" min="5" max="1100" step="10"
+                            oninput="document.getElementById('s7-weight-val').innerText = this.value">
+                    </div>
+                </div>
+                <div class="text-center">
+                    <button class="btn-predict px-5" onclick="runSession(7)">
+                        <i class="bi bi-bullseye me-2"></i> 분류 시작하기
+                    </button>
+                </div>
+            </div>
+
+            <div class="loading-spinner" id="spinner7">
+                <div class="spinner-border"></div>
+            </div>
+            <div class="result-box mt-4" id="result7"></div>
+            <div class="chart-area col-12" id="chart7"></div>
+
+            <div class="qa-box mt-5">
+                <h4>❓ 궁금할 수 있는 질문들</h4>
+                <div class="qa-item">
+                    <strong>Q: 왜 이름이 '회귀'인가요? 분류라면서요.</strong>
+                    <p class="small mb-0">A: 선형 회귀처럼 $z = w \times \text{특성} + b$ 라는 회귀 방정식(연속형 값)을 먼저 계산하기 때문입니다. 그 결과만
+                        시그모이드를 거쳐 확률(분류)로 쓰는 것이죠. 이 과정을 확률 모델링의 통계적 용어로 '로지스틱 회귀'라고 부르게 되었습니다.</p>
+                </div>
+                <div class="qa-item">
+                    <strong>Q: 시그모이드와 소프트맥스의 차이는 명확하게 무엇인가요?</strong>
+                    <p class="small mb-0">A: 시그모이드는 "합격이냐 불합격이냐(정답 2개)"를 다룰 때 쓰고, 계산 결과가 서로 독립적입니다. 소프트맥스는 "도미, 빙어, 농어 중
+                        무엇이냐(정답 여러개)"를 다룰 때 쓰며, 모든 클래스 확률의 합이 정확히 100%(1.0)가 되도록 데이터를 압착합니다.</p>
+                </div>
+                <div class="qa-item">
+                    <strong>Q: 시그모이드 함수는 요즘 딥러닝에서도 쓰나요?</strong>
+                    <p class="small mb-0">A: 출력층(마지막 결론을 낼 때)에서 이진 분류를 할 때는 여전히 100% 사용합니다. 하지만 신경망 중간 단계(은닉층)에서는 더 이상
+                        쓰지 않습니다. $z$ 값이 너무 크거나 작으면 기울기가 0이 되어 학습이 멈추는 '기울기 소실(Gradient Vanishing)' 문제 때문인데, 이를 해결하기 위해
+                        ReLU라는 함수가 표준으로 자리잡았습니다.</p>
+                </div>
+                <div class="qa-item">
+                    <strong>Q: 분류 결과 확률이 0.51이면 어떻게 해석해야 하나요?</strong>
+                    <p class="small mb-0">A: 모델이 양성 클래스라고 판정은 하지만, 확신은 매우 낮은 상태입니다. 결정 경계(Decision Boundary, z=0인 지점)에
+                        아주 아슬아슬하게 걸쳐 있는 데이터라는 뜻입니다.</p>
+                </div>
+                <div class="qa-item">
+                    <strong>Q: C값이 크면 모델이 어떻게 변하나요?</strong>
+                    <p class="small mb-0">A: 앞서 배운 $\alpha$ 매개변수와 반대로, C가 커지면 규제가 약해집니다. 가중치(w) 값이 굉장히 커지더라도 모델이 개의치 않고
+                        훈련 데이터에 완벽하게 맞추려 노력하게 되며, 이는 곧 복잡한 경계선을 만들어 과대적합(Overfitting)될 확률을 높입니다.</p>
+                </div>
+            </div>
+
+            <!-- 퀴즈 섹션 추가 -->
+            <div class="quiz-section" id="quiz-area">
+                <div class="quiz-header">
+                    <h3 class="fw-bold"><span class="emoji-bullet">📝</span> 오늘의 연습문제</h3>
+                    <p class="text-muted">강의에서 배운 기법을 새로운 데이터에 적용해보세요!</p>
+                    <button class="btn-predict" onclick="loadQuiz({{ session_id }})">문제 불러오기</button>
+                </div>
+                <div id="quiz-body"></div>
+            </div>
+
+
+
+        </div>
+    </div>
+    {% endblock %}
+
+    {% block ml_scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSession7IntroViz();
+        });
+    </script>
+    {% endblock %}

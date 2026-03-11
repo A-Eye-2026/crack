@@ -1,0 +1,616 @@
+{% extends 'layout.html' %}
+
+{% block extra_style %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap');
+
+    /* 전체 레이아웃 마진 제거로 스크롤바 차단 (v611) */
+    html,
+    body {
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        height: 100vh !important;
+    }
+
+    .main-content {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-top: 0 !important;
+        height: 100vh !important;
+    }
+
+    .jg-page-wrapper {
+        width: 100%;
+        height: 100vh;
+        /* 90vh -> 100vh로 대응 */
+        /* Chess와 동일하게 */
+        /* 전체 화면 고정 */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        /* 완벽한 중앙 배치 */
+        padding-top: 0;
+        /* 중앙 정렬을 위해 상단 패딩 제거 */
+        overflow: hidden !important;
+        position: relative;
+        margin: 0;
+        background: transparent !important;
+    }
+
+    body.modal-open {
+        overflow: hidden !important;
+    }
+
+    .jg-header-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 3vh;
+        /* 보드 공간 확보를 위해 5vh -> 3vh 축소 */
+        width: 100%;
+    }
+
+    .jg-main-title {
+        font-family: 'Orbitron', 'Noto Serif KR', sans-serif;
+
+        .title-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+    }
+
+    /* ─── 설정 그룹 및 상태 바 ─── */
+    .settings-group {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        /* 15px -> 18px로 체스와 완벽 일치 */
+    }
+
+    .settings-trigger-btn {
+        background: rgba(255, 255, 255, 0.6);
+        /* Chess와 동일하게 투명도 조정 */
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        /* Chess와 동일하게 */
+        width: 36px;
+        /* Chess와 동일하게 36px */
+        height: 36px;
+        border-radius: 10px;
+        /* Chess와 동일하게 10px */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        color: #483C32;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+    }
+
+    .settings-trigger-btn:hover {
+        background: var(--accent);
+        color: white;
+        transform: rotate(90deg);
+    }
+
+    /* SND 버튼 활성화 상태 */
+    .snd-active {
+        background: #27ae60 !important;
+        color: white !important;
+        border-color: #27ae60 !important;
+    }
+
+    .status-indicator-badge {
+        background: var(--accent);
+        color: white;
+        padding: 5px 18px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 800;
+        box-shadow: 0 6px 15px rgba(255, 181, 167, 0.15);
+    }
+
+    /* ─── 프리미엄 정통 장기 보드 컨테이너 (가로가 세로보다 5% 김) ─── */
+    #jg-board-outer {
+        width: min(72vh, 85vw);
+        /* 가로가 세로보다 5% 더 길도록: 10.5 : 10 */
+        aspect-ratio: 10.5 / 10;
+        background: linear-gradient(135deg, #3d2b1f 0%, #2a1f14 100%);
+        padding: 12px;
+        border: 8px solid #1a140f;
+        border-radius: 28px;
+        box-shadow:
+            0 25px 50px -12px rgba(0, 0, 0, 0.7),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+            inset 0 0 10px rgba(0, 0, 0, 0.3);
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-sizing: border-box;
+    }
+
+    #jg-board-container {
+        width: 100%;
+        height: 100%;
+        /* 부모 컨테이너 100% 추종하여 렌더링 영역 확보 */
+        background: #e9d1a3;
+        background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+        border-radius: 4px;
+        overflow: visible;
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.15);
+        border: 1px solid #c0a070;
+    }
+
+    /* ─── 모달 스타일 (체스 통합 최적화) ─── */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 200px;
+        /* PC 사이드바 너비 (원복: 200px) */
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(8px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 5000;
+        /* 더 높은 우선순위 */
+        transition: all 0.3s ease;
+    }
+
+    @media (max-width: 991px) {
+        .modal-overlay {
+            left: 0 !important;
+        }
+    }
+
+    .settings-box {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(30px);
+        width: 90%;
+        max-width: 440px;
+        padding: 30px;
+        border-radius: 32px;
+        box-shadow: 0 45px 110px rgba(0, 0, 0, 0.4);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        max-height: 85vh;
+        overflow-y: auto;
+        transition: background-color 0.4s ease, border-color 0.4s ease, transform 0.3s ease-out;
+    }
+
+    [data-theme='dark'] .settings-box {
+        background: rgba(30, 32, 35, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 45px 110px rgba(0, 0, 0, 0.6);
+    }
+
+    .settings-box::-webkit-scrollbar {
+        display: none;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+        padding-bottom: 12px;
+        margin-bottom: 5px;
+    }
+
+    .modal-header h3 {
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 900;
+        color: #333;
+        margin: 0;
+        font-size: 1.1rem;
+        letter-spacing: 2px;
+    }
+
+    [data-theme='dark'] .modal-header h3 {
+        color: #e2e8f0;
+    }
+
+    [data-theme='dark'] .modal-header {
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* 모달 닫기 버튼 최우선 가시성 확보 */
+    #jg-close-modal-top {
+        background: #f3f4f6 !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem !important;
+        cursor: pointer;
+        color: #333 !important;
+        transition: all 0.2s;
+        z-index: 5001;
+    }
+
+    [data-theme='dark'] #jg-close-modal-top {
+        background: #2d3748 !important;
+        color: #cbd5e0 !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    #jg-close-modal-top:hover {
+        background: var(--accent) !important;
+        color: white !important;
+        transform: scale(1.1);
+    }
+
+    #jg-close-modal-top:active {
+        transform: scale(0.95);
+        filter: brightness(0.9);
+    }
+
+    .setting-item {
+        background: rgba(0, 0, 0, 0.04);
+        padding: 18px;
+        border-radius: 20px;
+    }
+
+    [data-theme='dark'] .setting-item {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .setting-label {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #483C32;
+        margin-bottom: 8px;
+    }
+
+    [data-theme='dark'] .setting-label {
+        color: #a0aec0;
+    }
+
+    .formation-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-top: 10px;
+    }
+
+    .formation-btn {
+        padding: 15px;
+        border-radius: 18px;
+        background: white;
+        border: 2px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        color: #555;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    [data-theme='dark'] .formation-btn {
+        background: #2d3748;
+        border-color: rgba(255, 255, 255, 0.05);
+        color: #cbd5e0;
+    }
+
+    .formation-btn:hover {
+        transform: translateY(-3px);
+        border-color: var(--accent);
+        background: var(--bg-hover);
+    }
+
+    .formation-btn.selected {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+        box-shadow: 0 10px 25px rgba(255, 181, 167, 0.25);
+    }
+
+    /* 기물 아이콘 가시성 확보 (반전 제거 및 대비 조정) */
+    .formation-btn.selected .piece-icon-seq img {
+        filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.4)) brightness(1.2);
+    }
+
+    .piece-icon-seq {
+        display: flex;
+        gap: 4px;
+        justify-content: center;
+    }
+
+    .piece-icon-seq img {
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+        transition: filter 0.3s;
+    }
+
+    .formation-label {
+        font-size: 0.85rem;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    /* [v611] LMS 레이아웃 중앙 정렬 강제 보정 */
+    .jg-page-wrapper {
+        margin-left: auto !important;
+        margin-right: auto !important;
+        max-width: 720px;
+        /* 보드(가로가 더 넓음)와 헤더가 충분히 들어갈 정도 */
+    }
+
+    .modal-btn {
+        border: none;
+        padding: 16px;
+        border-radius: 18px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.25s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-size: 1rem;
+    }
+
+    .modal-btn.primary {
+        background: var(--accent);
+        color: white;
+        box-shadow: 0 8px 20px rgba(255, 181, 167, 0.2);
+    }
+
+    .modal-btn.secondary {
+        background: #fdfcfb;
+        color: #483C32;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    [data-theme='dark'] .modal-btn.secondary {
+        background: #4a5568;
+        color: white;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-btn.danger {
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+    }
+
+    .modal-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+    }
+
+    .modal-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    /* 기물 애니메이션 */
+    @keyframes jg-pulse {
+        0% {
+            transform: scale(1);
+            filter: brightness(1);
+        }
+
+        50% {
+            transform: scale(1.1);
+            filter: brightness(1.15) drop-shadow(0 0 12px rgba(255, 204, 0, 0.6));
+        }
+
+        100% {
+            transform: scale(1);
+            filter: brightness(1);
+        }
+    }
+
+    .bgm-active {
+        background: #27ae60 !important;
+        color: white !important;
+    }
+
+    .sub-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    @media (max-width: 600px) {
+        .settings-box {
+            padding: 20px 15px !important;
+            gap: 15px !important;
+            border-radius: 24px !important;
+        }
+
+        .formation-grid {
+            gap: 8px !important;
+        }
+
+        .formation-btn {
+            padding: 10px 5px !important;
+            border-radius: 12px !important;
+        }
+
+        .piece-icon-seq img {
+            width: 18px !important;
+            height: 18px !important;
+        }
+
+        .formation-label {
+            font-size: 0.75rem !important;
+        }
+
+        .modal-header h3 {
+            font-size: 0.95rem !important;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .jg-page-wrapper {
+            padding: 20px 0;
+        }
+
+        .jg-main-title {
+            font-size: 1.8rem;
+            letter-spacing: 6px;
+        }
+
+        #jg-board-outer {
+            padding: 12px;
+            border-radius: 12px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jg-page-wrapper">
+    <div class="jg-header-section">
+        <h1 class="jg-main-title">AI JANGGI</h1>
+        <div class="settings-group">
+            <button id="jg-settings-btn" class="settings-trigger-btn" title="설정">
+                <i class="fas fa-cog"></i>
+            </button>
+            <button id="jg-snd-btn" class="settings-trigger-btn snd-active" title="효과음">
+                <i class="fas fa-volume-up"></i>
+            </button>
+            <div id="jg-status" class="status-indicator-badge">당신의 턴</div>
+        </div>
+    </div>
+
+    <div id="jg-board-outer">
+        <div id="jg-board-container"></div>
+    </div>
+
+    <!-- 설정 및 결과 모달 (통합) -->
+    <div id="jg-settings-modal" class="modal-overlay">
+        <div class="settings-box">
+            <!-- 게임 결과 영역 -->
+            <div id="jg-result-area" class="hidden"
+                style="text-align:center; padding-bottom:12px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                <div id="jg-result-title"
+                    style="font-family:'Orbitron'; font-weight:900; color:#4b5563; font-size:1.6rem; letter-spacing:4px;">
+                    VICTORY</div>
+                <div id="jg-result-desc" style="font-size:0.85rem; color:#666; margin-top:4px;">상대방의 간담을 서늘하게 했습니다.
+                </div>
+            </div>
+
+            <div class="modal-header">
+                <h3>GAME SETTINGS</h3>
+                <button id="jg-close-modal-top"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="settings-body" style="display:flex; flex-direction:column; gap:20px;">
+                <!-- 난이도 설정 -->
+                <div class="setting-item">
+                    <div class="setting-label">AI DIFFICULTY: <span id="jg-diff-val">5</span></div>
+                    <small id="jg-diff-desc" style="display:block; margin-bottom:8px; color:#888;">도전적인 수준</small>
+                    <input type="range" id="jg-difficulty" min="1" max="10" value="5"
+                        style="width:100%; accent-color:var(--accent); background: transparent;">
+                </div>
+
+                <!-- 포메이션 설정 -->
+                <div class="setting-item">
+                    <div class="setting-label">INITIAL FORMATION (차림)</div>
+                    <div class="formation-grid">
+                        <button class="formation-btn selected" data-type="ma-sang-ma-sang">
+                            <div class="piece-icon-seq">
+                                <img src="/game/static/images/janggi/horse_b.svg" alt="마">
+                                <img src="/game/static/images/janggi/elephant_b.svg" alt="상">
+                                <img src="/game/static/images/janggi/horse_b.svg" alt="마">
+                                <img src="/game/static/images/janggi/elephant_b.svg" alt="상">
+                            </div>
+                            <span class="formation-label">마상마상</span>
+                        </button>
+                        <button class="formation-btn" data-type="sang-ma-sang-ma">
+                            <div class="piece-icon-seq">
+                                <img src="/game/static/images/janggi/elephant_b.svg" alt="상">
+                                <img src="/game/static/images/janggi/horse_b.svg" alt="마">
+                                <img src="/game/static/images/janggi/elephant_b.svg" alt="상">
+                                <img src="/game/static/images/janggi/horse_b.svg" alt="마">
+                            </div>
+                            <span class="formation-label">상마상마</span>
+                        </button>
+                        <button class="formation-btn" data-type="ma-sang-sang-ma">
+                            <div class="piece-icon-seq">
+                                <img src="/game/static/images/janggi/horse_b.svg" alt="마">
+                                <img src="/game/static/images/janggi/elephant_b.svg" alt="상">
+                                <img src="/game/static/images/janggi/elephant_b.svg" alt="상">
+                                <img src="/game/static/images/janggi/horse_b.svg" alt="마">
+                            </div>
+                            <span class="formation-label">마상상마</span>
+                        </button>
+                        <button class="formation-btn" data-type="sang-ma-ma-sang">
+                            <div class="piece-icon-seq">
+                                <img src="/game/static/images/janggi/elephant_b.svg" alt="상">
+                                <img src="/game/static/images/janggi/horse_b.svg" alt="마">
+                                <img src="/game/static/images/janggi/horse_b.svg" alt="마">
+                                <img src="/game/static/images/janggi/elephant_b.svg" alt="상">
+                            </div>
+                            <span class="formation-label">상마마상</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 게임 제어 버튼 -->
+                <div class="action-buttons">
+                    <button id="jg-new-game-btn" class="modal-btn primary">
+                        <i class="fas fa-play"></i> 새 게임 시작
+                    </button>
+                    <div class="sub-actions">
+                        <button id="jg-undo-btn" class="modal-btn secondary" disabled>
+                            <i class="fas fa-undo"></i> 무르기 (<span id="jg-undo-val">5</span>)
+                        </button>
+                        <button id="jg-resign-btn" class="modal-btn danger">
+                            <i class="fas fa-flag"></i> 기권
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 히스토리 (선택 사항) -->
+                <div
+                    style="font-size:0.75rem; color:#999; text-align:center; padding-top:10px; border-top:1px solid rgba(0,0,0,0.05);">
+                    MOVE COUNT: <span id="jg-move-count">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('game.static', filename='janggi.js') }}"></script>
+<script>
+    // janggi.js에서 공통 리스너와 로직을 처리하므로, 
+    // 템플릿 전용 초기화가 필요한 경우에만 최소한으로 사용합니다.
+    window.addEventListener('load', () => {
+        // AI JANGGI 엔진에 의해 전역 초기화가 진행됩니다.
+    });
+</script>
+{% endblock %}

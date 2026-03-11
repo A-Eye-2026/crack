@@ -1,0 +1,637 @@
+{% extends 'ml_layout.html' %}
+
+{% block ml_content %}
+<style>
+    .session-container {
+        padding: 3rem 2.5rem;
+        max-width: 1100px;
+        margin: 0 auto;
+        overflow-x: hidden;
+    }
+
+    .session-header h2 {
+        font-size: clamp(2rem, 5vw, 2.8rem);
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+        background: linear-gradient(to right, #9333ea, #db2777);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .section-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin-bottom: 2.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 2px solid #f1f5f9;
+        padding-bottom: 0.75rem;
+    }
+
+    [data-theme='dark'] .section-title {
+        border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+        color: #f8fafc !important;
+    }
+
+    .theory-box,
+    .insight-box,
+    .lab-box {
+        margin-bottom: 3rem !important;
+    }
+
+    .animate-on-scroll {
+        opacity: 0;
+        transform: translateY(25px);
+        transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .animate-on-scroll.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+        .session-container {
+            padding: 2rem 1.2rem;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+        }
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        // Add container class if missing
+        const mainDiv = document.getElementById('session13');
+        if (mainDiv) mainDiv.classList.add('session-container');
+
+        document.querySelectorAll('.card, .theory-box, .insight-box, .lab-box').forEach(el => {
+            el.classList.add('animate-on-scroll');
+            observer.observe(el);
+        });
+    });
+</script>
+<div class="session-panel" id="session13">
+    <div class="session-card">
+        <!-- 헤더 -->
+        <div class="session-header mb-4">
+            <h2 class="fw-bold" style="color: var(--ml-text-main);">
+                <span class="emoji-bullet">🔬</span> 13강. 주성분 분석 (PCA)
+                {% if 13 in completed_sessions %}
+                <span class="pass-badge"
+                    style="display: inline-flex !important; visibility: visible !important; opacity: 1 !important;">
+                    <i class="fas fa-check-circle"></i> 학습 완료
+                </span>
+                {% endif %}
+            </h2>
+            <p class="session-subtitle text-muted" style="line-height: 1.7;">
+                12강에서 K-평균으로 과일을 분류했지만, 사과와 파인애플이 혼동되는 문제가 있었습니다.
+                <strong>10,000개의 특성(픽셀)</strong>을 가진 데이터에서 핵심 정보만 뽑아 <strong>차원을 줄이면</strong>,
+                더 정확한 분류가 가능해집니다. 이것이 바로 <strong>주성분 분석(PCA, Principal Component Analysis)</strong>입니다.
+            </p>
+        </div>
+
+        <div class="theory-box mb-4" style="border-left: 6px solid #9333ea;">
+            <h6 class="fw-bold mb-2" style="color: #9333ea;"><i class="bi bi-lightbulb-fill me-2 text-warning"></i>차원
+                축소란?</h6>
+            <p class="small text-muted mb-2" style="line-height: 1.7;">
+                과일 사진 1장은 100×100 = <strong>10,000개의 숫자(특성)</strong>로 이루어져 있습니다.
+                이 숫자들 중 정말 중요한 정보만 <strong>50개 정도로 압축</strong>하면,
+                데이터 용량은 줄어들면서도 "어떤 과일인지"는 여전히 구분할 수 있습니다.
+            </p>
+            <div class="p-3 rounded-3 bg-white border-start border-4 border-info mb-4">
+                <h6 class="fw-bold extra-small mb-1 text-info">📐 수학적 배경: 분산의 합</h6>
+                <p class="extra-small text-muted mb-0">주성분 $k$개가 전체 분산(정보)을 얼마나 설명하는지는 각 주성분의 고윳값($\lambda$)의 합으로 계산됩니다.
+                </p>
+                <p class="text-center my-2" style="font-size: 1.1rem; color: #0284c7;">$$V = \sum_{i=1}^{k} \lambda_i$$
+                </p>
+                <p class="extra-small text-muted mb-0">이 값이 1.0에 가까울수록 원본 데이터의 정보를 완벽하게 보존하고 있다는 뜻입니다.</p>
+            </div>
+        </div>
+
+        <!-- 초보자 가이드 -->
+        <div class="p-4 rounded-4 mb-5" style="border: 2px dashed #dee2e6;">
+            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-lightbulb-fill text-warning me-2"></i>왕초보를 위한 핵심 정리</h6>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="p-3 bg-white rounded-3 shadow-sm h-100">
+                        <p class="small fw-bold text-primary mb-1">1. 무엇을?</p>
+                        <p class="small text-muted mb-0">10,000개 특성을 50개로 줄입니다. 데이터의 "핵심 방향"만 남깁니다.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white rounded-3 shadow-sm h-100">
+                        <p class="small fw-bold text-success mb-1">2. 왜?</p>
+                        <p class="small text-muted mb-0">차원이 낮아지면 계산이 빨라지고, 시각화가 가능하며, 과대적합이 줄어듭니다.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white rounded-3 shadow-sm h-100">
+                        <p class="small fw-bold text-danger mb-1">3. 어떻게?</p>
+                        <p class="small text-muted mb-0">데이터의 분산(퍼짐)이 가장 큰 방향을 찾아 그 축으로 투영합니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 1: PCA 적용 및 주성분 추출 -->
+        <div class="card shadow-sm border-0 rounded-4 mb-5">
+            <div class="card-body">
+                <h5 class="fw-bold text-dark mb-3"><span class="badge bg-primary me-2">STEP 1</span> PCA를 이용한 주성분 추출
+                </h5>
+                <p class="text-muted mb-3" style="line-height: 1.7;">
+                    먼저 과일 이미지 데이터를 준비하고, 10,000개의 픽셀을 가진 고차원 데이터를 50개의 주성분으로 축소해보겠습니다.
+                </p>
+                <div class="bg-dark text-light p-3 rounded-3 mb-3" style="font-size: 0.82rem; overflow-x: auto;">
+                    <pre class="mb-0"><code class="language-python"># 과일 데이터를 불러옵니다.
+import numpy as np
+fruits = np.load('fruits_300.npy')
+fruits_2d = fruits.reshape(-1, 100*100)
+
+from sklearn.decomposition import PCA
+# 50개의 주성분을 찾도록 PCA 모델을 설정합니다.
+pca = PCA(n_components=50)
+pca.fit(fruits_2d)
+
+# 전문가가 찾은 핵심 비법(주성분)의 모양 확인
+print(pca.components_.shape) # (50, 10000)
+
+import matplotlib.pyplot as plt
+
+# 이미지 출력용 메서드 가로 10개의 이미지 배열을 만들고 10개가 넘어가면 다음줄에 10개~
+def draw_fruits(arr, ratio=1):  # 배열의 값을 이용해서 이미지로 출력해주는 메서드
+    n = len(arr)    # n은 샘플 개수입니다
+    # 한 줄에 10개씩 이미지를 그립니다. 샘플 개수를 10으로 나누어 전체 행 개수를 계산합니다.
+    rows = int(np.ceil(n/10))
+    # 행이 1개 이면 열 개수는 샘플 개수입니다. 그렇지 않으면 10개입니다.
+    cols = n if rows < 2 else 10
+    fig, axs = plt.subplots(rows, cols,
+                            figsize=(cols*ratio, rows*ratio), squeeze=False)
+    for i in range(rows):
+        for j in range(cols):
+            if i*10 + j < n:    # n 개까지만 그립니다.
+                axs[i, j].imshow(arr[i*10 + j], cmap='gray_r')
+            axs[i, j].axis('off')
+    plt.show()</code></pre>
+                </div>
+
+                <div class="explanation-box p-3 rounded-3 mb-3" style="border-left: 5px solid #db2777;">
+                    <h6 class="fw-bold mb-2" style="color: #db2777;"><i class="bi bi-chat-dots-fill me-2"></i>친절한 코드 설명
+                    </h6>
+                    <ul class="small text-muted mb-0 ps-3" style="line-height: 1.8;">
+                        <li><strong>import numpy as np</strong>: 복잡한 숫자 계산을 아주 잘하는 파이썬 친구 '넘파이'를 불러와요.</li>
+                        <li><strong>fruits_2d = fruits.reshape(-1, 100*100)</strong>: 사진 한 장(100x100)을 길쭉한 종이 한
+                            장(10,000픽셀)처럼 펴서 컴퓨터가 읽기 편하게 만들었어요.</li>
+                        <li><strong>pca = PCA(n_components=50)</strong>: 수만 개의 특징 중에서 "딱 50개만 뽑아서 핵심 요약본을 만들어줘!"라고 '주성분
+                            분석' 전문가에게 부탁한 거예요.</li>
+                        <li><strong>pca.fit(fruits_2d)</strong>: 이제 전문가가 300장의 과일 사진을 꼼꼼히 살펴보며 데이터가 어떤 방향으로 퍼져 있는지 핵심
+                            비법(주성분)을 공부해요.</li>
+                        <li><strong>pca.components_.shape</strong>: 공부한 결과, 10,000개 픽셀의 특징을 요약한 50개의 주성분이 잘 만들어졌는지 확인해보는
+                            거예요.</li>
+                    </ul>
+                </div>
+
+                <!-- ✨ reshape(-1)의 마법 상세 설명 (v120) -->
+                <div class="insight-box mt-4"
+                    style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1.5rem; overflow: hidden;">
+                    <div class="p-3 bg-secondary text-white d-flex align-items-center">
+                        <i class="bi bi-magic me-2"></i>
+                        <h6 class="fw-bold mb-0">reshape(-1, 100*100)의 마법</h6>
+                    </div>
+                    <div class="p-4">
+                        <div class="row g-4">
+                            <div class="col-md-7">
+                                <h6 class="fw-bold text-dark"><i class="bi bi-1-square-fill me-2"></i>reshape(-1,
+                                    100*100)의 원리</h6>
+                                <p class="small text-muted" style="line-height: 1.7;">
+                                    처음 <code>fruits</code>는 <strong>(300, 100, 100)</strong> 모양입니다. 가로·세로 100개씩 픽셀이 박힌
+                                    사진 300장이 겹겹이 쌓여 있는 3D 형태죠. 하지만 PCA 모델은 이런 '입체'를 이해하지 못합니다.
+                                </p>
+                                <ul class="small text-muted ps-3">
+                                    <li><strong>100*100 (10,000)</strong>: 사진 한 장을 <strong>숫자 한 줄(10,000개 칸)</strong>로
+                                        길게 늘어뜨리겠다는 뜻입니다.</li>
+                                    <li><strong>-1</strong>: <strong>"전체 데이터 개수에 맞춰서 행(사진 수)은 네가 알아서 계산해!"</strong>라는
+                                        편리한 주문입니다.</li>
+                                </ul>
+                                <div class="p-3 bg-white rounded-3 border-start border-4 border-primary small">
+                                    <strong>결과:</strong> (300, 100*100) &rarr; <strong>(300, 10000)</strong> 표 형태로 변신!
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="p-3 bg-light rounded-4 h-100">
+                                    <h6 class="fw-bold small mb-2"><i
+                                            class="bi bi-lightbulb-fill text-warning me-2"></i>왜 이렇게
+                                        하나요?</h6>
+                                    <p class="extra-small text-muted mb-2">AI 모델에게 시킬 때 <strong>"입체 사진 더미"</strong>보다는
+                                        <strong>"딱 정돈된 2차원 표"</strong>를 주는 것이 원칙이기 때문입니다.
+                                    </p>
+                                    <div class="alert alert-info py-2 px-3 border-0 rounded-3 mb-0"
+                                        style="font-size: 0.75rem;">
+                                        <i class="bi bi-info-circle me-1"></i> <strong>빅분기 실기 팁:</strong> AI가 "Please
+                                        flatten your input data"라고 에러를 뱉는다면 십중팔구 이 과정이 빠진 것입니다.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 2: 주성분 시각화 -->
+        <div class="card shadow-sm border-0 rounded-4 mb-5">
+            <div class="card-body">
+                <h5 class="fw-bold text-dark mb-3"><span class="badge bg-success me-2">STEP 2</span> 추출된 주성분 시각화</h5>
+                <p class="text-muted mb-3" style="line-height: 1.7;">
+                    PCA 전문가가 찾아낸 데이터의 '핵심 패턴'이 어떻게 생겼는지 그림으로 확인해볼까요?
+                </p>
+                <div class="bg-dark text-light p-3 rounded-3 mb-3" style="font-size: 0.82rem; overflow-x: auto;">
+                    <pre class="mb-0"><code class="language-python"># 전문가가 찾은 핵심 비법(주성분)의 모양 확인
+print(pca.components_.shape) # (50, 10000)
+draw_fruits(pca.components_.reshape(-1, 100, 100)) # 10 * 5 = 50</code></pre>
+                </div>
+                <div class="explanation-box p-3 rounded-3 mb-3"
+                    style="background: #f0f9ff; border-left: 5px solid #0284c7;">
+                    <h6 class="fw-bold mb-2" style="color: #0284c7;"><i class="bi bi-chat-dots-fill me-2"></i>친절한 코드 설명
+                    </h6>
+                    <ul class="small text-muted mb-0 ps-3" style="line-height: 1.8;">
+                        <li><strong>pca.components_.reshape(-1, 100, 100)</strong>: 아까 길쭉하게 폈던 요약본(주성분)을 우리가 눈으로 볼 수 있게
+                            다시 100x100 크기의 사진으로 만든 거예요.</li>
+                        <li><strong>draw_fruits(...)</strong>: 앞서 배운 함수를 불러와서, 전문가가 찾은 50개의 핵심 패턴을 화면에 쫙 보여달라고 한 거예요.
+                        </li>
+                        <li><strong># 10 * 5 = 50</strong>: 주석은 "10개씩 5줄로 총 50개의 그림이 나올 거야"라고 알려주는 메모예요.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 3: 데이터 압축 및 복원 -->
+        <div class="card shadow-sm border-0 rounded-4 mb-5">
+            <div class="card-body">
+                <h5 class="fw-bold text-dark mb-3"><span class="badge bg-info text-white me-2">STEP 3</span> 데이터 압축과 복원
+                    비교</h5>
+                <p class="text-muted mb-3" style="line-height: 1.7;">
+                    10,000개 데이터를 50개로 획기적으로 줄였다가, 다시 원래 크기로 되돌렸을 때 그림이 어떻게 바뀌는지 확인해봅시다.
+                </p>
+                <div class="bg-dark text-light p-3 rounded-3 mb-3" style="font-size: 0.82rem; overflow-x: auto;">
+                    <pre class="mb-0"><code class="language-python"># 데이터를 실제로 50차원으로 압축합니다.
+fruits_pca = pca.transform(fruits_2d)
+print(fruits_pca.shape) # (300, 50)
+
+# 압축된 데이터를 다시 원본 크기로 복원합니다.
+fruits_inverse = pca.inverse_transform(fruits_pca)
+print(fruits_inverse.shape) # (300, 10000)
+
+# 복원된 데이터를 이미지로 확인합니다.
+fruits_reconstruct = fruits_inverse.reshape(-1, 100, 100)
+for label in range(0, 3):
+    draw_fruits(fruits_reconstruct[label*100:label*100+100])
+    print("\n")</code></pre>
+                </div>
+                <div class="explanation-box p-3 rounded-3 mb-3"
+                    style="background: #f0fdf4; border-left: 5px solid #16a34a;">
+                    <h6 class="fw-bold mb-2" style="color: #16a34a;"><i class="bi bi-chat-dots-fill me-2"></i>친절한 코드 설명
+                    </h6>
+                    <ul class="small text-muted mb-0 ps-3" style="line-height: 1.8;">
+                        <li><strong>pca.transform(fruits_2d)</strong>: 이제 진짜로 모든 사진에서 불필요한 부분은 빼고 50개짜리 핵심 요약본(압축 파일)으로
+                            만들었어요.</li>
+                        <li><strong>pca.inverse_transform(fruits_pca)</strong>: 신기하게도 50개만 남은 요약본을 가지고 마법처럼 다시 10,000개짜리
+                            원래 사진으로 되돌려 본 거예요.</li>
+                        <li><strong>fruits_reconstruct</strong>: 마법으로 되돌린 사진들을 다시 100x100 크기로 예쁘게 정리했어요.</li>
+                        <li><strong>for start in range(0, 300, 100)</strong>: 사진이 너무 많으니까 100장씩 나눠서 묶음으로 보여달라는 반복문이에요.
+                    </ul>
+                </div>
+                <!-- [v130] Added Reconstruction Image -->
+                <div class="mt-4 text-center">
+                    <img src="{{ url_for('ml.static', filename='images/sessions/session13/pca_reconstruction.png') }}"
+                        alt="PCA Reconstruction Result" class="img-fluid rounded-4 shadow-sm border bg-white p-2">
+                    <p class="extra-small text-muted mt-2">그림: 50개의 주성분만으로 복원된 과일 이미지 (살짝 흐릿하지만 구분이 가능합니다!)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 4: 설명된 분산 비율 -->
+        <div class="card shadow-sm border-0 rounded-4 mb-5">
+            <div class="card-body">
+                <h5 class="fw-bold text-dark mb-3"><span class="badge bg-warning text-dark me-2">STEP 4</span> 설명된 분산 비율
+                    분석</h5>
+                <div class="row g-4 align-items-center">
+                    <div class="col-lg-6">
+                        <p class="text-muted mb-3" style="line-height: 1.7;">
+                            50개의 주성분이 원래 이미지 데이터의 정보를 얼마나 많이 담고 있는지 숫자로 확인해봅니다.
+                        </p>
+                        <div class="bg-dark text-light p-3 rounded-3 mb-3"
+                            style="font-size: 0.82rem; overflow-x: auto;">
+                            <pre class="mb-0"><code class="language-python"># 설명된 분산 비율을 합산하여 정보 보존력을 평가합니다.
+print(np.sum(pca.explained_variance_ratio_)) # 약 0.92
+
+# 설명된 분산을 그래프로 그려봅니다.
+plt.plot(pca.explained_variance_ratio_)</code></pre>
+                        </div>
+                        <div class="explanation-box p-3 rounded-3 mb-3"
+                            style="background: #fffbeb; border-left: 5px solid #d97706;">
+                            <h6 class="fw-bold mb-2" style="color: #d97706;"><i
+                                    class="bi bi-chat-dots-fill me-2"></i>친절한 코드 설명
+                            </h6>
+                            <ul class="small text-muted mb-0 ps-3" style="line-height: 1.8;">
+                                <li><strong>pca.explained_variance_ratio_</strong>: 50개의 주성분이 각각 원본의 정보를 몇 %씩 담고 있는지 적힌
+                                    리스트예요.</li>
+                                <li><strong>np.sum(...)</strong>: 이 리스트를 다 더해봤더니 원본의 약 92%나 보존하고 있다는 걸 알게 됐어요! 50개만 있어도
+                                    원본의 거의 모든 내용을 알 수 있는 거죠.</li>
+                                <li><strong>plt.plot(...)</strong>: 각 주성분의 중요도를 그래프로 그려서 어디까지가 가장 핵심적인 정보인지 시각화해 본 거예요.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 text-center">
+                        <img src="{{ url_for('ml.static', filename='images/sessions/session13/explained_variance.png') }}"
+                            alt="Explained Variance" class="img-fluid rounded-4 shadow-sm border bg-white p-2">
+                        <p class="extra-small text-muted mt-2">그림 1: 주성분별 설명된 분산 비율 그래프 (정보 기여도)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 5: 분류 모델 적용 및 성능 비교 -->
+        <div class="card shadow-sm border-0 rounded-4 mb-5">
+            <div class="card-body">
+                <h5 class="fw-bold text-dark mb-3"><span class="badge bg-danger me-2">STEP 5</span> 분류 모델 훈련 및 성능 비교
+                </h5>
+                <p class="text-muted mb-3" style="line-height: 1.7;">
+                    압축된 데이터가 실제 학습에서 얼마나 유리한지 '로지스틱 회귀' 모델로 테스트해봅시다.
+                </p>
+                <div class="bg-dark text-light p-3 rounded-3 mb-3" style="font-size: 0.82rem; overflow-x: auto;">
+                    <pre class="mb-0"><code class="language-python">from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_validate
+
+lr = LogisticRegression()
+target = np.array([0]*100 + [1]*100 + [2]*100)
+
+# 원본 데이터로 성능 측정
+scores = cross_validate(lr, fruits_2d, target)
+print(np.mean(scores['test_score']))
+print(np.mean(scores['fit_time']))
+
+# PCA 압축 데이터로 성능 측정
+scores = cross_validate(lr, fruits_pca, target)
+print(np.mean(scores['test_score']))
+print(np.mean(scores['fit_time']))</code></pre>
+                </div>
+                <div class="explanation-box p-3 rounded-3 mb-3"
+                    style="background: #fef2f2; border-left: 5px solid #dc2626;">
+                    <h6 class="fw-bold mb-2" style="color: #dc2626;"><i class="bi bi-chat-dots-fill me-2"></i>친절한 코드 설명
+                    </h6>
+                    <ul class="small text-muted mb-0 ps-3" style="line-height: 1.8;">
+                        <li><strong>LogisticRegression()</strong>: 우리 데이터가 어떤 과일인지 분류해줄 훌륭한 인공지능 선생님을 모셔왔어요.</li>
+                        <li><strong>cross_validate(..., target)</strong>: 선생님께 "이 그림들이 각각 사과, 파인애플, 바나나야"라고 정답지(target)를
+                            주고 실력을 테스트해보는 거예요.</li>
+                        <li><strong>fit_time</strong>: 10,000개 특징으로 공부할 때와 50개 특징만 공부할 때, 얼마나 시간이 절약되는지 시계를 보고 측정하는 거예요.
+                            압축된 데이터가 훨씬 빠르게 공부를 끝낸답니다!</li>
+                    </ul>
+                </div>
+                <div class="p-3 rounded-3 bg-light border-start border-4 border-danger">
+                    <h6 class="fw-bold small mb-2">❓ 왜 5등분해서 시험을 보나요? (교차 검증의 비밀)</h6>
+                    <p class="extra-small text-muted mb-0" style="line-height: 1.8;">
+                        이것을 <strong>5-폴드 교차 검증(5-fold Cross Validation)</strong>이라고 해요. 사이킷런의
+                        <code>cross_validate</code> 함수는 별도로 지정하지 않으면 기본적으로 데이터를 5개 그룹으로 나눈답니다.
+                        운 좋게 쉬운 문제만 풀어서 점수가 잘 나오는 걸 방지하기 위해, 한 그룹씩 돌아가며 시험지로 쓰고 나머지 네 그룹으로 공부하기를 총 5번 반복하는 거예요. 이렇게 하면
+                        모델의 진짜 실력을 아주 객관적으로 알 수 있답니다!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 6: 분산 비율 기반 PCA 및 군집 분석 -->
+        <div class="card shadow-sm border-0 rounded-4 mb-5">
+            <div class="card-body">
+                <h5 class="fw-bold text-dark mb-3"><span class="badge bg-secondary me-2">STEP 6</span> 분산 비율 기반 PCA와
+                    군집하기</h5>
+                <p class="text-muted mb-3" style="line-height: 1.7;">
+                    주성분의 개수 대신 "정보를 50%만 남겨줘"라고 지정하면 어떻게 될까요? 압축 효율의 끝판왕을 경험해봅시다!
+                </p>
+                <div class="bg-dark text-light p-3 rounded-3 mb-3" style="font-size: 0.82rem; overflow-x: auto;">
+                    <pre class="mb-0"><code class="language-python"># 설명된 분산의 50%에 달하는 주성분을 찾습니다.
+pca = PCA(n_components=0.5)
+pca.fit(fruits_2d)
+print(pca.n_components_) # 2
+
+fruits_pca = pca.transform(fruits_2d)
+print(fruits_pca.shape) # (300, 2)
+
+# 2개의 특성만으로 다시 분류 확인
+scores = cross_validate(lr, fruits_pca, target)
+print(np.mean(scores['test_score']))
+print(np.mean(scores['fit_time']))
+
+# K-평균 알고리즘으로 군집 분석
+from sklearn.cluster import KMeans
+km = KMeans(n_clusters=3, random_state=42)
+km.fit(fruits_pca)
+print(fruits_pca.shape)
+print(np.unique(km.labels_, return_counts=True))
+
+# 군집된 결과를 그림으로 확인
+for label in range(0, 3):
+    draw_fruits(fruits[km.labels_ == label])
+    print("\n")</code></pre>
+                </div>
+                <div class="explanation-box p-3 rounded-3 mb-3"
+                    style="background: #f8fafc; border-left: 5px solid #475569;">
+                    <h6 class="fw-bold mb-2" style="color: #475569;"><i class="bi bi-chat-dots-fill me-2"></i>친절한 코드 설명
+                    </h6>
+                    <ul class="small text-muted mb-0 ps-3" style="line-height: 1.8;">
+                        <li><strong>n_components=0.5</strong>: "개수 상관없으니 원래 정보의 절반만 살려줘!"라고 했더니, 전문가가 단 2개의 특징점(주성분)만 딱
+                            찾아냈어요. 대단하죠?</li>
+                        <li><strong>KMeans(n_clusters=3)</strong>: 이제 정답지 없이 그 요약본(2개 축)만 보고 비슷한 과일끼리 3개의 묶음으로 나눠보게 시키는
+                            거예요.</li>
+                        <li><strong>draw_fruits(fruits[km.labels_ == label])</strong>: 분류된 결과가 비슷한 과일들끼리 잘 묶였는지 사진첩을 열어서
+                            마지막으로 검사하는 과정입니다.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="p-3 rounded-3 bg-light border-start border-4 border-danger">
+            <h6 class="fw-bold small mb-2">❓ 왜 5등분해서 시험을 보나요?</h6>
+            <p class="extra-small text-muted mb-0" style="line-height: 1.6;">운 좋게 쉬운 문제만 풀어서 점수가 잘 나오는 걸 방지하기
+                위해서예요! 데이터를 5등분해서 매번 다른 팀을 시험지로 쓰고, 나머지로 공부하기를 5번 반복하면 모델의 진짜 실력을 객관적으로 알 수 있답니다.</p>
+        </div>
+
+
+
+        <!-- 실습: PCA 가상 투영 실험실 -->
+        <div class="lab-box mb-5">
+            <div class="lab-header">
+                <h6 class="fw-bold text-white mb-0"><i class="bi bi-flask-fill me-2"></i>PCA 가상 투영 실험실</h6>
+            </div>
+            <div class="lab-body">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <p class="small text-muted mb-3">2개의 주성분(PC1, PC2)만 사용하여 3차원 이상의 데이터를 2차원 평면에 투영한 결과입니다. 과일들이
+                            어떻게 묶이는지 확인해보세요!</p>
+                        <ul class="small text-muted" style="line-height: 1.8;">
+                            <li><span class="badge" style="background:#ff4d4d;">Red</span>: 사과 그룹 (분산 집중)</li>
+                            <li><span class="badge" style="background:#4dabff;">Blue</span>: 파인애플 그룹</li>
+                            <li><span class="badge" style="background:#ffce4d; color:#000;">Yellow</span>: 바나나 그룹</li>
+                        </ul>
+                        <div class="p-3 rounded-3 bg-light border">
+                            <h6 class="fw-bold small mb-2">💡 분석 포인트</h6>
+                            <p class="extra-small text-muted mb-0">주성분 축을 따라 데이터가 멀리 떨어져 있을수록 분류 모델이 정답을 맞히기 쉬워집니다. PCA는
+                                이렇게 "가장 잘 구분되는 방향"을 찾아냅니다.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-7">
+                        <img src="{{ url_for('ml.static', filename='images/sessions/session13/pca_scatter.png') }}"
+                            alt="PCA Scatter Plot" class="img-fluid rounded-4 shadow-sm">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 핵심 요약 -->
+        <div class="theory-box mb-5" style="border-left: 6px solid #9333ea; background: #faf5ff;">
+            <h6 class="fw-bold mb-3" style="color: #9333ea;"><i class="bi bi-bookmark-star-fill me-2"></i>13강 핵심 요약</h6>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="p-3 bg-white rounded-3 shadow-sm h-100">
+                        <p class="small fw-bold mb-1" style="color: #9333ea;">📐 PCA의 특징</p>
+                        <ul class="small text-muted mb-0 ps-3" style="line-height: 1.6;">
+                            <li>차원 축소로 데이터 용량을 극적으로 줄임</li>
+                            <li>노이즈 제거 성격이 있어 성능이 향상되기도 함</li>
+                            <li><strong>교차 검증(5-fold)</strong> 속도를 가속화함</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-white rounded-3 shadow-sm h-100">
+                        <p class="small fw-bold mb-1" style="color: #9333ea;">🎯 실습 포인트</p>
+                        <ul class="small text-muted mb-0 ps-3" style="line-height: 1.6;">
+                            <li><code>n_components</code>를 실수(0~1)로 주면 비율로 설정 가능</li>
+                            <li>시각화 시에는 보통 2개 또는 3개의 주성분 사용</li>
+                            <li>분석 전 표준화(StandardScaler)를 하는 것이 권장됨</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 따라해보기: 얼굴 데이터 다이어트 -->
+        <div class="card shadow-sm border-0 rounded-4 mb-5">
+            <div class="card-body">
+                <h4 class="fw-bold text-dark mb-4">
+                    <span class="badge bg-dark me-2">SPECIAL</span> 따라해보기: 얼굴 데이터 다이어트
+                </h4>
+                <p class="text-muted" style="line-height: 1.7;">
+                    이 코드는 4,096개의 복잡한 얼굴 데이터를 단 50개의 핵심 특징으로 요약하는 '데이터 다이어트' 과정입니다.
+                    한 줄씩 섬세하게 뜯어보겠습니다.
+                </p>
+
+                <!-- 1. 데이터 준비 -->
+                <div class="mb-5">
+                    <h6 class="fw-bold text-primary"><i class="bi bi-1-circle-fill me-2"></i>데이터 준비: 400장의 얼굴 소환</h6>
+                    <div class="bg-dark text-light p-3 rounded-3 mb-3" style="font-size: 0.82rem;">
+                        <pre class="mb-0"><code class="language-python">from sklearn.datasets import fetch_olivetti_faces
+faces_data = fetch_olivetti_faces()
+faces = faces_data.images   # (400, 64, 64)
+X = faces_data.data         # (400, 4096)
+y = faces_data.target       # 0~39번 사람 라벨</code></pre>
+                    </div>
+                    <ul class="small text-muted ps-3">
+                        <li><strong>fetch_olivetti_faces()</strong>: 사이킷런이 제공하는 실제 사람 얼굴 데이터셋을 내려받습니다.</li>
+                        <li><strong>faces</strong>: 우리 눈에 보이는 2차원 사진 형태입니다. (가로 64 &times; 세로 64).</li>
+                        <li><strong>X</strong>: 컴퓨터가 계산하기 좋게 1차원으로 펼친 상태입니다. ($64 \times 64 = 4,096$픽셀). 사진 한 장이 4,096개의
+                            숫자로
+                            이루어진 긴 줄인 셈이죠.</li>
+                    </ul>
+                </div>
+
+                <!-- 2. PCA 모델링 -->
+                <div class="mb-5">
+                    <h6 class="fw-bold text-success"><i class="bi bi-2-circle-fill me-2"></i>PCA 모델링: "핵심 요약봇" 만들기</h6>
+                    <div class="bg-dark text-light p-3 rounded-3 mb-3" style="font-size: 0.82rem;">
+                        <pre class="mb-0"><code class="language-python">pca = PCA(n_components=50)
+pca.fit(X)</code></pre>
+                    </div>
+                    <ul class="small text-muted ps-3">
+                        <li><strong>PCA(n_components=50)</strong>: "4,096개의 픽셀 정보 중에서 가장 중요한 <strong>50개의 핵심
+                                축(주성분)</strong>만 남기겠다"는 선언입니다.</li>
+                        <li><strong>pca.fit(X)</strong>: 400장의 사진을 훑으며 <strong>"사람 얼굴에서 가장 변동성이 큰 부분(눈의 깊이, 콧날의 각도, 입술
+                                모양
+                                등)"</strong>이 어디인지 학습합니다.</li>
+                    </ul>
+                </div>
+
+                <!-- 3. 주성분 확인 -->
+                <div class="mb-5">
+                    <h6 class="fw-bold text-info"><i class="bi bi-3-circle-fill me-2"></i>주성분 확인: "유령 얼굴(Eigenfaces)"의
+                        정체
+                    </h6>
+                    <div class="bg-dark text-light p-3 rounded-3 mb-3" style="font-size: 0.82rem;">
+                        <pre class="mb-0"><code class="language-python">for i in range(10):
+    axs[i//5, i%5].imshow(pca.components_[i].reshape(64, 64), cmap='gray')</code></pre>
+                    </div>
+                    <ul class="small text-muted ps-3">
+                        <li><strong>pca.components_</strong>: PCA가 찾아낸 '핵심 패턴'입니다.</li>
+                        <li><strong>의미</strong>: 출력된 흐릿한 얼굴들은 실제 사람의 얼굴이 아니라, <strong>"얼굴들이 공통적으로 가진 특징적
+                                패턴"</strong>입니다. 일명
+                            **Ghost Faces**라고도 하죠.</li>
+                        <li>1번 유령은 전체적인 조명 패턴을, 2번 유령은 눈매의 특징을 담고 있는 식이며, 이들을 조합하면 어떤 사람의 얼굴도 흉내 낼 수 있습니다.</li>
+                    </ul>
+                </div>
+
+                <!-- 4. 압축과 복원 -->
+                <div class="mb-5">
+                    <h6 class="fw-bold text-warning"><i class="bi bi-4-circle-fill me-2"></i>압축과 복원: 데이터의 연금술</h6>
+                    <div class="bg-dark text-light p-3 rounded-3 mb-3" style="font-size: 0.82rem;">
+                        <pre class="mb-0"><code class="language-python">X_pca = pca.transform(X)           # 압축: 4096 -> 50
+X_reconstructed = pca.inverse_transform(X_pca) # 복원: 50 -> 4096</code></pre>
+                    </div>
+                    <ul class="small text-muted ps-3">
+                        <li><strong>transform(X)</strong>: 4,096개의 숫자를 단 50개의 숫자로 변환합니다. 데이터 크기가 약 80분의 1로 줄어듭니다.</li>
+                        <li><strong>inverse_transform(X_pca)</strong>: 50개의 핵심 정보만 가지고 다시 원래의 4,096개 픽셀로 되돌립니다.</li>
+                        <li><strong>중요</strong>: 한 번 버려진 정보는 완벽히 돌아오지 않기 때문에, 복원된 사진은 원본보다 살짝 흐릿(Blur)해집니다. 마치
+                            <strong>'화질
+                                저하된 압축 파일'</strong>과 같은 원리입니다.
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 5. 성능 검증 -->
+                <div class="mb-5">
+                    <h6 class="fw-bold text-danger"><i class="bi bi-5-circle-fill me-2"></i>성능 검증: 얼마나 잘 살렸나?</h6>
+                    <div class="bg-dark text-light p-3 rounded-3 mb-3" style="font-size: 0.82rem;">
+                        <pre
+                            class="mb-0"><code class="language-python">total_variance = np.sum(pca.explained_variance_ratio_)</code></pre>
+                    </div>
+                    <ul class="small text-muted ps-3">
+                        <li><strong>explained_variance_ratio_</strong>: 각 주성분이 원본 데이터의 정보를 몇 %나 담고 있는지 알려줍니다.</li>
+                        <li><strong>결과</strong>: 만약 이 값이 0.85라면, <strong>"데이터 양을 80분의 1로 줄였지만, 정보는 85%나 살아있다!"</strong>는
+                            뜻입니다. 아주 효율적인 압축이죠.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 퀴즈 섹션 -->
+        <div class="quiz-section" id="quiz-area">
+            <div class="quiz-header">
+                <h3 class="fw-bold"><span class="emoji-bullet">📝</span> 오늘의 연습문제</h3>
+                <p class="text-muted">강의에서 배운 기법을 새로운 데이터에 적용해보세요!</p>
+                <button class="btn-predict" onclick="loadQuiz({{ session_id }})">문제 불러오기</button>
+            </div>
+            <div id="quiz-body"></div>
+        </div>
+
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="mx-auto" style="max-width: 650px;">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold"
+                style="font-family: 'Orbitron', sans-serif; color: var(--text-primary); letter-spacing: 1px;">AI Image
+                Analyzer</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">이미지를 업로드하고 강력한 AI 모델로 객체를 탐지하세요.</p>
+        </div>
+
+        <div class="card border-0 shadow-lg" style="border-radius: 24px; background: var(--bg-card); padding: 40px;">
+            <form action="/ai-detect/write" method="post" enctype="multipart/form-data">
+                <div class="mb-4">
+                    <label class="form-label fw-bold" style="color: var(--text-primary);">제목</label>
+                    <input type="text" name="title" class="form-control form-control-lg"
+                        style="border-radius: 12px; background: var(--bg-input); border: 1px solid var(--border-light); color: var(--text-primary);"
+                        required placeholder="분석할 이미지의 제목을 입력하세요">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold" style="color: var(--text-primary);">설명 (선택사항)</label>
+                    <textarea name="content" class="form-control" rows="3"
+                        style="border-radius: 12px; background: var(--bg-input); border: 1px solid var(--border-light); color: var(--text-primary);"
+                        placeholder="이미지에 대한 추가적인 설명을 남길 수 있습니다."></textarea>
+                </div>
+
+                <div class="mb-5">
+                    <label class="form-label fw-bold" style="color: var(--text-primary);">이미지 업로드</label>
+                    <div class="upload-area text-center position-relative mt-2"
+                        style="border: 2px dashed var(--accent); border-radius: 16px; padding: 40px 20px; background: var(--bg-input); cursor: pointer; transition: all 0.3s ease;">
+                        <input type="file" name="image" class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                            accept="image/*" onchange="previewImage(this)" style="cursor: pointer; z-index: 10;"
+                            required>
+                        <div id="uploadPlaceholder">
+                            <i class="bi bi-cloud-arrow-up display-4" style="color: var(--accent);"></i>
+                            <h5 class="mt-3 mb-1" style="color: var(--text-primary);">이미지를 이곳에 드래그하거나 클릭하세요</h5>
+                            <p class="small m-0" style="color: var(--text-muted);">지원 형식: JPG, PNG, JPEG</p>
+                        </div>
+                        <img id="preview" src="#" class="mx-auto rounded d-none"
+                            style="max-height: 250px; object-fit: contain; z-index: 5; position: relative;">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-3 rounded-pill fw-bold fs-5 shadow-sm btn-submit"
+                    style="letter-spacing: 1px;">
+                    <i class="bi bi-cpu me-2"></i> 분석 시작하기
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById('uploadPlaceholder').classList.add('d-none');
+                document.getElementById('preview').src = e.target.result;
+                document.getElementById('preview').classList.remove('d-none');
+                document.querySelector('.upload-area').style.padding = '10px';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
+
+<style>
+    .upload-area:hover {
+        background: var(--bg-hover) !important;
+        transform: translateY(-2px);
+    }
+
+    .btn-submit {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(164, 120, 100, 0.4) !important;
+    }
+</style>
+{% endblock %}

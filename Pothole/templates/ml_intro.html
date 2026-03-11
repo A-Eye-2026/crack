@@ -1,0 +1,645 @@
+{% extends 'ml_layout.html' %}
+
+{% block ml_styles %}
+<style>
+    .intro-hero {
+        background: linear-gradient(135deg, #2980b9 0%, #3498db 50%, #2471a3 100%);
+        /* Softer Blue (toned down from bright cyan) */
+        color: white;
+        padding: 60px 40px;
+        border-radius: 30px;
+        margin-bottom: 40px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 15px 35px rgba(41, 128, 185, 0.25);
+    }
+
+    .intro-hero::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(21, 170, 191, 0.1) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .intro-badge {
+        background: rgba(255, 255, 255, 0.15);
+        color: #ffd166;
+        padding: 6px 16px;
+        border-radius: 50px;
+        font-weight: 800;
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        display: inline-block;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+    }
+
+    .intro-hero h2 {
+        font-family: var(--font-tech);
+        font-size: 3rem;
+        font-weight: 900;
+        margin-bottom: 20px;
+        line-height: 1.1;
+    }
+
+    .intro-hero p {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        max-width: 700px;
+        line-height: 1.8;
+    }
+
+    .vision-section {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 40px;
+        margin-bottom: 60px;
+        align-items: center;
+    }
+
+    .vision-card {
+        background: var(--ml-card-bg);
+        padding: 40px;
+        border-radius: 30px;
+        border: 1px solid var(--ml-border-soft);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+    }
+
+    .vision-card h3 {
+        font-weight: 900;
+        margin-bottom: 25px;
+        color: var(--ml-deep);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .vision-card p {
+        color: var(--ml-text-sub);
+        line-height: 1.8;
+        margin-bottom: 20px;
+    }
+
+    .compare-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 30px;
+    }
+
+    .compare-item {
+        padding: 20px;
+        border-radius: 20px;
+        background: var(--ml-bg-soft);
+        border: 1px solid var(--ml-border-soft);
+    }
+
+    .compare-item h5 {
+        font-weight: 800;
+        font-size: 1rem;
+        margin-bottom: 10px;
+        color: var(--ml-primary);
+    }
+
+    .compare-item ul {
+        padding-left: 18px;
+        margin-bottom: 0;
+        font-size: 0.9rem;
+        color: var(--ml-text-sub);
+    }
+
+    .technique-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 25px;
+        margin-top: 50px;
+        align-items: stretch;
+        /* 카드 높이 통일 */
+    }
+
+    .tech-card {
+        background: var(--ml-card-bg);
+        border-radius: 30px;
+        padding: 35px 30px;
+        border: 1px solid var(--ml-border-soft);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        /* 부모 그리드 높이에 맞춤 */
+        position: relative;
+        overflow: hidden;
+        word-break: keep-all;
+        /* 한글 단어 끊김 방지 */
+    }
+
+    /* 좀 더 선명하고 시인성이 좋은 산뜻한 파스텔톤 배경색 */
+    .technique-grid a:nth-child(1) {
+        background: #e3f2fd;
+        border-color: #bbdefb;
+    }
+
+    .technique-grid a:nth-child(2) {
+        background: #e8f5e9;
+        border-color: #c8e6c9;
+    }
+
+    .technique-grid a:nth-child(3) {
+        background: #fff3e0;
+        border-color: #ffe0b2;
+    }
+
+    .technique-grid a:nth-child(4) {
+        background: #fce4ec;
+        border-color: #f8bbd0;
+    }
+
+    .technique-grid a:nth-child(5) {
+        background: #f3e5f5;
+        border-color: #e1bee7;
+    }
+
+    .technique-grid a:nth-child(6) {
+        background: #e0f2f1;
+        border-color: #b2dfdb;
+    }
+
+    .technique-grid a:nth-child(7) {
+        background: #fff8e1;
+        border-color: #ffecb3;
+    }
+
+    .technique-grid a:nth-child(8) {
+        background: #e0f7fa;
+        border-color: #b2ebf2;
+    }
+
+    .technique-grid a:nth-child(9) {
+        background: #e8f5e9;
+        border-color: #c8e6c9;
+    }
+
+    .technique-grid a:nth-child(10) {
+        background: #e8eaf6;
+        border-color: #c5cae9;
+    }
+
+    .technique-grid a:nth-child(11) {
+        background: #fbe9e7;
+        border-color: #ffccbc;
+    }
+
+    .technique-grid a:nth-child(12) {
+        background: #e0f2f1;
+        border-color: #b2dfdb;
+    }
+
+    .technique-grid a:nth-child(13) {
+        background: #f1f8e9;
+        border-color: #dcedc8;
+    }
+
+    .technique-grid a:nth-child(14) {
+        background: #fff3e0;
+        border-color: #ffe0b2;
+    }
+
+    .technique-grid a:nth-child(15) {
+        background: #e1f5fe;
+        border-color: #b3e5fc;
+    }
+
+    .technique-grid a:nth-child(16) {
+        background: #f3e5f5;
+        border-color: #e1bee7;
+    }
+
+    .technique-grid a:nth-child(17) {
+        background: #f9fbe7;
+        border-color: #f0f4c3;
+    }
+
+    .technique-grid a:nth-child(18) {
+        background: #e1f5fe;
+        border-color: #b3e5fc;
+    }
+
+    /* [v252] 다크모드 전용 선명한 파스텔톤 대응 */
+    [data-theme='dark'] .technique-grid a:nth-child(1) {
+        background: rgba(33, 150, 243, 0.12);
+        border-color: rgba(33, 150, 243, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(2) {
+        background: rgba(76, 175, 80, 0.12);
+        border-color: rgba(76, 175, 80, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(3) {
+        background: rgba(255, 152, 0, 0.12);
+        border-color: rgba(255, 152, 0, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(4) {
+        background: rgba(233, 30, 99, 0.12);
+        border-color: rgba(233, 30, 99, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(5) {
+        background: rgba(156, 39, 176, 0.12);
+        border-color: rgba(156, 39, 176, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(6) {
+        background: rgba(0, 150, 136, 0.12);
+        border-color: rgba(0, 150, 136, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(7) {
+        background: rgba(255, 193, 7, 0.12);
+        border-color: rgba(255, 193, 7, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(8) {
+        background: rgba(0, 188, 212, 0.12);
+        border-color: rgba(0, 188, 212, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(9) {
+        background: rgba(76, 175, 80, 0.12);
+        border-color: rgba(76, 175, 80, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(10) {
+        background: rgba(63, 81, 181, 0.12);
+        border-color: rgba(63, 81, 1 indigo - 81, 181, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(11) {
+        background: rgba(255, 87, 34, 0.12);
+        border-color: rgba(255, 87, 34, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(12) {
+        background: rgba(0, 150, 136, 0.12);
+        border-color: rgba(0, 150, 136, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(13) {
+        background: rgba(139, 195, 74, 0.12);
+        border-color: rgba(139, 195, 74, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(14) {
+        background: rgba(255, 152, 0, 0.12);
+        border-color: rgba(255, 152, 0, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(15) {
+        background: rgba(3, 169, 244, 0.12);
+        border-color: rgba(3, 169, 244, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(16) {
+        background: rgba(156, 39, 176, 0.12);
+        border-color: rgba(156, 39, 176, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(17) {
+        background: rgba(205, 220, 57, 0.12);
+        border-color: rgba(205, 220, 57, 0.3);
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(18) {
+        background: rgba(3, 169, 244, 0.12);
+        border-color: rgba(3, 169, 244, 0.3);
+    }
+
+    .tech-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, #1dd1a1, #0fb9b1);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .tech-card:hover {
+        transform: translateY(-10px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        filter: brightness(0.96);
+        border-color: transparent;
+    }
+
+    .tech-card:hover::before {
+        opacity: 1;
+    }
+
+    .tech-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.7);
+        color: var(--ml-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        margin-bottom: 25px;
+        transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+    }
+
+    .tech-card:hover .tech-icon {
+        transform: rotate(10deg);
+        background: white;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        color: var(--ml-deep);
+    }
+
+    .tech-card h4 {
+        font-weight: 900;
+        margin-bottom: 15px;
+        font-size: 1.25rem;
+        color: var(--ml-text-main);
+    }
+
+    .tech-card p {
+        font-size: 0.95rem;
+        color: var(--ml-text-sub);
+        line-height: 1.7;
+        flex: 1;
+        margin-bottom: 25px;
+    }
+
+    .tech-tag {
+        margin-top: auto;
+        padding: 15px;
+        border-radius: 16px;
+        background: var(--ml-bg-soft);
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--ml-text-sub);
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        line-height: 1.5;
+        border: 1px dashed var(--ml-border-soft);
+    }
+
+    .tech-tag i {
+        color: #f39c12;
+        font-size: 1.1rem;
+        margin-top: 2px;
+    }
+
+    .tech-tag strong {
+        color: var(--ml-deep);
+        display: block;
+        margin-bottom: 4px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .btn-fresh-start {
+        background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+        color: #ffffff !important;
+        border: none;
+        border-radius: 50px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        box-shadow: 0 10px 20px rgba(58, 123, 213, 0.3);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-fresh-start:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(58, 123, 213, 0.4);
+        background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+        color: #ffffff !important;
+    }
+
+    @media (max-width: 991px) {
+        .vision-section {
+            grid-template-columns: 1fr;
+        }
+
+        .intro-hero h2 {
+            font-size: 2.2rem;
+        }
+    }
+
+    /* 다크모드 파스텔톤 보정 */
+    [data-theme='dark'] .technique-grid a:nth-child(n) {
+        background: var(--ml-card-bg) !important;
+        border: 1px solid var(--ml-border-soft) !important;
+    }
+
+    [data-theme='dark'] .technique-grid a:nth-child(n):hover {
+        border-color: var(--ml-primary) !important;
+        background: var(--ml-bg-soft) !important;
+    }
+
+    [data-theme='dark'] .vision-card[style*="background: #fdfaf7"] {
+        background: var(--ml-card-bg) !important;
+    }
+</style>
+{% endblock %}
+
+{% block ml_content %}
+<div class="intro-hero">
+    <span class="intro-badge">Foundation of AI Vision</span>
+    <h2>데이터를 읽는 눈<br>머신러닝의 시작</h2>
+    <p>AI Vision은 단순히 이미지를 보는 것을 넘어, 데이터에 숨겨진 패턴과 질서를 찾아내는 학문입니다. 딥러닝이라는 거대한 산을 오르기 위해 반드시 거쳐야 할 '데이터 분석의 기초'를 탄탄히 다지는
+        과정입니다.</p>
+</div>
+
+<div class="vision-section">
+    <div class="vision-card">
+        <h3><i class="bi bi-cpu"></i> 왜 머신러닝 기초인가요?</h3>
+        <p>현대 AI Vision의 주역은 딥러닝(Deep Learning)이지만, 그 뿌리는 고전적인 머신러닝 기법에 있습니다. 딥러닝 모델에 넣기 전 데이터를 어떻게 정제하고, 어떤 특성이 중요한지
+            판단하는 '데이터 감각'은 머신러닝 분석을 통해서만 길러집니다.</p>
+        <p>비전 센서에서 들어오는 원시 데이터를 숫자화하고, 그 안에서 유의미한 상관관계를 찾아내는 능력이 바로 <strong>AI Vision의 진짜 실력</strong>이 됩니다.</p>
+
+        <div class="compare-grid">
+            <div class="compare-item">
+                <h5>머신러닝 (Classical ML)</h5>
+                <ul>
+                    <li>정형 데이터(숫자, 표) 최적</li>
+                    <li>사람이 직접 특성을 추출</li>
+                    <li>작은 데이터셋에서도 강력함</li>
+                    <li>결과 해석이 명확함(Explainable)</li>
+                </ul>
+            </div>
+            <div class="compare-item">
+                <h5>딥러닝 (Deep Learning)</h5>
+                <ul>
+                    <li>비정형 데이터(이미지, 영상) 최적</li>
+                    <li>AI가 스스로 특성을 학습</li>
+                    <li>거대 데이터와 GPU 연산 필수</li>
+                    <li>결과 도출 과정이 복잡함(Blackbox)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="vision-card" style="background: #fdfaf7;">
+        <h3><i class="bi bi-graph-up-arrow"></i> 현업 현황 및 활용</h3>
+        <p>현업에서는 무거운 딥러닝 모델만 사용하지 않습니다. 엣지 디바이스(카메라, 임베디드 장치)에서는 전력 소모를 줄이면서도 빠른 판단을 내리기 위해 머신러닝 기법이 여전히 핵심적으로 활용됩니다.
+        </p>
+        <ul class="list-unstyled">
+            <li class="mb-3 d-flex gap-3">
+                <div class="text-primary fs-4"><i class="bi bi-check2-circle"></i></div>
+                <div><strong>제조 공정 검수</strong>: 부품의 치수를 보고 합격/불합격을 빠르게 판정할 때 KNN이나 결정 트리류의 알고리즘이 사용됩니다.</div>
+            </li>
+            <li class="mb-3 d-flex gap-3">
+                <div class="text-primary fs-4"><i class="bi bi-check2-circle"></i></div>
+                <div><strong>데이터 전처리 파이프라인</strong>: 이미지의 픽셀 정보를 벡터화한 뒤, 딥러닝 입력 전 스케일링과 정규화를 하는 과정은 머신러닝의 기초 지식을 그대로
+                    따릅니다.</div>
+            </li>
+            <li class="d-flex gap-3">
+                <div class="text-primary fs-4"><i class="bi bi-check2-circle"></i></div>
+                <div><strong>하이브리드 AI</strong>: 딥러닝으로 특징을 뽑고(Feature Extraction), 머신러닝으로 최종 분류를 하는 방식이 효율성 측면에서 널리 쓰입니다.
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<h3 class="fw-bold mb-4" style="font-family: var(--font-tech);"><i class="bi bi-mortarboard-fill me-2 text-primary"></i>
+    학습 로드맵: 18개의 분석 기법</h3>
+<p class="text-muted mb-4">본 과정에서는 데이터 분석의 A부터 Z까지, 18가지 핵심 기법을 직접 실험하며 체득합니다.</p>
+
+<div class="technique-grid">
+    <!-- 1~10강: 기초 및 클래식 머신러닝 (생략 - 기존 내용 유지 권장하나 구조상 전체 재배치) -->
+    <a href="/data_analysis/1" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-people"></i></div>
+        <h4>🐟 1강 KNN 분류</h4>
+        <p>가장 가까운 이웃의 정답을 따라가는 다수결 분류 기법입니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 불량 판정, 고객 그룹화 등</div>
+    </a>
+    <a href="/data_analysis/2" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-scissors"></i></div>
+        <h4>✂️ 2강 훈련/테스트</h4>
+        <p>데이터를 훈련용과 검증용으로 나누어 모델의 성능을 정교하게 평가합니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 모델 성능 검증 파이프라인</div>
+    </a>
+    <a href="/data_analysis/3" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-calculator"></i></div>
+        <h4>📏 3강 전처리</h4>
+        <p>무게와 길이 등 단위가 다른 데이터를 균일하게 맞춰 학습 효율을 높입니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 데이터 정규화 필수 단계</div>
+    </a>
+    <a href="/data_analysis/4" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-graph-up"></i></div>
+        <h4>📊 4강 KNN 회귀</h4>
+        <p>이웃 데이터의 평균값을 사용하여 연속적인 수치를 예측합니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 정밀 수치 예측</div>
+    </a>
+    <a href="/data_analysis/5" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <h4>📈 5강 선형·다항 회귀</h4>
+        <p>데이터의 추세를 방정식으로 모델링하여 미래 값을 예측합니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 아파트 시세, 매출 예측</div>
+    </a>
+    <a href="/data_analysis/6" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-wrench"></i></div>
+        <h4>🔧 6강 규제</h4>
+        <p>모델이 복잡해지는 것을 막아 과대적합을 방지하는 릿지, 라쏘 기법입니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 안정적인 모델 구축</div>
+    </a>
+    <a href="/data_analysis/7" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-bullseye"></i></div>
+        <h4>🎯 7강 로지스틱 회귀</h4>
+        <p>선형 방정식을 확률로 변환하여 분류하는 현대 통계 분류의 기초입니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 암 진단, 대출 승인 확률</div>
+    </a>
+    <a href="/data_analysis/8" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-lightning"></i></div>
+        <h4>⚡ 8강 SGD</h4>
+        <p>데이터를 조금씩 나누어 점진적으로 학습하는 대규모 데이터 처리 기술입니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 실시간 추천 시스템 최적화</div>
+    </a>
+    <a href="/data_analysis/9" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-tree"></i></div>
+        <h4>🌳 9강 결정 트리</h4>
+        <p>스무고개 방식으로 명확한 판단 근거를 제시하는 분류 알고리즘입니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 화이트박스 진단 시스템</div>
+    </a>
+    <a href="/data_analysis/10" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-tree-fill"></i></div>
+        <h4>🌲 10강 앙상블</h4>
+        <p>여러 모델의 지혜를 모아 압도적인 정확도를 내는 랜덤 포레스트 등입니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 캐글 우승 알고리즘</div>
+    </a>
+    <a href="/data_analysis/11" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-app-indicator"></i></div>
+        <h4>🍇 11강 군집 비지도</h4>
+        <p>정답이 없는 데이터에서 스스로 패턴과 그룹을 찾아냅니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 뉴스 자동 묶음, 이미지 분할</div>
+    </a>
+    <a href="/data_analysis/12" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-record-circle"></i></div>
+        <h4>🎯 12강 K-평균</h4>
+        <p>데이터의 중심점을 찾아 효율적으로 군집화하는 알고리즘입니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 물류 센터 최적 위치 선정</div>
+    </a>
+    <a href="/data_analysis/13" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-diagram-3"></i></div>
+        <h4>🔬 13강 PCA</h4>
+        <p>방대한 정보를 핵심적인 주성분으로 압축하여 시각화와 속도를 개선합니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 차원 축소, 노이즈 제거</div>
+    </a>
+    <a href="/data_analysis/14" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-cpu"></i></div>
+        <h4>🧠 14강 인공신경망</h4>
+        <p>뇌의 뉴런 네트워크를 모방한 딥러닝 인공지능의 출발점입니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 기초 이미지 분류 (MNIST)</div>
+    </a>
+    <a href="/data_analysis/15" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-layers"></i></div>
+        <h4>🕸️ 15강 심층신경망</h4>
+        <p>더 깊은 층과 고도화된 함수로 복잡한 패턴을 학습하는 DNN입니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 고급 사물 인식, NLP 기초</div>
+    </a>
+    <a href="/data_analysis/16" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-shield-check"></i></div>
+        <h4>🛡️ 16강 훈련 도구</h4>
+        <p>드롭아웃, 콜백 등으로 과대적합을 막고 모델을 정교화합니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 실전 딥러닝 튜닝 전문가</div>
+    </a>
+    <a href="/data_analysis/17" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-grid-3x3-gap"></i></div>
+        <h4>📷 17강 CNN</h4>
+        <p>이미지의 형태와 특징을 직접 추출하여 고성능 시각 지능을 구현합니다.</p>
+        <div class="tech-tag"><strong>실무</strong> 자율주행, 얼굴 인식 AI</div>
+    </a>
+    <a href="/data_analysis/18" class="tech-card">
+        <div class="tech-icon"><i class="bi bi-eye"></i></div>
+        <h4>👁️ 18강 합성곱 시각화</h4>
+        <p>실제 학습된 모델의 가중치와 특성 맵을 들여다보며 AI가 이미지를 해석하는 원리를 이해합니다.</p>
+        <div class="tech-tag"><strong>실무</strong> XAI(설명 가능한 AI) 기초</div>
+    </a>
+</div>
+
+<div class="text-center mt-5 mb-5">
+    <a href="/data_analysis/1" class="btn btn-fresh-start fs-5 px-5 py-3">첫 번째 실험 시작하기 <i
+            class="bi bi-chevron-right ms-2"></i></a>
+</div>
+{% endblock %}
+
+{% block ml_scripts %}
+<!-- No AOS - cards load instantly -->
+{% endblock %}

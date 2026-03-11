@@ -1,0 +1,281 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+    .member-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        padding: 20px 0;
+    }
+
+    .member-card {
+        position: relative;
+        border-radius: 20px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
+    }
+
+    .member-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    /* 부르르 떨리는 애니메이션 Keyframes */
+    @keyframes shake {
+        0% {
+            transform: translate(1px, 1px) rotate(0deg);
+        }
+
+        10% {
+            transform: translate(-1px, -2px) rotate(-1deg);
+        }
+
+        20% {
+            transform: translate(-3px, 0px) rotate(1deg);
+        }
+
+        30% {
+            transform: translate(3px, 2px) rotate(0deg);
+        }
+
+        40% {
+            transform: translate(1px, -1px) rotate(1deg);
+        }
+
+        50% {
+            transform: translate(-1px, 2px) rotate(-1deg);
+        }
+
+        60% {
+            transform: translate(-3px, 1px) rotate(0deg);
+        }
+
+        70% {
+            transform: translate(3px, 1px) rotate(-1deg);
+        }
+
+        80% {
+            transform: translate(-1px, -1px) rotate(1deg);
+        }
+
+        90% {
+            transform: translate(1px, 2px) rotate(0deg);
+        }
+
+        100% {
+            transform: translate(1px, -2px) rotate(-1deg);
+        }
+    }
+
+    .member-card.shake-active {
+        animation: shake 0.5s;
+        animation-iteration-count: 1;
+    }
+
+    /* 로그인 유저 빛나는 테두리 효과 (화려한 그라데이션) */
+    .me-glow {
+        position: relative;
+        z-index: 1;
+    }
+
+    .me-glow::after {
+        content: '';
+        position: absolute;
+        top: -4px;
+        left: -4px;
+        right: -4px;
+        bottom: -4px;
+        background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+        background-size: 400%;
+        z-index: -1;
+        filter: blur(5px);
+        width: calc(100% + 8px);
+        height: calc(100% + 8px);
+        animation: glowing 20s linear infinite;
+        opacity: 0.8;
+        border-radius: 50%;
+    }
+
+    @keyframes glowing {
+        0% {
+            background-position: 0 0;
+        }
+
+        50% {
+            background-position: 400% 0;
+        }
+
+        100% {
+            background-position: 0 0;
+        }
+    }
+
+    /* 비활성화 계정 도장(스탬프) 효과 */
+    .banned-stamp {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-15deg);
+        border: 4px solid #ff4d4d;
+        color: #ff4d4d;
+        padding: 5px 15px;
+        font-size: 1.5rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        border-radius: 10px;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 0 10px rgba(255, 77, 77, 0.3);
+        pointer-events: none;
+        opacity: 0.9;
+    }
+
+    .card-cover {
+        height: 120px;
+        background-color: #f0f0f0;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    .card-profile-img {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 4px solid #fff;
+        object-fit: cover;
+        position: absolute;
+        top: 80px;
+        left: 20px;
+        background-color: #fff;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-body {
+        padding: 50px 20px 20px;
+    }
+
+    .member-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+        color: #2c3e50;
+        /* 기본 다크 네이비 */
+    }
+
+    /* 다크모드에서 이름 가시성 (그레이/검정 계열 요청 반영) */
+    [data-theme='dark'] .member-name {
+        color: #191919 !important;
+        /* 카드 배경이 밝은 계열이므로 어두운 색으로 고정 */
+    }
+
+    .member-role {
+        font-size: 0.85rem;
+        color: #7f8c8d;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* 버튼 스타일 */
+    .btn-admin-action {
+        padding: 4px 12px;
+        font-size: 0.75rem;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+</style>
+
+<div class="container mt-5 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="bi bi-people-fill"></i> 회원 목록</h2>
+        <a href="/mypage" class="btn btn-outline-secondary rounded-pill">
+            <i class="bi bi-arrow-left"></i> 마이페이지로
+        </a>
+    </div>
+
+    <div class="member-grid">
+        {% for member in members %}
+        <div class="member-card {% if member.active == 0 %}opacity-75{% endif %}" onclick="triggerShake(this)">
+            {% if member.active == 0 %}
+            <div class="banned-stamp">비활성화</div>
+            {% endif %}
+
+            <div class="card-cover"
+                style="{% if member.cover_photo %}background-image: url('{{ member.cover_photo }}');{% else %}background: linear-gradient(135deg, #dbcb9e 0%, #e9e2d5 100%);{% endif %}">
+            </div>
+
+            {% set is_me = (session.get('user_id') == member.id) %}
+            {% set is_online = (member.is_online == 1) %}
+            <div class="card-profile-img-container {% if is_online %}me-glow{% endif %}"
+                style="position: absolute; top: 80px; left: 20px; z-index: 2;">
+                {% if member.profile_photo %}
+                <img src="{{ member.profile_photo }}" class="card-profile-img" alt="{{ member.name }}"
+                    style="position: static; margin: 0; border: 4px solid #fff;">
+                {% else %}
+                <div class="card-profile-img d-flex align-items-center justify-content-center text-secondary bg-light"
+                    style="position: static; margin: 0; border: 4px solid #fff;">
+                    <i class="bi bi-person-fill fs-2"></i>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="member-name">{{ member.name }}</div>
+                        {% if session.get('user_role') == 'admin' or session.get('user_id') == member.id %}
+                        <div class="member-role">{{ member.role }}</div>
+                        {% endif %}
+                    </div>
+                    {% if session.get('user_role') == 'admin' %}
+                    <button
+                        class="btn {% if member.active == 1 %}btn-outline-danger{% else %}btn-danger{% endif %} btn-admin-action"
+                        onclick="event.stopPropagation(); toggleActive({{ member.id }}, '{{ member.name }}')">
+                        {% if member.active == 1 %}비활성화{% else %}활성화{% endif %}
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="member-date mt-2"><i class="bi bi-calendar-check"></i> 가입일: {{
+                    member.created_at.strftime('%Y-%m-%d') if member.created_at else 'Unknown' }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function triggerShake(element) {
+        element.classList.remove('shake-active');
+        void element.offsetWidth;
+        element.classList.add('shake-active');
+    }
+
+    async function toggleActive(memberId, memberName) {
+        const action = event.target.innerText;
+        if (!confirm(`${memberName}님을 ${action} 하시겠습니까?`)) return;
+
+        try {
+            const response = await fetch(`/member/toggle_active/${memberId}`, { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (e) {
+            alert('상태 변경 중 오류가 발생했습니다.');
+        }
+    }
+</script>
+{% endblock %}

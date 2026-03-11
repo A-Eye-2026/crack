@@ -1,0 +1,134 @@
+# k-평균(k-means) 군집 알고리즘이 비지도 학습의 평균값을 자동으로 찾아줌
+
+# 이 평균 값이 클러스터의 중심에 위치하기 때문에 클러스터 중심,
+# 센트로이드(centroid : 무게중심)라고 부름
+
+# 1. 무작위로 k 개의 클러스터 중심을 정함
+# 2. 각 샘플에서 가장 가까운 클러스터 중심을 찾아 해당 클러스터의 샘플로 지정
+# 3. 클러스터에 속한 샘플의 평균값으로 클러스터 중심을 변경
+# 4. 클러스터 중심에 변화가 없을 때 까지 2번으로 돌아가 반복
+
+# 1단계 : 랜덤하게 중심을 지정
+# 바나나, 바나(중심)나, 사과
+# 사과, 사과,(중심), 파인애플
+# 바나나, 파인(중심)애플, 파인애플
+
+# 2단계 : 왼쪽 위부터 시계방향으로 중심점 이동 후 2번 반복
+# 바나(중심)나, 바나나, 바나나
+# 사과, 사과,(중심), 사과
+# 파인애플, 파인애플, 파인(중심)애플
+
+# 3단계
+# 바나나, 바나(중심)나, 바나나
+# 사과, 사과(중심), 사과
+# 파인애플, 파인(중심)애플, 파인애플
+!wget https://bit.ly/fruits_300_data -O fruits_300.npy # -O 대문자 오
+import numpy as np
+
+# shape(쉐이프) 모양을 만들다
+fruits = np.load('fruits_300.npy')  # 300 * 100 * 100
+fruits_2d = fruits.reshape(-1, 100*100)
+# 샘플개수, 너비*높이 로 변경 (2차원으로 모양을 만든다.)
+
+print(fruits.shape) # 샘플개수, 이미지높이, 이미지너비
+print(fruits_2d.shape) # 샘플개수 , 이미지높이*너비
+from sklearn.cluster import KMeans
+# 사이킷런에 클러스터 모듈아래 KMeans 클래스
+
+km = KMeans(n_clusters=3, random_state=42)
+#           클러스터 개수 3(바나나, 사과, 파인애플)
+km.fit(fruits_2d) # 비지도 학습임으로 타겟을 설정하지 않고 학습
+print(km.labels_) # 군집 결과는 labels_속성에 저장됨 37 * 8 + 4 = 300
+# 현재 0이 바나난지 파인애플인지 모름
+# 직접 이미지를 출력해봐야 함
+
+print(np.unique(km.labels_, return_counts=True))
+# 0번에 112, 1번에 98, 2번에 90 샘플을 모았음
+# 그림으로 출력하기 위한 draw_fruit()를 만들어 봄
+import matplotlib.pyplot as plt
+
+def draw_fruits(arr, ratio=1): # ratio = 비율, 비
+    n = len(arr)    # n은 샘플 개수입니다
+    # 한 줄에 10개씩 이미지를 그립니다. 샘플 개수를 10으로 나누어 전체 행 개수를 계산합니다.
+    rows = int(np.ceil(n/10))
+    # 행이 1개 이면 열 개수는 샘플 개수입니다. 그렇지 않으면 10개입니다.
+    cols = n if rows < 2 else 10
+    fig, axs = plt.subplots(rows, cols,
+                            figsize=(cols*ratio, rows*ratio), squeeze=False)
+    for i in range(rows):
+        for j in range(cols):
+            if i*10 + j < n:    # n 개까지만 그립니다.
+                axs[i, j].imshow(arr[i*10 + j], cmap='gray_r')
+            axs[i, j].axis('off')
+    plt.show()
+
+draw_fruits(fruits[km.labels_==0]) # 0번이 파인애플이나 사과나 바나나가 섞여 있음
+# 112개의 0번 레이블을 판단한 이미지들
+draw_fruits(fruits[km.labels_==1]) # 바나나
+draw_fruits(fruits[km.labels_==2]) # 사과
+# 파인애플만 오류가 보임
+# 훈련데이터에 타깃 레이블을 제공하지 않았는데 이정도면 쓸만하다!!!
+
+# 클러스터 중심 : cluster_centers_ 속성에 저장되어 있음
+# 이 배열은 fruits_2d 샘플의 클러스터 중심이기 때문에 각 중심을 이미지로 출력해보자.
+draw_fruits(km.cluster_centers_.reshape(-1, 100, 100), ratio=4)
+# 각 중심을 이미지로 출력하려면 100*100 크기의 2차원 배열로 변경 함.
+# KMeans 클래스는 훈련 데이터 샘플에서 클러스터 중심까지 거리로 변환해 주는
+# transform() 메서드를 가지고 있음
+# transform() 메서드는 StandardScaler 클래스 처럼 특성 값을 변환하는 도구로 사용 가능
+
+print(km.transform(fruits_2d[100:101]))
+# 인덱스가 100인 샘플에 적용 -> fit()메서드와 마찬가지로 2차원 배열로 해주어야 함
+# 하나의 샘플을 전달 -> (1, 클러스터 개수)인 2차원 배열임
+# 첫번재 클러스터(레이블 0) -> 첫번째 원소 파인애플
+# 두번째 클러스터(레이블 1) -> 두번째 원소값 바나나
+# 세번째 클러스터(레이블 2) -> 세번째 원소값 사과
+# [[3400.24197319 8837.37750892 5279.33763699]]
+#  파인애플거리    바나나거리     사과거리
+print(km.transform(fruits_2d[200:201]))
+# [[ 9982.58049829  3713.63284791 10489.74113635]]
+#    파인애플거리    바나나거리     사과거리
+print(km.transform(fruits_2d[0:1]))
+# [[4661.3649493  8642.61845541 3094.2021583 ]]
+#   파인애플거리    바나나거리     사과거리
+# predict() : 가장 가까운 클러스터 중심을 예측 클래스로 사용
+print(km.predict(fruits_2d[0:1]))   # 0번째 그림에 대한 예측 레이블
+print(km.predict(fruits_2d[100:101]))   # 100번째 그림에 대한 예측 레이블
+print(km.predict(fruits_2d[200:201]))   # 200번째 그림에 대한 예측 레이블
+draw_fruits(fruits[0:5]) # 사과임을 확인
+draw_fruits(fruits[100:105]) # 파인애플임을 확인
+draw_fruits(fruits[200:205]) # 바나나
+print(km.n_iter_)
+# 반복적으로 클러스터 중심을 옮기면서 최적의 클러스터를 찾는다. (n_iter_ 반복횟수)
+# 지금까지는 3개의 객체라는 것을 편법으로 적용해서 분석을 해 보았지만
+# 실무에서는 클러스터 개수 조차 모름 n_cluster=3
+
+# 최적의 k 찾기 -> 많은 기법이 있지만 엘보우를 활용해보자.
+
+# k-평균 알고리즘은 클러스터 중심과 클러스터에 속한 샘플 사이의 거리를 잴수 잇는데
+# 이 거리의 제곱 합을 이너셔(inertia)라고 함
+# inertia : 클러스터에 속한 샘플이 얼마나 가깝게 모있는지 나타내는 값
+#    (클러스터의 샘플이 얼마나 가깝게 있는지를 나타내는 값)
+# 일반적으로 클러스터 개수가 늘어나면 클러스터 개개의 크기는 줄어들기 때문에 이너셔도 줄어든다.
+# 엘보우에 방법은 클러스터 개수를 늘려가면서 이너셔의 변화를 관찰하여 최적을 클러스터 개수를 찾는다.
+
+# 클러스터 개수를 증가시키면서 이너셔를 그래프로 그리면 감소하는 속도가 꺾이는 지점이 있는데
+# 이때부터 클러스터 개수를 늘려도 클러스터에 잘 밀집된 정도가 크게 개선되지 않음
+#   -> 이너셔가 크게 줄어들지 않음
+# 그래서 팔꿈치 모양이라고 해서 엘보우 방법이라고 부름
+
+# KMeans 클래스에서 자동으로 이너셔를 계산하는 inertia_ 속성이 있음.
+# 클러스터 개수 k 를 2~6까지 변경하면서 5번 훈련해보자.
+inertia = []
+for k in range(2, 7):
+    km = KMeans(n_clusters=k, n_init='auto', random_state=42)
+    #                         n_init: 서로 다른 군집 중심점(centroid)을 최초 셋팅한다.
+    km.fit(fruits_2d)
+    inertia.append(km.inertia_)
+
+plt.plot(range(2, 7), inertia)
+plt.xlabel('k')
+plt.ylabel('inertia')
+plt.show()
+# k=3 부분에서 꺾이는 엘보우 현상이 나타난다. -> 3개의 군집으로 만들면됨!
+# 그래서 원래는 n_clusters=k 값을 찾은 다음에 from sklearn.cluster import KMeans를 실행한다.

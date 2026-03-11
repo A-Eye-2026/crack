@@ -1,0 +1,646 @@
+{% extends 'ml_layout.html' %}
+
+{% block ml_content %}
+<style>
+    .session-container {
+        padding: 3rem 2.5rem;
+        max-width: 1100px;
+        margin: 0 auto;
+        overflow-x: hidden;
+    }
+
+    #session12 h3 {
+        font-size: clamp(2rem, 5vw, 2.8rem);
+        font-weight: 800;
+        margin-bottom: 2rem;
+        background: linear-gradient(to right, #15aabf, #4c6ef5);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: block;
+    }
+
+    .section-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin-bottom: 2.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 2px solid var(--ml-border-soft);
+        padding-bottom: 0.75rem;
+    }
+
+    [data-theme='dark'] .section-title {
+        border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+        color: #f8fafc !important;
+    }
+
+    .theory-box,
+    .insight-box,
+    .lab-box {
+        margin-bottom: 3.5rem !important;
+    }
+
+    .animate-on-scroll {
+        opacity: 0;
+        transform: translateY(25px);
+        transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .animate-on-scroll.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+        .session-container {
+            padding: 2.2rem 1.2rem;
+        }
+
+        #session12 h3 {
+            font-size: 1.8rem;
+        }
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        // Add container class if missing
+        const mainDiv = document.getElementById('session12');
+        if (mainDiv) mainDiv.classList.add('session-container');
+
+        document.querySelectorAll('.card, .theory-box, .insight-box, .lab-box').forEach(el => {
+            el.classList.add('animate-on-scroll');
+            observer.observe(el);
+        });
+    });
+</script>
+<div class="session-panel active" id="session12">
+    <div class="session-card">
+        <h3>🎯 세션 12: k-평균 (k-means) 알고리즘
+            {% if 12 in completed_sessions %}
+            <span class="pass-badge"><i class="fas fa-check-circle"></i> 학습 완료</span>
+            {% endif %}
+        </h3>
+
+        <div class="row g-4 mb-5 mt-3">
+            <!-- 상단: 이론 설명 -->
+            <div class="col-12 col-xl-12">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-2">
+                    <div class="card-header border-bottom-0 pt-4 pb-0 px-4" style="background: var(--ml-card-bg);">
+                        <h5 class="fw-bold" style="color: var(--ml-text-main);"><i
+                                class="bi bi-cpu-fill text-primary me-2"></i>스스로 군집의 중심을 찾는
+                            k-평균
+                        </h5>
+                    </div>
+                    <div class="card-body px-4 py-3">
+                        <p class="text-muted" style="line-height: 1.7;">
+                            <strong>k-평균(k-means)</strong>은 비지도 학습의 대표적인 알고리즘으로, 데이터의 평균값을 자동으로 찾아 줍니다. 이 평균값은 클러스터의 중심에
+                            위치하기 때문에 <strong>센트로이드(centroid)</strong>라고 부릅니다.
+                        </p>
+
+                        <!-- 🌱 초보자를 위한 초간단 가이드 -->
+                        <div class="p-4 rounded-4 mb-4"
+                            style="background: var(--ml-bg-soft); border: 2px dashed var(--ml-border);">
+                            <h6 class="fw-bold mb-3" style="color: var(--ml-text-main);"><i
+                                    class="bi bi-lightbulb-fill text-warning me-2"></i>왕초보를 위한 3단계 요약</h6>
+                            <div class="row g-3 mb-5">
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded-3 shadow-sm h-100" style="background: var(--ml-card-bg);">
+                                        <p class="small fw-bold text-primary mb-1">1. 무엇을(What)?</p>
+                                        <p class="small mb-0" style="color: var(--ml-text-sub);">이름표 없는 사진 수백 장을 컴퓨터에게
+                                            줍니다.</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded-3 shadow-sm h-100" style="background: var(--ml-card-bg);">
+                                        <p class="small fw-bold text-success mb-1">2. 언제(When)?</p>
+                                        <p class="small mb-0" style="color: var(--ml-text-sub);">데이터가 너무 많아 일일이 분류하기 힘들
+                                            때 사용합니다.</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded-3 shadow-sm h-100" style="background: var(--ml-card-bg);">
+                                        <p class="small fw-bold text-danger mb-1">3. 왜(Why)?</p>
+                                        <p class="small mb-0" style="color: var(--ml-text-sub);">비슷한 것끼리 '알아서' 묶어주는 마법이
+                                            필요하니까요!</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 🔍 초보자를 위한 비교: 왜 '비지도' 학습인가요? -->
+                            <div class="row g-3 mb-5">
+                                <div class="col-md-6">
+                                    <div class="p-3 rounded-4 h-100 theme-overlay-light"
+                                        style="background: rgba(255, 240, 240, 0.1); border: 1px solid rgba(255, 204, 204, 0.3);">
+                                        <p class="small fw-bold text-danger mb-2"><i class="bi bi-tag-fill me-1"></i>지도
+                                            학습 (지금까지 배운 것)</p>
+                                        <p class="small" style="line-height: 1.6; color: var(--ml-text-main);">
+                                            <strong>"이건 사과야, 이건 바나나야"</strong>라고 정답을 알려주고 공부시킵니다. <br>
+                                            정해진 이름표(라벨)를 맞히는 것이 목표예요. (마치 <strong>답지가 있는 문제집</strong> 풀기!)
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 rounded-4 h-100 theme-overlay-info"
+                                        style="background: rgba(240, 249, 255, 0.1); border: 1px solid rgba(204, 229, 255, 0.3);">
+                                        <p class="small fw-bold text-primary mb-2"><i class="bi bi-magic me-1"></i>비지도
+                                            학습 (오늘 배우는 것)</p>
+                                        <p class="small" style="line-height: 1.6; color: var(--ml-text-main);">
+                                            정답(이름표)이 아예 없습니다. <br>
+                                            컴퓨터가 <strong>"이것들은 비슷하게 생겼네?"</strong> 하고 스스로 분류합니다. (마치 <strong>답지 없이
+                                                보물찾기</strong> 하는 것과 같죠!)
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="small text-muted mt-5 mb-0" style="line-height: 1.6;">
+                                <i class="bi bi-info-circle me-1"></i> 어렵게 생각하지 마세요! 수천 개의 장난감이 섞여 있을 때, <strong>"색깔이나
+                                    모양이 비슷한 애들끼리 3개 주머니에 나눠 담아줘!"</strong>라고 명령하는 것과 같습니다.
+                            </p>
+                        </div>
+                        <div class="bg-light p-3 rounded-3 mb-5 border">
+                            <h6 class="fw-bold small text-primary mb-3">작동 원리 (Step-by-Step):</h6>
+                            <ol class="small text-muted mb-0" style="line-height: 1.8;">
+                                <li>무작위로 <strong>k개</strong>의 클러스터 중심(센트로이드)을 정합니다.</li>
+                                <li>각 데이터에서 가장 가까운 센트로이드를 찾아 해당 클러스터의 샘플로 지정합니다.</li>
+                                <li>클러스터에 속한 샘플들의 실제 평균값으로 센트로이드를 이동시킵니다.</li>
+                                <li>중심점에 변화가 없을 때까지 2~3번 과정을 반복하여 최적의 군집을 완성합니다.</li>
+                            </ol>
+                        </div>
+
+                        <div class="theory-box mb-5"
+                            style="border-left: 6px solid #e67e22; background: var(--ml-lab-bg);">
+                            <h6 class="fw-bold text-warning mb-2"><i
+                                    class="bi bi-question-circle-fill me-2"></i>엘보우(Elbow) 방법?
+                            </h6>
+                            <p class="small text-muted mb-0" style="line-height: 1.6;">
+                                최적의 k(군집 개수)를 찾는 방법입니다. 군집 개수를 늘려가며 <strong>이너셔(Inertia, 중심과 샘플 거리의 제곱 합)</strong>를 측정했을
+                                때, 줄어드는 속도가 꺾이는 지점(사람의 팔꿈치 모양)이 가장 적절한 k값입니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 중단: 시각화 데이터 (정적 이미지) -->
+            <div class="col-12 col-xl-12">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-bullseye text-danger me-2"></i>알고리즘이 찾은 군집의 중심
+                            (Centroids)</h5>
+                        <p class="text-muted small mb-4">
+                            k-평균 알고리즘이 300장의 과일 사진을 분석하여 스스로 찾아낸 3개의 중심 이미지입니다.<br>
+                            사과, 파인애플, 바나나의 전형적인 특징을 잘 추출해낸 것을 볼 수 있습니다.
+                        </p>
+                        <div class="text-center mb-4">
+                            <img class="img-fluid rounded border shadow-sm"
+                                src="{{ url_for('ml.static', filename='images/sessions/session12/kmeans.png') }}"
+                                alt="K-Means Centroids" style="max-height: 400px;">
+                            <p class="extra-small text-muted mt-2">컴퓨터가 300장의 사진을 분석해 찾아낸 '사과, 바나나, 파인애플'의 평균
+                                모습(Centroids)입니다.</p>
+                        </div>
+
+
+
+
+
+                        <div class="mt-4 p-4 rounded-4 mb-5"
+                            style="background: rgba(255, 245, 245, 0.1); border: 1px solid rgba(254, 215, 215, 0.3);">
+                            <h6 class="fw-bold text-danger mb-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>잠깐!
+                                클러스터 개수(k)를 잘못 설정하면 어떤 그림이 그려질까요?</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6 border-end">
+                                    <p class="small text-danger mb-1"><strong>🔍 너무 작게 설정했을 때 (k=2)</strong></p>
+                                    <p class="small text-muted mb-2" style="line-height: 1.6;">
+                                        사과와 파인애플이 비슷하게 생겼다고 판단하여 <strong>한 팀</strong>으로 묶어버립니다.
+                                    </p>
+                                    <div class="p-2 rounded border extra-small text-muted"
+                                        style="background: var(--ml-card-bg);">
+                                        <strong>이미지 결과:</strong> 사과와 파인애플이 겹쳐진 '희미한 혼합 이미지'가 그려집니다. 바나나만 겨우 독립된 그룹을 유지하게
+                                        되죠.
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="small text-danger mb-1"><strong>🔍 너무 크게 설정했을 때 (k=5, 10)</strong></p>
+                                    <p class="small text-muted mb-2" style="line-height: 1.6;">
+                                        같은 사과 그룹 안에서도 "조금 더 빨간 것"과 "덜 빨간 것"을 <strong>다른 팀</strong>으로 쪼갭니다.
+                                    </p>
+                                    <div class="p-2 rounded border extra-small text-muted"
+                                        style="background: var(--ml-card-bg);">
+                                        <strong>이미지 결과:</strong> 똑같은 사과 모양의 센트로이드가 2~3개씩 중복해서 나타납니다. 데이터가 너무 잘게 쪼개져 실질적인
+                                        의미가 퇴색되죠.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ✨ reshape(-1, 100*100)의 마법 상세 설명 (v120) -->
+                        <div class="insight-box mt-4 mb-5"
+                            style="background: var(--ml-card-bg); border: 1px solid var(--ml-border); border-radius: 1.5rem; overflow: hidden;">
+                            <div class="p-3 bg-secondary text-white d-flex align-items-center">
+                                <i class="bi bi-magic me-2"></i>
+                                <h6 class="fw-bold mb-0">reshape(-1, 100*100)의 마법</h6>
+                            </div>
+                            <div class="p-4">
+                                <div class="row g-4">
+                                    <div class="col-md-7">
+                                        <h6 class="fw-bold" style="color: var(--ml-text-main);"><i
+                                                class="bi bi-1-square-fill me-2"></i>왜
+                                            평평하게(Flatten) 만드나요?</h6>
+                                        <p class="small text-muted" style="line-height: 1.7;">
+                                            처음 <code>fruits</code>는 <strong>(300, 100, 100)</strong> 모양의 입체적인 데이터입니다.
+                                            하지만 K-Means 알고리즘은 <strong>"한 행이 사진 한 장"</strong>인 2차원 표 데이터를 원합니다.
+                                        </p>
+                                        <ul class="small text-muted ps-3">
+                                            <li><strong>100*100 (10,000)</strong>: 가로·세로 픽셀을 한 줄로 길게 늘어뜨린다는 뜻입니다.</li>
+                                            <li><strong>-1</strong>: <strong>"데이터 개수에 맞춰서 행 개수(사진 수)는 알아서
+                                                    계산해!"</strong>라는 똑똑한 옵션입니다.</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <div class="p-3 rounded-3 border h-100" style="background: var(--ml-card-bg);">
+                                            <h6 class="fw-bold small mb-2" style="color: var(--ml-text-main);"><i
+                                                    class="bi bi-lightbulb-fill text-warning me-2"></i>결과물 예시</h6>
+                                            <p class="extra-small text-muted mb-0">데이터는 자동으로 <strong>(300,
+                                                    10000)</strong> 모양이 됩니다. AI에게 "입체 더미"가 아닌 "정돈된 표"를 주는 것이 분석의 핵심입니다!
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 🧪 코드 스포트라이트: K-Means의 핵심 코드 -->
+                        <div class="mb-5 p-4 rounded-4"
+                            style="background: var(--ml-lab-bg); border: 1px solid var(--ml-border-soft);">
+                            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-code-square me-2"></i>코드 한 줄 분석: K-평균
+                                실행하기</h6>
+                            <div class="bg-dark text-white p-3 rounded-3 mb-3 font-monospace small">
+                                <div class="mb-1"><span style="color: #6a9955;"># 1. 2차원(100x100) 이미지를 1차원(1만 개) 목록으로
+                                        펼치기</span></div>
+                                <div class="mb-2">fruits_2d = fruits.reshape(-1, 100*100)</div>
+                                <div class="mb-1"><span style="color: #6a9955;"># 2. "3개로 묶어줘!" 모델 만들기 (랜덤 시드 42
+                                        고정)</span></div>
+                                <div class="mb-2">km = KMeans(n_clusters=3, random_state=42)</div>
+                                <div class="mb-1"><span style="color: #6a9955;"># 3. 데이터 학습 (비지도 학습이므로 타겟 없이 스스로 패턴
+                                        찾기)</span></div>
+                                <div class="mb-2">km.fit(fruits_2d)</div>
+                                <div class="mb-1"><span style="color: #6a9955;"># 4. 군집 결과 확인 (0, 1, 2 등의 숫자로
+                                        라벨링됨)</span></div>
+                                <div class="mb-0">print(km.labels_)</div>
+                            </div>
+                            <ul class="small text-muted mb-0 ps-3">
+                                <li class="mb-2"><strong>reshape:</strong> 컴퓨터는 2차원 그림보다 한 줄로 길게 늘어선 숫자 목록을 더 잘 처리합니다.
+                                    1만 개의 픽셀을 한 줄로 세우는 과정입니다.</li>
+                                <li class="mb-2"><strong>n_clusters=3:</strong> 우리가 이미 과일이 3종류라는 것을 알고 있기에 3으로 설정했습니다.
+                                </li>
+                                <li><strong>fit:</strong> 이 명령을 내리는 순간, 컴퓨터가 300장의 사진을 수없이 비교하며 비슷한 것끼리 묶기 위한 최적의 중심점을
+                                    찾기 시작합니다.</li>
+                            </ul>
+                        </div>
+
+                        <!-- 📊 센트로이드 상세 분석 -->
+                        <div class="mt-4 p-4 rounded-4"
+                            style="background: var(--ml-bg-soft); border: 1px solid var(--ml-border-soft);">
+                            <h6 class="fw-bold mb-3" style="color: var(--ml-text-main);"><i
+                                    class="bi bi-bullseye text-danger me-2"></i>분석 결과:
+                                컴퓨터가 찾은 '가장 과일다운' 이미지</h6>
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <p class="small text-muted mb-2"><strong>1. 어떻게 만들어졌나요?</strong></p>
+                                    <p class="small text-muted" style="line-height: 1.6;">
+                                        이 이미지들은 실제 사진이 아니라, 각 군집에 속한 100장의 사진을 <strong>픽셀별로 모두 평균 낸 결과</strong>입니다.
+                                        사과는 둥글게, 바나나는 길쭉하게 평균이 잡히면서 각 과일의 '본질적인 형태'만 남게 된 것이죠.
+                                    </p>
+                                </div>
+                                <div class="col-12 mt-2 border-top pt-3">
+                                    <p class="small mb-2" style="color: var(--ml-text-main);"><strong>2. 코드로 들여다보기:
+                                            센트로이드(Centroid)의 비밀</strong>
+                                    </p>
+                                    <code class="small d-block mb-2 p-3 border rounded"
+                                        style="color: #d63384; font-family: 'Fira Code', monospace; background: var(--ml-code-bg);">
+                                        km.cluster_centers_
+                                    </code>
+                                    <p class="small text-muted mb-0" style="line-height: 1.6;">
+                                        이 속성에는 300장의 사진을 분석해 얻어낸 <strong>3개의 핵심 평균 데이터</strong>가 들어있습니다.
+                                        우리가 이 값을 시각화하면 위 사진처럼 과일의 뽀얀 평균 모습이 나타나는 것입니다. 머신러닝이 스스로 학습한 '지식'의 실체라고 볼 수
+                                        있습니다.
+                                    </p>
+                                </div>
+                                <div class="col-12 mt-3 border-top pt-3">
+                                    <p class="small mb-2" style="color: var(--ml-text-main);"><strong>3. 센트로이드를 눈으로 보는
+                                            시각화 코드</strong></p>
+                                    <div class="bg-dark text-white p-3 rounded-3 mb-3 font-monospace small">
+                                        <div class="mb-1"><span style="color: #6a9955;"># 3개의 센트로이드를 나란히 보여주는 그래프
+                                                만들기</span></div>
+                                        <div class="mb-2">fig, axes = plt.subplots(1, 3, figsize=(15, 5))</div>
+                                        <div class="mb-1"><span style="color: #6a9955;"># 각 센트로이드를 하나씩 꺼내서 그리기</span>
+                                        </div>
+                                        <div class="mb-1"><span style="color: #c586c0;">for</span> i <span
+                                                style="color: #c586c0;">in</span> range(3):</div>
+                                        <div class="mb-1">&nbsp;&nbsp;axes[i].imshow(</div>
+                                        <div class="mb-1">&nbsp;&nbsp;&nbsp;&nbsp;km.cluster_centers_[i]<span
+                                                style="color: #569cd6;">.reshape(100, 100)</span>,</div>
+                                        <div class="mb-2">&nbsp;&nbsp;&nbsp;&nbsp;cmap=<span
+                                                style="color: #ce9178;">'gray_r'</span>)</div>
+                                    </div>
+                                    <ul class="small text-muted mb-0 ps-3">
+                                        <li class="mb-2"><strong>plt.subplots(1, 3):</strong> 1행 3열의 빈 캔버스를 만듭니다. 3개의
+                                            센트로이드를 나란히 보여주기 위한 '액자 틀'이에요.</li>
+                                        <li class="mb-2"><strong>cluster_centers_[i]:</strong> i번째 군집의 중심(센트로이드) 데이터를
+                                            꺼냅니다. 이것은 1만 개의 숫자로 이루어진 1차원 배열이에요.</li>
+                                        <li class="mb-2"><strong>.reshape(100, 100):</strong> 아까 1줄로 펼쳤던 데이터를 다시 100×100
+                                            정사각형 이미지로 되돌립니다. (펼치기 ↔ 되감기)</li>
+                                        <li><strong>cmap='gray_r':</strong> 색상표(colormap) 설정입니다. <code>gray_r</code>은
+                                            "반전된 회색"으로, 숫자가 클수록 밝게(하얗게) 표시됩니다. 과일의 밝은 부분이 흰색으로 나타나 직관적이에요.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-12 mt-4">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-graph-down text-success me-2"></i>엘보우 방법: 최적의 K 찾기</h5>
+                        <p class="text-muted small mb-4">
+                            클러스터 개수(k)가 늘어날수록 이너셔 값은 자연스럽게 줄어듭니다.<br>
+                            이 그래프에서는 k=3 지점에서 기울기가 급격히 변하는 '팔꿈치' 구간이 정답임을 상징합니다.
+                        </p>
+                        <div class="text-center">
+                            <img class="img-fluid rounded border shadow-sm"
+                                src="{{ url_for('ml.static', filename='images/sessions/session12/inertia.png') }}"
+                                alt="Elbow Method Chart" style="max-height: 400px;">
+                        </div>
+
+                        <!-- 📊 엘보우 방법 상세 분석 -->
+                        <div class="mt-4 p-4 rounded-4"
+                            style="background: var(--ml-lab-bg); border: 1px solid var(--ml-border-soft);">
+                            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-graph-down me-2"></i>그래프 정밀 분석: 왜 3이
+                                정답일까요?</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <p class="small text-muted mb-2"><strong>1. 축의 의미</strong></p>
+                                    <ul class="small text-muted" style="line-height: 1.6;">
+                                        <li><strong>x축 (Number of Clusters):</strong> 나눌 군집의 개수(k)입니다.</li>
+                                        <li><strong>y축 (Inertia):</strong> 각 데이터가 소속된 중심과 얼마나 멀리 떨어져 있는지 나타내는 수치입니다.
+                                            (낮을수록 좋습니다.)</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="small text-muted mb-2"><strong>2. 분석 결과</strong></p>
+                                    <p class="small text-muted" style="line-height: 1.6;">
+                                        군집 개수가 늘어날수록 이너셔는 줄어들지만, <strong>3 이후로는 줄어드는 속도가 눈에 띄게 완만해집니다.</strong>
+                                        더 쪼개봐야 큰 이득이 없다는 뜻이죠. 그래서 꺾이는 지점인 '3'을 최적의 개수로 판단합니다.
+                                    </p>
+                                </div>
+                                <div class="col-12 mt-2 border-top pt-3">
+                                    <p class="small mb-1" style="color: var(--ml-text-main);"><strong>💡 코드로 보는
+                                            이너셔(Inertia):</strong></p>
+                                    <code class="small"
+                                        style="background: #eee; padding: 2px 5px; border-radius: 4px; color: #d63384;">km.inertia_</code>
+                                    <p class="small text-muted mt-1 mb-0">이너셔는 "각 데이터가 자기 팀의 중심(센트로이드)과 얼마나 가까이 뭉쳐있는가"를
+                                        나타내는 점수입니다. 점수가 작을수록 아주 빽빽하게 잘 모였다는 뜻이죠! 하지만 무작정 팀을 많이 늘리면(k가 커지면) 당연히 점수는 낮아지기
+                                        때문에, 효율이 급격히 떨어지는 '엘보우' 지점을 찾는 것이 중요합니다.</p>
+                                </div>
+                                <div class="col-12 mt-3 border-top pt-3">
+                                    <p class="small mb-2" style="color: var(--ml-text-main);"><strong>3. 엘보우 그래프를 그리는 전체
+                                            코드</strong></p>
+                                    <div class="bg-dark text-white p-3 rounded-3 mb-3 font-monospace small">
+                                        <div class="mb-1"><span style="color: #6a9955;"># 이너셔를 담을 빈 리스트</span></div>
+                                        <div class="mb-2">inertia = []</div>
+                                        <div class="mb-1"><span style="color: #6a9955;"># k를 2부터 6까지 바꿔가며 실험</span>
+                                        </div>
+                                        <div class="mb-1"><span style="color: #c586c0;">for</span> k <span
+                                                style="color: #c586c0;">in</span> range(2, 7):</div>
+                                        <div class="mb-1">&nbsp;&nbsp;km = KMeans(n_clusters=k)</div>
+                                        <div class="mb-1">&nbsp;&nbsp;km.fit(fruits_2d)</div>
+                                        <div class="mb-2">&nbsp;&nbsp;inertia.append(km.inertia_)</div>
+                                        <div class="mb-1"><span style="color: #6a9955;"># 결과를 꺾은선 그래프로 시각화</span></div>
+                                        <div>plt.plot(range(2, 7), inertia)</div>
+                                    </div>
+                                    <ul class="small text-muted mb-0 ps-3">
+                                        <li class="mb-2"><strong>inertia = []:</strong> 각 k에서 나온 이너셔 점수를 저장할 빈 그릇을 미리
+                                            준비합니다.</li>
+                                        <li class="mb-2"><strong>for k in range(2, 7):</strong> k=2, 3, 4, 5, 6으로 5번 반복
+                                            실험합니다. "2팀으로 나누면?", "3팀으로 나누면?" ... 계속 시도해 보는 것이죠.</li>
+                                        <li class="mb-2"><strong>km.fit(fruits_2d):</strong> 매 k마다 새로운 K-평균 모델을 만들고
+                                            학습시킵니다.</li>
+                                        <li class="mb-2"><strong>inertia.append(km.inertia_):</strong> 그 결과로 나온 이너셔(뭉침
+                                            점수)를 리스트에 하나씩 추가합니다.</li>
+                                        <li><strong>plt.plot(...):</strong> x축에 k값, y축에 이너셔 점수를 놓고 꺾은선 그래프를 그립니다. 이 선이
+                                            꺾이는 지점이 바로 '엘보우(팔꿈치)'입니다!</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 신규: draw_fruits 함수 심층 분석 -->
+            <div class="col-12 col-xl-12 mt-4">
+                <div class="card border-0 shadow-sm rounded-4" style="border-left: 6px solid #6c5ce7 !important;">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-code-square text-primary me-2"></i>보너스: 시각화 도우미
+                            `draw_fruits` 함수 이해하기</h5>
+                        <p class="text-muted small mb-4">
+                            과일 사진 수백 장을 격자 형태로 예쁘게 그려주는 마법 같은 함수입니다. 한 줄씩 뜯어볼까요?
+                        </p>
+
+                        <div class="bg-dark text-white p-3 rounded-4 mb-4 font-monospace small"
+                            style="line-height: 1.8;">
+                            <div class="mb-1"><span style="color: #c586c0;">def</span> <span
+                                    style="color: #dcdcaa;">draw_fruits</span>(arr, ratio=<span
+                                    style="color: #b5cea8;">1</span>):</div>
+                            <div class="mb-1">&nbsp;&nbsp;&nbsp;&nbsp;n = len(arr) <span style="color: #6a9955;"># ① 사진
+                                    개수 확인</span></div>
+                            <div class="mb-1">&nbsp;&nbsp;&nbsp;&nbsp;rows = <span
+                                    style="color: #4ec9b0;">int</span>(np.ceil(n/<span
+                                    style="color: #b5cea8;">10</span>))
+                                <span style="color: #6a9955;"># ② 몇 줄이 필요할까?
+                                    (반올림)</span>
+                            </div>
+                            <div class="mb-1">&nbsp;&nbsp;&nbsp;&nbsp;cols = n <span style="color: #c586c0;">if</span>
+                                rows < <span style="color: #b5cea8;">2</span> <span style="color: #c586c0;">else</span>
+                                    <span style="color: #b5cea8;">10</span> <span style="color: #6a9955;"># ③ 10개보다 작으면
+                                        그만큼만, 아니면 10칸</span></div>
+                            <div class="mb-1">&nbsp;&nbsp;&nbsp;&nbsp;fig, axs = plt.subplots(rows, cols,
+                                figsize=(cols*ratio, rows*ratio), squeeze=<span style="color: #569cd6;">False</span>)
+                            </div>
+                            <div class="mb-1">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #c586c0;">for</span> i <span
+                                    style="color: #c586c0;">in</span> <span style="color: #4ec9b0;">range</span>(rows):
+                            </div>
+                            <div class="mb-1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span
+                                    style="color: #c586c0;">for</span> j <span style="color: #c586c0;">in</span> <span
+                                    style="color: #4ec9b0;">range</span>(cols):</div>
+                            <div class="mb-1">
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span
+                                    style="color: #c586c0;">if</span> i*<span style="color: #b5cea8;">10</span> + j < n:
+                                    <span style="color: #6a9955;"># ④ 사진이 남아있을 때만 그리기</span></div>
+                            <div class="mb-1">
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;axs[i,
+                                j].imshow(arr[i*<span style="color: #b5cea8;">10</span> + j], cmap=<span
+                                    style="color: #ce9178;">'gray_r'</span>)</div>
+                            <div class="mb-0">
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;axs[i,
+                                j].axis(<span style="color: #ce9178;">'off'</span>) <span style="color: #6a9955;"># ⑤
+                                    눈금은 필요 없으니 끄기!</span></div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <h6 class="fw-bold small mb-2">① np.ceil(n/10)의 수학적 의미</h6>
+                                <p class="small text-muted" style="line-height: 1.6;">
+                                    사진 35장을 그리려면 3.5줄이 아니라 <strong>4줄</strong>이 필요하겠죠? <code>ceil</code>은 소수점이 있으면 무조건
+                                    올림하여 필요한 방(Row)을 넉넉히 예약합니다.
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="fw-bold small mb-2">② i*10 + j 인덱싱 기법</h6>
+                                <p class="small text-muted" style="line-height: 1.6;">
+                                    2차원 아파트(Row, Col)를 1차원 목록(Index)으로 변환하는 마법 공식입니다. i행 j열에 위치한 사진이 원본 목록의 몇 번째인지 정확히
+                                    찾아내어 <code>imshow</code>에 전달합니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하단: 클러스터링 결과 (정적 이미지 인터랙티브) -->
+            <div class="col-12 col-xl-12 mt-4">
+                <div class="card border-0 shadow-sm rounded-4"
+                    style="border-top: 5px solid #2ecc71 !important; background: var(--ml-card-bg);">
+                    <div class="card-body p-4 text-center">
+                        <h5 class="fw-bold mb-3">🧪 클러스터링 결과 탐색기</h5>
+                        <p class="text-muted small mb-4">
+                            k-평균 알고리즘이 300장의 과일 사진을 3개의 클러스터로 자동 분류한 결과입니다.<br>
+                            버튼을 눌러 각 그룹에 어떤 과일들이 묶였는지 확인해 보세요!
+                        </p>
+
+                        <div class="d-flex justify-content-center gap-3 mb-4">
+                            <button class="btn btn-outline-primary px-4 rounded-pill fw-bold cluster-btn active"
+                                onclick="setCluster(0, this)">
+                                Cluster 0 보기
+                            </button>
+                            <button class="btn btn-outline-success px-4 rounded-pill fw-bold cluster-btn"
+                                onclick="setCluster(1, this)">
+                                Cluster 1 보기
+                            </button>
+                            <button class="btn btn-outline-warning px-4 rounded-pill fw-bold cluster-btn"
+                                onclick="setCluster(2, this)">
+                                Cluster 2 보기
+                            </button>
+                        </div>
+
+                        <div class="position-relative">
+                            <img id="cluster-viewer" class="img-fluid rounded border shadow-sm w-100"
+                                src="{{ url_for('ml.static', filename='images/sessions/session12/cluster0.png') }}"
+                                alt="Cluster Result"
+                                style="max-height: 550px; object-fit: contain; transition: opacity 0.3s ease;">
+                        </div>
+
+                        <!-- 💡 결과 로직 설명 -->
+                        <div class="mt-4 p-4 rounded-4 text-start"
+                            style="background: var(--ml-bg-soft); border: 1px solid var(--ml-border-soft);">
+                            <h6 class="fw-bold text-warning mb-3"><i class="bi bi-lightbulb-fill me-2"></i>탐색기 작동 원리:
+                                라벨(Labels)의 마법</h6>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <p class="small text-muted mb-2"><strong>어떤 코드가 이미지를 분류하나요?</strong></p>
+                                    <code class="small d-inline-block px-2 py-1 bg-white border rounded mb-2"
+                                        style="color: #e67e22;">
+                                        km.labels_
+                                    </code>
+                                    <p class="small text-muted" style="line-height: 1.6;">
+                                        학습이 끝난 `km` 모델의 `labels_` 속성에는 300개의 숫자가 들어있습니다.
+                                        예를 들어 <strong>[0, 0, 1, 2, 0, ...]</strong> 처럼 각 사진이 0번, 1번, 2번 팀 중 어디에 속하는지
+                                        기록되어 있죠.
+                                        우리가 버튼을 클릭하면, 탐색기는 이 번호표를 보고 사진들을 모아서 보여주는 것이랍니다!
+                                    </p>
+                                </div>
+                                <div class="col-12 mt-2 border-top pt-3">
+                                    <p class="small mb-2" style="color: var(--ml-text-main);"><strong>클러스터별 과일을 추출하는 전체
+                                            코드</strong></p>
+                                    <div class="bg-dark text-white p-3 rounded-3 mb-3 font-monospace small">
+                                        <div class="mb-1"><span style="color: #6a9955;"># 원하는 클러스터 번호(예: 0번)에 속한 사진
+                                                골라내기</span></div>
+                                        <div class="mb-2">target = np.where(km.labels_ == 0)[0]</div>
+                                        <div class="mb-1"><span style="color: #6a9955;"># 10x10 격자 캔버스 만들기 (최대
+                                                100장)</span></div>
+                                        <div class="mb-2">fig, axes = plt.subplots(10, 10, figsize=(10, 10))</div>
+                                        <div class="mb-1"><span style="color: #c586c0;">for</span> i <span
+                                                style="color: #c586c0;">in</span> range(10):</div>
+                                        <div class="mb-1">&nbsp;&nbsp;<span style="color: #c586c0;">for</span> j <span
+                                                style="color: #c586c0;">in</span> range(10):</div>
+                                        <div class="mb-1">&nbsp;&nbsp;&nbsp;&nbsp;axes[i,
+                                            j].imshow(fruits[target[i*10+j]],</div>
+                                        <div class="mb-1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cmap=<span
+                                                style="color: #ce9178;">'gray_r'</span>)</div>
+                                        <div>&nbsp;&nbsp;&nbsp;&nbsp;axes[i, j].axis(<span
+                                                style="color: #ce9178;">'off'</span>)
+                                        </div>
+                                    </div>
+                                    <ul class="small text-muted mb-0 ps-3">
+                                        <li class="mb-2"><strong>np.where(km.labels_ == 0):</strong> 300개의 번호표 중에서 "0번
+                                            팀"인 사진의 위치(인덱스)만 추출합니다. 마치 "0번 번호표를 가진 학생만 앞으로 나오세요!"와 같습니다.</li>
+                                        <li class="mb-2"><strong>plt.subplots(10, 10):</strong> 10행 10열, 총 100칸의 격자 캔버스를
+                                            준비합니다. 각 칸에 한 장씩 사진을 채우게 됩니다.</li>
+                                        <li class="mb-2"><strong>fruits[target[i*10+j]]:</strong> 원본 과일 데이터에서 0번 팀에 해당하는
+                                            사진을 순서대로 꺼냅니다. <code>i*10+j</code>는 2차원 격자를 1차원 인덱스로 변환하는 공식이에요.</li>
+                                        <li><strong>axis('off'):</strong> 각 칸의 축 숫자를 숨깁니다. 사진만 깔끔하게 보이도록 하기 위한 설정이에요.
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 퀴즈 섹션 추가 -->
+        <div class="quiz-section" id="quiz-area">
+            <div class="quiz-header">
+                <h3 class="fw-bold"><span class="emoji-bullet">📝</span> 오늘의 연습문제</h3>
+                <p class="text-muted">강의에서 배운 기법을 새로운 데이터에 적용해보세요!</p>
+                <button class="btn-predict" onclick="loadQuiz({{ session_id }})">문제 불러오기</button>
+            </div>
+            <div id="quiz-body"></div>
+        </div>
+
+
+
+    </div>
+</div>
+
+<script>
+    function setCluster(id, btn) {
+        // 이미지 경로 설정
+        const baseUrl = "{{ url_for('ml.static', filename='images/sessions/session12/') }}";
+        const img = document.getElementById('cluster-viewer');
+
+        // 페이드 효과와 함께 이미지 교체
+        img.style.opacity = 0.5;
+        setTimeout(() => {
+            img.src = `${baseUrl}cluster${id}.png`;
+            img.style.opacity = 1;
+        }, 150);
+
+        // 버튼 활성화 상태 업데이트
+        document.querySelectorAll('.cluster-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+</script>
+{% endblock %}

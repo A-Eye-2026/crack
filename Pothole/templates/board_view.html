@@ -1,0 +1,89 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <h2 class="mb-4">게시글 상세보기</h2>
+
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">{{ board.title }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3 border-bottom pb-2">
+                    <div class="col-md-6">
+                        <strong>작성자:</strong> {{ board.writer_name }}
+                        <span class="text-muted">({{ board.writer_uid }})</span>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <div class="d-flex align-items-center justify-content-md-end gap-3">
+                            <span class="text-muted small"><strong>작성일:</strong> {{ board.created_at.strftime('%Y-%m-%d
+                                %H:%M') if board.created_at }}</span>
+                            <span class="like-btn-board" style="cursor: pointer; color: #ff4757; font-size: 1.1rem;"
+                                onclick="toggleLike('{{ board.id }}', 'board', this)">
+                                <i class="bi {{ 'bi-heart-fill' if board.is_liked else 'bi-heart' }}"></i>
+                                <span class="like-count" style="font-size: 0.95rem; color: #666;">{{ board.likes_count |
+                                    default(0) }}</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if board.image_url %}
+                <div class="mb-4 text-center">
+                    <img src="{{ board.image_url }}" alt="{{ board.title }}" class="img-fluid rounded shadow-sm"
+                        style="max-height: 500px;">
+                </div>
+                {% endif %}
+
+                <div class="view-content mb-4" style="white-space: pre-wrap;">
+                    {{ board.content }}
+                </div>
+
+                <div class="text-center">
+                    <a href="/board" class="btn btn-secondary">목록으로</a>
+                    <a href="/board/edit/{{ board.id }}" class="btn btn-warning">수정</a>
+                    <a href="/board/delete/{{ board.id }}" class="btn btn-danger"
+                        onclick="return confirm('정말 삭제하시겠습니까?')">삭제</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleLike(postId, postType, el) {
+        fetch('/api/like', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ post_id: postId, post_type: postType })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const heartIcon = el.querySelector('i');
+                    const countSpan = el.querySelector('.like-count');
+
+                    if (data.action === 'added') {
+                        heartIcon.classList.replace('bi-heart', 'bi-heart-fill');
+                    } else {
+                        heartIcon.classList.replace('bi-heart-fill', 'bi-heart');
+                    }
+                    countSpan.innerText = data.count;
+                } else {
+                    if (data.message === '로그인이 필요합니다.') {
+                        if (confirm('좋아요를 누르려면 로그인이 필요합니다. 로그인 하시겠습니까?')) {
+                            window.location.href = '/login';
+                        }
+                    } else {
+                        alert(data.message);
+                    }
+                }
+            });
+    }
+</script>
+{% endblock %}

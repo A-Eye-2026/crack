@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold"
+            style="font-family: 'Orbitron', sans-serif; color: var(--text-primary); letter-spacing: 1px;">AI Detection
+            Result</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">인공지능 객체 탐지망의 분석 결과입니다.</p>
+    </div>
+
+    <div class="row justify-content-center g-4">
+        <div class="col-lg-7">
+            <div class="card shadow-lg border-0 h-100"
+                style="border-radius: 24px; background: var(--bg-card); overflow: hidden;">
+                <div class="card-header border-bottom-0 pt-4 px-4 bg-transparent">
+                    <h5 class="fw-bold m-0" style="color: var(--text-primary);">
+                        <i class="bi bi-image me-2" style="color: var(--accent);"></i>Analyzed Image
+                    </h5>
+                </div>
+                <div class="card-body p-4 text-center d-flex align-items-center justify-content-center">
+                    <img src="/static/{{ img_url }}" class="img-fluid rounded"
+                        style="max-height: 500px; object-fit: contain; box-shadow: 0 4px 20px rgba(0,0,0,0.2);"
+                        alt="분석 결과">
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-lg border-0 h-100"
+                style="border-radius: 24px; background: var(--bg-card); overflow: hidden;">
+                <div
+                    class="card-header border-bottom-0 pt-4 px-4 bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold m-0" style="color: var(--text-primary);">
+                        <i class="bi bi-list-check me-2" style="color: var(--accent);"></i>Detection Data
+                    </h5>
+                    <span class="badge rounded-pill"
+                        style="background: var(--bg-input); color: var(--accent); border: 1px solid var(--border-light);">Total
+                        {{ results|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 430px; overflow-y: auto;">
+                        <table class="table table-hover mb-0 align-middle text-center"
+                            style="--bs-table-bg: transparent;">
+                            <thead style="position: sticky; top: 0; background: var(--bg-sidebar-control); z-index: 1;">
+                                <tr>
+                                    <th class="py-3"
+                                        style="font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid var(--border-light);">
+                                        객체명</th>
+                                    <th class="py-3"
+                                        style="font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid var(--border-light);">
+                                        신뢰도</th>
+                                    <th class="py-3 text-end pe-4"
+                                        style="font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid var(--border-light);">
+                                        좌표 (BBox)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in results %}
+                                <tr style="border-bottom: 1px solid var(--border-light);">
+                                    <td class="py-3"><span class="badge"
+                                            style="background-color: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-light); font-weight: 600; padding: 6px 10px;">{{
+                                            item.name }}</span></td>
+                                    <td class="py-3"><strong style="color: var(--accent);">{{ item.conf }}%</strong>
+                                    </td>
+                                    <td class="py-3 text-end pe-4">
+                                        <small style="color: var(--text-muted); font-family: monospace;">
+                                            {{ item.bbox[0] }}, {{ item.bbox[1] }}<br>
+                                            {{ item.bbox[2] }}, {{ item.bbox[3] }}
+                                        </small>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-5" style="color: var(--text-muted);">
+                                        <i class="bi bi-emoji-neutral display-4 mb-3 d-block" style="opacity: 0.3;"></i>
+                                        탐지된 객체가 없습니다.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-center gap-3 mt-5 mb-5">
+        <a href="/ai-detect/write" class="btn btn-outline-primary rounded-pill px-4 shadow-sm"
+            style="font-weight: 600;">다시 분석하기</a>
+        <a href="/ai-detect" class="btn btn-primary rounded-pill px-4 shadow-sm" style="font-weight: 600;">내 탐지 목록으로</a>
+    </div>
+</div>
+
+<style>
+    /* 스크롤바 커스텀 */
+    .table-responsive::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .table-responsive::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: var(--border-light);
+        border-radius: 10px;
+    }
+
+    .table-responsive:hover::-webkit-scrollbar-thumb {
+        background: rgba(164, 120, 100, 0.4);
+    }
+</style>
+{% endblock %}

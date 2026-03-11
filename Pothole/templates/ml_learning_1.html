@@ -1,0 +1,247 @@
+{% extends 'ml_layout.html' %}
+
+{% block ml_content %}
+<div class="session-panel active" id="session1">
+    <div class="session-card">
+        <h3>🐟 세션 1: KNN으로 생선 분류하기</h3>
+        <div class="theory-box">
+            <h4>1-1. K-최근접 이웃 (K-Nearest Neighbors)</h4>
+            <p>가장 단순하면서도 강력한 분류 알고리즘이에요. 새로운 데이터가 들어오면 <strong>"너 누구랑 가장 비슷해?"</strong>라고 물어보는 방식이죠.</p>
+            <ul class="emoji-list">
+                <li><span class="emoji-bullet">📏</span> <strong>거리 계산:</strong> 좌표 평면에서 가장 가까운 이웃 5개를 찾아요.</li>
+                <li><span class="emoji-bullet">🗳️</span> <strong>다수결의 원칙:</strong> 이웃 5개 중 도미가 많으면 도미, 빙어가 많으면 빙어로 결정!
+                </li>
+                <li><span class="emoji-bullet">🧠</span> <strong>특징(Feature):</strong> 생선의 '길이'와 '무게'가 분류의 기준이 됩니다.</li>
+            </ul>
+            <div class="tip-box mt-3">
+                <strong>💡 심화 학습:</strong> 단순히 가깝다고 다 같은 이웃일까요? <br>
+                데이터의 단위(cm vs g)가 너무 다르면 그래프상 거리가 왜곡될 수 있어요. 이를 해결하는 방법은 3강에서 배울 '표준화'입니다!
+            </div>
+        </div>
+
+        <div class="bridge-box mt-4">
+            <h4>🎯 KNN, 단어의 의미를 파헤쳐보자! (Mastery Note)</h4>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="field-card">
+                        <span class="field-icon">K</span>
+                        <strong class="d-block mb-1">K (수/개수)</strong>
+                        <p class="extra-small text-muted mb-0">몇 명의 이웃을 볼 것인가? K=5면 가장 가까운 5명을, K=1이면 단 한 명의 말만 듣겠다는
+                            뜻입니다.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="field-card">
+                        <span class="field-icon">N</span>
+                        <strong class="d-block mb-1">Nearest (가장 가까운)</strong>
+                        <p class="extra-small text-muted mb-0">거리가 가장 짧은 위치를 찾습니다. '유클리드 거리'라는 수학적 공식을 사용하여 직선 거리를 계산해요.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="field-card">
+                        <span class="field-icon">N</span>
+                        <strong class="d-block mb-1">Neighbors (이웃들)</strong>
+                        <p class="extra-small text-muted mb-0">주변 이웃들의 정답(레이블)을 확인합니다. 내 주변에 도미가 많으면 나도 도미가 되는 식이죠.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="tip-box mt-3"
+                style="background: rgba(164, 120, 100, 0.05); border-left-color: var(--ml-primary);">
+                🚩 <strong>한 줄 요약:</strong> "새로운 데이터가 들어오면, 가장 가까운(Nearest) K명의 이웃(Neighbors)에게 물어보고 다수결로 결정한다!"
+            </div>
+        </div>
+
+        <div class="comparison-box mt-4">
+            <h5>✨ 좋은 학습 vs 나쁜 학습 비교</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="comp-card bad">
+                        <h6>❌ 나쁜 예 (나홀로 데이터)</h6>
+                        <p class="small">데이터가 1~2개뿐이면, 새로운 생선이 왔을 때 엉뚱한 이웃을 참조하게 되어 오답률이 급격히 올라가요.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="comp-card good">
+                        <h6>✅ 좋은 예 (풍부한 데이터)</h6>
+                        <p class="small">다양한 크기의 도미/빙어 데이터가 골고루 있으면, 경계선 근처의 데이터도 아주 정확하게 맞출 수 있습니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ① — 데이터 준비</h5>
+            <pre><span class="keyword">import</span> numpy <span class="keyword">as</span> np
+
+<span class="comment"># 도미와 빙어 데이터를 합쳐서 하나의 리스트로 만듭니다.</span>
+fish_length = bream_length + smelt_length
+fish_weight = bream_weight + smelt_weight
+
+<span class="comment"># [길이, 무게]가 한 쌍이 되도록 2차원 배열로 변환합니다.</span>
+fish_data = np.<span class="func">column_stack</span>((fish_length, fish_weight))
+fish_target = np.<span class="func">array</span>([<span class="number">1</span>]*<span class="number">35</span> + [<span class="number">0</span>]*<span class="number">14</span>)</pre>
+            <div class="code-desc"><strong>핵심:</strong> <code>column_stack()</code>은 두 배열을 나란히 세운 뒤 행 단위로 묶어줍니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ② — 시각화 (산점도)</h5>
+            <pre><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt
+
+plt.<span class="func">scatter</span>(bream_length, bream_weight, label=<span class="string">'bream'</span>)
+plt.<span class="func">scatter</span>(smelt_length, smelt_weight, label=<span class="string">'smelt'</span>)
+plt.<span class="func">xlabel</span>(<span class="string">'length'</span>)
+plt.<span class="func">ylabel</span>(<span class="string">'weight'</span>)
+plt.<span class="func">legend</span>()
+plt.<span class="func">show</span>()</pre>
+            <div class="code-desc"><strong>핵심:</strong> 데이터를 그래프에 점으로 찍어보면 도미와 빙어의 특징이 뚜렷하게 구분됩니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ③ — 모델 생성</h5>
+            <pre><span class="keyword">from</span> sklearn.neighbors <span class="keyword">import</span> <span class="func">KNeighborsClassifier</span>
+
+<span class="comment"># 모델 객체를 생성합니다. 이웃 개수는 기본값인 5로 설정합니다.</span>
+kn = <span class="func">KNeighborsClassifier</span>(n_neighbors=<span class="number">5</span>)</pre>
+            <div class="code-desc"><strong>핵심:</strong> 사이킷런 모델은 클래스를 객체로 먼저 만들어야 사용 가능합니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ④ — 모델 학습 (fit)</h5>
+            <pre><span class="comment"># fit() 메서드는 준비한 데이터로 모델을 훈련시킵니다.</span>
+kn.<span class="func">fit</span>(fish_data, fish_target)</pre>
+            <div class="code-desc"><strong>핵심:</strong> 훈련이란, 데이터 간의 관계나 특성을 모델이 기억하게 하는 과정입니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ⑤ — 성능 평가 (score)</h5>
+            <pre><span class="comment"># 모델이 얼마나 잘 맞히는지 확인해봅니다 (0.0 ~ 1.0).</span>
+score = kn.<span class="func">score</span>(fish_data, fish_target)
+<span class="func">print</span>(<span class="string">f"정확도: {score:.4f}"</span>)</pre>
+            <div class="code-desc"><strong>핵심:</strong> <code>score()</code>는 내부적으로 predict를 수행한 뒤 실제 정답과 비교합니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ⑥ — 새로운 데이터 예측</h5>
+            <pre><span class="comment"># 길이 30cm, 무게 600g인 생선은 무엇으로 판정할까요?</span>
+prediction = kn.<span class="func">predict</span>([[<span class="number">30</span>, <span class="number">600</span>]])
+<span class="func">print</span>(<span class="string">"예측 결과:"</span>, prediction) <span class="comment"># [1] -> 도미!</span></pre>
+            <div class="code-desc"><strong>핵심:</strong> <code>predict()</code>를 쓸 때는 입력 데이터를 반드시 리스트의 리스트(2차원)로 줘야 합니다.
+            </div>
+        </div>
+
+        <div class="vocab-box">
+            <h5>📗 용어 사전</h5>
+            <div class="vocab-item"><span class="vocab-term">KNN (K-Nearest Neighbors):</span> "가장 가까운 K명에게 물어보기" 알고리즘
+            </div>
+            <div class="vocab-item"><span class="vocab-term">분류 (Classification):</span> 데이터를 정해진 그룹(예: 도미/빙어)으로 나누는 것
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="lab-box h-100 mb-0"
+                    style="border: 2px solid #e1e9f4; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); padding: 1.5rem;">
+                    <h4 class="mb-4 text-primary">🧪 실습 — 이 생선은 도미? 빙어?</h4>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="d-flex justify-content-between">
+                                <span class="small fw-bold text-secondary">생선 길이</span>
+                                <span class="slider-val-badge"><span id="s1-length-val">25.0</span>cm</span>
+                            </label>
+                            <input type="range" id="s1-length" class="form-range custom-range" value="25" min="5"
+                                max="50" step="0.1"
+                                oninput="document.getElementById('s1-length-val').innerText = parseFloat(this.value).toFixed(1)">
+                        </div>
+                        <div class="col-12">
+                            <label class="d-flex justify-content-between">
+                                <span class="small fw-bold text-secondary">생선 무게</span>
+                                <span class="slider-val-badge"><span id="s1-weight-val">150</span>g</span>
+                            </label>
+                            <input type="range" id="s1-weight" class="form-range custom-range" value="150" min="5"
+                                max="1100" step="10"
+                                oninput="document.getElementById('s1-weight-val').innerText = this.value">
+                        </div>
+                        <div class="col-12">
+                            <label class="d-flex justify-content-between">
+                                <span class="small fw-bold text-secondary">K값 (이웃 수)</span>
+                                <span class="slider-val-badge"
+                                    style="background: #e7f5ff; border:1px solid #74c0fc;"><span
+                                        id="s1-k-val">5</span>명</span>
+                            </label>
+                            <input type="range" id="s1-k" class="form-range custom-range" value="5" min="1" max="49"
+                                step="1" oninput="document.getElementById('s1-k-val').innerText = this.value">
+                        </div>
+                        <div class="col-12 mt-4 text-center">
+                            <button class="btn btn-predict px-5 py-2 fw-bold" onclick="runSession(1)"
+                                style="font-size: 1.1rem; letter-spacing: 1px;"><i class="bi bi-search me-2"></i>분류
+                                시작하기</button>
+                            <p class="small text-muted mt-3 mb-0">💡 <strong>가이드:</strong> K값을 좌우로 움직여보세요.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="result-area-container h-100 p-4 border rounded-4 bg-white shadow-sm"
+                    style="min-height: 400px;">
+                    <div class="loading-spinner" id="spinner1">
+                        <div class="spinner-border"></div>
+                        <p class="mt-2">AI가 분석 중...</p>
+                    </div>
+                    <div class="result-box mt-0" id="result1">
+                        <p class="text-muted mb-0">위에서 생선의 길이와 무게를 설정한 뒤 '분류 시작하기' 버튼을 눌러보세요!</p>
+                    </div>
+                    <div class="chart-area col-12 mt-3" id="chart1"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-box mt-5">
+            <h4>❓ 궁금할 수 있는 질문들</h4>
+            <div class="qa-item">
+                <strong>Q: K값을 너무 작게(예: 1) 설정하면 어떻게 되나요?</strong>
+                <p class="small mb-0">A: 데이터의 아주 작은 노이즈에도 민감하게 반응하여 모델이 너무 예민해집니다(과대적합 위험). K=1이면 바로 옆집 말만 듣는 고집불통이 되죠.
+                </p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: K값을 너무 크게(예: 전체 데이터 개수) 설정하면요?</strong>
+                <p class="small mb-0">A: 모든 예측을 "주류 정답"으로만 하게 됩니다. 도미가 35개, 빙어가 14개라면 K=49일 때 무조건 '도미'로만 대답하게 되는 거죠.</p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: 왜 모델 훈련(fit) 이후에 score가 1.0이 나왔는데 함정인가요?</strong>
+                <p class="small mb-0">A: 시험 범위를 다 가르쳐주고 똑같은 문제로 시험을 본 것과 같습니다. 실전(안 배운 데이터)에서도 잘할지는 알 수 없으니까요!</p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: KNN은 실무에서 많이 쓰이나요?</strong>
+                <p class="small mb-0">A: 데이터가 아주 많아지면 모든 거리 계산이 너무 오래 걸려서 잘 쓰지 않아요. 하지만 작고 직관적인 데이터에서는 아주 훌륭한 출발점이 됩니다.
+                </p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: 유클리드 거리 말고 다른 방식도 있나요?</strong>
+                <p class="small mb-0">A: 네, 맨해튼 거리(격자 형태 거리)나 코사인 유사도(방향성 중심) 등 다양합니다. 하지만 분류 문제에서는 직선 거리인 유클리드를 가장 많이
+                    씁니다.</p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: 생선의 특징을 더 많이(예: 높이, 두께) 추가하면 더 똑똑해지나요?</strong>
+                <p class="small mb-0">A: 일반적으로는 그렇습니다. 하지만 관련 없는 정보가 섞이면 오히려 헷갈려할 수도 있어요. 이를 '차원의 저주'라고 부르기도 합니다.</p>
+            </div>
+        </div>
+
+        <!-- 퀴즈 섹션 추가 -->
+        <div class="quiz-section" id="quiz-area">
+            <div class="quiz-header">
+                <h3 class="fw-bold"><span class="emoji-bullet">📝</span> 오늘의 연습문제</h3>
+                <p class="text-muted">강의에서 배운 기법을 새로운 데이터에 적용해보세요!</p>
+                <button class="btn-predict" onclick="loadQuiz({{ session_id }})">문제 불러오기</button>
+            </div>
+            <div id="quiz-body"></div>
+        </div>
+
+
+
+    </div>
+</div>
+{% endblock %}
+
+{% block ml_scripts %}{% endblock %}

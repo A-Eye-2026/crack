@@ -1,0 +1,328 @@
+{% extends 'ml_layout.html' %}
+
+{% block ml_content %}
+<style>
+    /* 11강 전용: 본문 컨테이너에 꽉 차도록 패딩 조절 */
+    #session11 .session-card {
+        padding: 30px 20px !important;
+    }
+
+    #session11 .card-body {
+        padding: 20px !important;
+    }
+
+    #session11 .img-fluid {
+        width: 100%;
+        object-fit: contain;
+    }
+</style>
+<div class="session-panel active" id="session11">
+    <div class="session-card">
+        <h3>🍏 세션 11: 군집 비지도 학습 (Clustering)</h3>
+
+        <div class="row g-4 mb-5 mt-3">
+            <!-- 상단: 이론 설명 -->
+            <div class="col-12 col-xl-12">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-2">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+                        <h5 class="fw-bold text-dark"><i class="bi bi-lightbulb-fill text-warning me-2"></i>타깃 값이 없는
+                            데이터: 비지도 학습</h5>
+                    </div>
+                    <div class="card-body px-4 py-3">
+                        <p class="text-muted" style="line-height: 1.7;">
+                            지금까지는 데이터를 보고 그것이 '사과'인지 '포도'인지 정답(타깃 값)을 알려주고 학습하는 <strong>지도 학습(Supervised
+                                Learning)</strong>을 다루었습니다.
+                            하지만 현업에서는 정답이 없는 데이터를 받아 스스로 패턴과 그룹을 찾아야 할 때가 많습니다. 이를 <strong>비지도 학습(Unsupervised
+                                Learning)</strong>이라고 합니다.
+                            <br><br>
+                            이 세션에서는 과일 사진들(사과, 파인애플, 바나나 300장)의 픽셀 정보를 분석하여, 정답을 가르쳐주지 않아도 비슷한 과일끼리
+                            <strong>군집(Clustering)</strong>을 이루는 방법을 배워봅니다.
+                        </p>
+
+                        <!-- 🎯 Mastery Note -->
+                        <div class="theory-box mb-5" style="border-left: 6px solid #15aabf; background: #f4fcfe;">
+                            <h6 class="fw-bold text-primary mb-2"><i class="bi bi-patch-check-fill me-2"></i>Mastery
+                                Note: 픽셀 평균을 이용한 군집화 원리</h6>
+                            <ul class="small text-muted mb-0" style="line-height: 1.6;">
+                                <li><strong>흑백 이미지 분석:</strong> 해상도 100x100(1만 픽셀) 사진을 1차원 배열로 펼칩니다. 각 픽셀값(0~255)의 평균을
+                                    내보며 어떻게 뭉치는지 관찰합니다.</li>
+                                <li><strong>전체 픽셀의 평균:</strong> 바나나는 면적이 작고 사과, 파인애플은 면적이 크기 때문에 이미지의 평균 밝기가 다릅니다. 이
+                                    특성만으로 일단 부류가 나뉠 수 있습니다.</li>
+                                <li><strong>위치별 픽셀의 평균:</strong> 과일마다 위치별로 어둡고 밝은 곳이 일정하기 때문에, '픽셀 위치'의 특성값이 훌륭한 군집화의
+                                    기준이 됩니다.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하단: 데이터 탐색 시각화 -->
+            <div class="col-12 col-xl-12">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4 position-relative">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-bar-chart-fill text-success me-2"></i>과일 사진 데이터의 픽셀 평균
+                            분포</h5>
+                        <p class="text-muted small mb-4">
+                            300장의 과일 사진을 100장 단위로 분할하여 전체 픽셀의 평균을 낸 히스토그램입니다.<br>
+                            바나나는 구분이 될 것 같지만, 사과와 파인애플은 분포가 많이 겹쳐 구분하기 힘들다는 것을 확인할 수 있습니다.
+                        </p>
+                        <div class="text-center" style="min-height: 250px;">
+                            <img id="intro-chart1" class="img-fluid rounded-3 shadow-sm border w-100"
+                                style="max-height: 500px;"
+                                src="{{ url_for('ml.static', filename='images/sessions/session11/intro1.png') }}"
+                                alt="과일별 픽셀 평균 분포">
+                        </div>
+
+                        <!-- 📊 그래프 상세 분석 섹션 추가 -->
+                        <div class="mt-5 p-4 rounded-4" style="background: #fdfaf7; border: 1px solid #f1e9e4;">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-graph-up-arrow text-danger me-2"></i>그래프
+                                정밀 분석: 사과와 바나나는 왜 위치가 다를까요?</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <p class="small text-muted mb-2"><strong>1. 축의 의미</strong></p>
+                                    <ul class="small text-muted" style="line-height: 1.6;">
+                                        <li><strong>x축 (Pixel Average):</strong> 사진 1장에 들어있는 1만 개의 픽셀(점)들의 평균 밝기입니다. 0에
+                                            가까울수록 검은색(어두움), 255에 가까울수록 흰색(밝음)을 의미합니다.</li>
+                                        <li><strong>y축 (Frequency):</strong> 해당 밝기 범주에 속하는 사진의 개수(빈도)입니다. 막대가 높을수록 그 밝기를
+                                            가진 사진이 많다는 뜻입니다.</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="small text-muted mb-2"><strong>2. 분석 결과</strong></p>
+                                    <ul class="small text-muted" style="line-height: 1.6;">
+                                        <li><strong>바나나(노란색):</strong> 평균 밝기가 40 내외로 가장 낮습니다. 사진에서 과일이 차지하는 면적이 작아
+                                            배경(검은색)이 많이 보이기 때문입니다.</li>
+                                        <li><strong>사과/파인애플:</strong> 밝기가 80~100 사이로 높습니다. 과일이 화면을 꽉 채우고 있어 전체적으로 더 밝게
+                                            측정됩니다.</li>
+                                    </ul>
+                                </div>
+                                <div class="col-12 mt-2 border-top pt-3">
+                                    <p class="small text-dark mb-1"><strong>💡 연동된 파이썬 코드 원리:</strong></p>
+                                    <code class="small"
+                                        style="background: #eee; padding: 2px 5px; border-radius: 4px; color: #d63384;">np.mean(fruits, axis=1)</code>
+                                    <p class="small text-muted mt-1 mb-0">이 한 줄의 코드가 각 사진의 1만 개 픽셀값을 모두 더해서 1만으로 나누는 산술
+                                        평균을 계산합니다. 이 간단한 통계만으로도 바나나와 다른 과일을 어느 정도 구분할 수 있게 됩니다!</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 🧪 코드 스포트라이트: plt.hist와 alpha의 비밀 -->
+                        <div class="mt-4 p-4 rounded-4 mb-4" style="background: #f0f7ff; border: 1px solid #d0e3ff;">
+                            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-code-square me-2"></i>코드 스포트라이트: 시각화
+                                도구의 마법</h6>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <p class="small text-muted mb-2"><strong>1. plt.hist() 함수는 어떤 일을 하나요?</strong></p>
+                                    <p class="small text-muted mb-3" style="line-height: 1.6;">
+                                        데이터를 일정한 간격(바구니)으로 나누고, 각 바구니에 숫자가 몇 개씩 들어가는지 세어서 막대그래프로 보여줍니다. 이를 통해 데이터가 어디에
+                                        많이 몰려있는지(분포) 한눈에 확인할 수 있습니다.
+                                    </p>
+                                </div>
+                                <div class="col-12 border-top pt-3">
+                                    <p class="small text-muted mb-2"><strong>2. alpha(투명도)를 사용하는 이유</strong></p>
+                                    <p class="small text-muted" style="line-height: 1.6;">
+                                        <strong>alpha=0.8</strong>은 막대를 80% 정도만 불투명하게(약간 투명하게) 만들라는 뜻입니다. (1.0이면 완전히
+                                        가려지고, 0이면 투명해집니다.)
+                                    </p>
+                                    <div class="bg-white p-3 rounded-3 border small text-muted">
+                                        <i class="bi bi-info-circle-fill text-info me-1"></i> <strong>그래프가 겹치면 어떻게
+                                            되나요?</strong><br>
+                                        사과와 파인애플 그래프가 겹치는 부분을 보세요! 투명도를 주었기 때문에 <strong>앞쪽 데이터와 뒤쪽 데이터의 색이 섞여서</strong>
+                                        보입니다. 만약 투명도를 주지 않았다면(alpha=1.0), 나중에 그려진 그래프가 먼저 그려진 그래프를 완전히 가려서 겹친 부분을 확인할 수
+                                        없었을 거예요.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-12 mt-4">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4 position-relative">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-bar-chart-steps text-info me-2"></i>각 픽셀 위치별 평균값 (형태적
+                            특징)
+                        </h5>
+                        <p class="text-muted small mb-4">
+                            전체 평균이 아닌, 10,000개의 픽셀 위치 각각의 평균값을 막대 그래프로 나타낸 것입니다.<br>
+                            각 과일이 특징적으로 가지는 "형태적 고유성"을 픽셀 단위로 엿볼 수 있습니다.
+                        </p>
+                        <div class="text-center" style="min-height: 250px;">
+                            <img id="intro-chart2" class="img-fluid rounded-3 shadow-sm border w-100"
+                                style="max-height: 500px;"
+                                src="{{ url_for('ml.static', filename='images/sessions/session11/intro2.png') }}"
+                                alt="위치별 픽셀 평균값">
+                        </div>
+
+                        <!-- 🔍 형태적 특징 상세 분석 섹션 추가 -->
+                        <div class="mt-4 p-4 rounded-4" style="background: #f4fbf4; border: 1px solid #e0eee0;">
+                            <h6 class="fw-bold text-success mb-3"><i class="bi bi-search me-2"></i>형태적 특징 분석: 왜 그래프 모양이
+                                다를까요?</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <p class="small text-muted mb-2"><strong>1. 축의 의미</strong></p>
+                                    <ul class="small text-muted" style="line-height: 1.6;">
+                                        <li><strong>x축 (Pixel Position):</strong> 100x100 해상도의 사진을 한 줄로 길게 펼친 10,000개의
+                                            위치입니다. (0번부터 9,999번까지)</li>
+                                        <li><strong>y축 (Average Brightness):</strong> 100장의 사진에서 해당 위치가 평균적으로 얼마나 밝은지를
+                                            나타냅니다.</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="small text-muted mb-2"><strong>2. 과일별 특징 (고유한 형태)</strong></p>
+                                    <ul class="small text-muted" style="line-height: 1.6;">
+                                        <li><strong>사과:</strong> 동그란 형태라 중간 부분에 밝은 픽셀이 넓게 집중되어 완만한 산 모양을 이룹니다.</li>
+                                        <li><strong>파인애플:</strong> 겉면이 거칠어서 사과보다 그래프가 더 지저분하고 삐죽삐죽하게(노이즈) 나타납니다.</li>
+                                        <li><strong>바나나:</strong> 길쭉한 형태라 특정 위치에만 밝은 픽셀이 몰려 있어 그래프가 더 좁고 뾰족하게 나타납니다.
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-12 mt-2 border-top pt-3">
+                                    <p class="small text-dark mb-1"><strong>💡 연동된 파이썬 코드 원리:</strong></p>
+                                    <code class="small"
+                                        style="background: #eef; padding: 2px 5px; border-radius: 4px; color: #005cc5;">axes[i].bar(range(10000), np.mean(fruits, axis=0))</code>
+                                    <p class="small text-muted mt-1 mb-0">이 코드는 1만 개의 막대기(`plt.bar`)를 촘촘하게 그려서 과일의 '평균적인
+                                        실루엣'을 수치로 표현한 것입니다. <strong>비지도 학습</strong>은 바로 이런 미세한 실루엣 차이를 사람의 도움 없이 스스로
+                                        찾아냅니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 핵심 파이썬 코드 박스 -->
+        <div class="code-box mt-5">
+            <h5>💻 핵심 파이썬 코드 — 오차 기반 군집 검색</h5>
+            <div class="p-4 rounded-4 mb-4 border shadow-sm" style="background: #ffffff; position: relative;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge bg-primary rounded-pill px-3">데이터 스스로의 패턴 찾기 (Numpy 활용)</span>
+                    <i class="bi bi-file-earmark-code text-muted"></i>
+                </div>
+                <div class="p-3 rounded-3"
+                    style="background: #f8f9fa; font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 0.95rem; line-height: 1.7; color: #333; border: 1px solid #e9ecef;">
+                    <span style="color: #495057; font-weight: 600; font-family: sans-serif;"># 1. "누가 더 닮았나?" - 각 과일 사진과
+                        평균 사진 사이의 픽셀값 차이(오차)를 구합니다.</span><br>
+                    <span style="color: #495057; font-weight: 600; font-family: sans-serif;"># abs()는 절댓값을 구하는 것으로, 차이가
+                        양수든 음수든 '얼마나 멀리 떨어져 있나'만 봅니다.</span><br>
+                    <span style="color: #d73a49;">abs_diff</span> = np.<span style="color: #005cc5;">abs</span>(fruits -
+                    <span style="color: #d73a49;">apple_mean</span>)<br>
+                    <br>
+                    <span style="color: #495057; font-weight: 600; font-family: sans-serif;"># 2. "전체적인 유사도 계산" - 1만 개의
+                        픽셀 오차들을 모두 평균 냅니다.</span><br>
+                    <span style="color: #495057; font-weight: 600; font-family: sans-serif;"># 숫자가 작을수록 평균 사진과 아주 비슷하게
+                        생긴 사진이라는 뜻입니다!</span><br>
+                    <span style="color: #d73a49;">abs_mean</span> = np.<span
+                        style="color: #005cc5;">mean</span>(abs_diff, axis=(1, 2))<br>
+                    <br>
+                    <span style="color: #495057; font-weight: 600; font-family: sans-serif;"># 3. "쌍둥이 사진 찾기" - 오차가 가장
+                        적은 순서(가장 닮은 순서)대로 사진 100장을 골라냅니다.</span><br>
+                    <span style="color: #d73a49;">apple_index</span> = np.<span
+                        style="color: #005cc5;">argsort</span>(abs_mean)[:100]<br>
+                </div>
+            </div>
+
+            <p class="text-muted small">
+                <i class="bi bi-info-circle me-1"></i> 우리는 사과의 '평균 사진'을 구한 다음, 300장의 사진 중 그 평균과 차이(오차)가 가장 적은 사진 100장을
+                골라낼 수 있습니다. 이 과정이 K-Means와 같은 군집화 알고리즘의 가장 기본적인 원리입니다.
+            </p>
+        </div>
+
+        <!-- 인터랙티브 체험 섹션 -->
+        <div class="lab-box p-4 mt-5" style="border: 2px dashed #007bff; background: #f8fbff; border-radius: 25px;">
+            <h5 class="fw-bold mb-3"><i class="bi bi-search me-2 text-primary"></i>실험: 평균 오차 기반 과일 검색기</h5>
+
+            <div class="card border-0 shadow-sm rounded-4 mb-5 overflow-hidden">
+                <div class="row g-0">
+                    <!-- 제어부 -->
+                    <div class="col-md-5 border-end bg-light p-4">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-sliders text-danger me-2"></i>군집화 테스트</h5>
+                        <p class="text-muted small mb-4">
+                            과일을 선택하면, 타깃 과일의 '평균 픽셀'을 기준으로 군집화 로직이 300장의 사진 중 가장 유사한 (오차가 적은) 과일들끼리 그룹으로 묶어 표출합니다. 알고리즘이
+                            혼동하는 이미지가 섞여 들어오는지 확인해보세요.
+                        </p>
+
+                        <div class="mb-4 bg-white p-3 rounded-3 shadow-sm border text-center d-flex flex-column gap-3">
+                            <button class="btn btn-outline-danger fw-bold rounded-pill shadow-sm py-3"
+                                onclick="searchFruits('apple')">🍎 사과 군집 찾기</button>
+                            <button class="btn btn-outline-warning text-dark fw-bold rounded-pill shadow-sm py-3"
+                                onclick="searchFruits('pineapple')">🍍 파인애플 군집 찾기</button>
+                            <button class="btn border fw-bold rounded-pill shadow-sm py-3"
+                                style="color:#d35400; background-color:#fff3cd;" onclick="searchFruits('banana')">🍌 바나나
+                                군집 찾기</button>
+                        </div>
+                    </div>
+
+                    <!-- 결과 표시부 -->
+                    <div
+                        class="col-md-7 p-4 bg-white text-center d-flex flex-column align-items-center justify-content-center">
+                        <h5 class="fw-bold mb-3 text-center"><i class="bi bi-image text-warning me-2"></i>군집 검색 결과</h5>
+                        <p class="small text-muted" id="search-msg">과일을 선택하여 군집 결과를 확인하세요. (오차가 0에 가까운 순서대로 출력)</p>
+
+                        <div id="search-loading" class="spinner-border text-danger my-4" style="display:none;"></div>
+
+                        <img id="search-chart" class="img-fluid rounded border shadow-sm w-100"
+                            style="max-height: 500px; display:none; object-fit: contain;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 퀴즈 섹션 추가 -->
+        <div class="quiz-section" id="quiz-area">
+            <div class="quiz-header">
+                <h3 class="fw-bold"><span class="emoji-bullet">📝</span> 오늘의 연습문제</h3>
+                <p class="text-muted">강의에서 배운 기법을 새로운 데이터에 적용해보세요!</p>
+                <button class="btn-predict" onclick="loadQuiz({{ session_id }})">문제 불러오기</button>
+            </div>
+            <div id="quiz-body"></div>
+        </div>
+
+
+
+    </div>
+</div>
+{% endblock %}
+
+{% block ml_scripts %}
+<script>
+    // 페이지 로드 시 초기화
+    document.addEventListener('DOMContentLoaded', () => {
+        // 이미지는 템플릿에서 직접 src를 지정했으므로 추가 호출 불필요
+        console.log("11강 정적 로딩 모드 활성화");
+    });
+
+    async function searchFruits(target) {
+        const loading = document.getElementById('search-loading');
+        const img = document.getElementById('search-chart');
+        const msg = document.getElementById('search-msg');
+
+        loading.style.display = 'inline-block';
+        img.style.display = 'none';
+        msg.innerText = "분석 알고리즘이 사진들을 분류하고 있습니다...";
+
+        try {
+            const res = await fetch('/api/ml/session/11/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target: target })
+            }).then(r => r.json());
+
+            if (res.success) {
+                img.src = `data:image/png;base64,${res.data.chart}`;
+                img.style.display = 'inline-block';
+                msg.innerText = res.data.message;
+            } else {
+                msg.innerText = '검색 중 오류가 발생했습니다.';
+            }
+        } catch (e) {
+            console.error(e);
+            msg.innerText = '서버 연결 오류';
+        } finally {
+            loading.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

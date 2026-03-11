@@ -1,0 +1,48 @@
+# 14강. 인공 신경망 (ANN) 핵심 파이썬 코드
+# 케라스를 사용하여 패션 MNIST 데이터를 분류하는 딥러닝 모델을 만듭니다.
+
+import tensorflow as tf
+from tensorflow import keras
+from sklearn.model_selection import train_test_split
+import numpy as np
+
+# 0. 실행마다 동일한 결과를 얻기 위해 랜덤 시드 설정
+tf.keras.utils.set_random_seed(42)
+tf.config.experimental.enable_op_determinism()
+
+# 1. 패션 MNIST 데이터 불러오기
+# 10종류의 의류 이미지 (28x28 픽셀)
+(train_input, train_target), (test_input, test_target) = keras.datasets.fashion_mnist.load_data()
+print("Data Shape:", train_input.shape, train_target.shape)
+# 출력: (60000, 28, 28) (60000,)
+
+# 2. 데이터 전처리
+# 인공 신경망은 입력값이 0~1 사이일 때 가장 학습이 잘 됩니다. (정규화)
+train_scaled = train_input / 255.0
+
+# 완전 연결층(Dense Layer)은 1차원 배열을 입력으로 받으므로 2D -> 1D 변환
+train_scaled = train_scaled.reshape(-1, 28*28)
+
+# 훈련 세트와 검증 세트로 분할 (성능 측정을 위해 20%를 검증용으로 사용)
+train_scaled, val_scaled, train_target, val_target = train_test_split(
+    train_scaled, train_target, test_size=0.2, random_state=42)
+
+# 3. 모델 구축
+# 뉴런 10개, 활성화 함수 'softmax' (다중 분류), 입력 크기 784인 밀집층 생성
+dense = keras.layers.Dense(10, activation='softmax', input_shape=(784,))
+model = keras.Sequential(dense)
+
+# 4. 모델 설정 및 컴파일
+# loss: 다중 분류에서 타깃이 정수(0,1,2..)일 때 'sparse_categorical_crossentropy' 사용
+model.compile(loss='sparse_categorical_crossentropy', metrics='accuracy')
+
+# 5. 모델 훈련 (5회 반복 학습)
+model.fit(train_scaled, train_target, epochs=5)
+
+# 6. 모델 평가
+# 학습에 사용되지 않은 검증 세트에서의 정확도 확인
+print("\n[검증 세트 결과]")
+model.evaluate(val_scaled, val_target)
+
+# [참고] 인공 신경망은 선형 모델보다 더 복잡한 비선형 관계를 학습할 수 있으며,
+# 출력층의 뉴런 개수는 분류하려는 클래스의 개수와 같아야 합니다.

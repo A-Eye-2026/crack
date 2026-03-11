@@ -1,0 +1,112 @@
+{% extends 'layout.html' %}
+{% block content %}
+<style>
+    /* 실제 표가 들어가는 컨테이너 */
+    .board-box {
+        width: 100%;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    /* 타이틀과 버튼의 끝선 정렬 */
+    .board-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        width: 100%;
+        margin-bottom: 1.5rem !important;
+    }
+
+    /* 테이블 래퍼에 수평 스크롤 추가 (모바일 대응) */
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* 모바일 대응 */
+    @media (max-width: 991px) {
+        .board-box {
+            margin: 0 15px;
+            max-width: none;
+            width: auto;
+        }
+    }
+
+    /* 다크모드 테이블 지원 (v44) */
+    [data-theme='dark'] .table-wrapper {
+        background-color: var(--bg-card) !important;
+        border-color: var(--border-light) !important;
+    }
+
+    [data-theme='dark'] .table,
+    [data-theme='dark'] .table td,
+    [data-theme='dark'] .table th {
+        color: var(--text-primary) !important;
+        border-bottom-color: var(--border-light) !important;
+    }
+
+    [data-theme='dark'] .table-light th {
+        background-color: var(--bg-sidebar-control) !important;
+        color: var(--text-primary) !important;
+        border-bottom-color: var(--border-light) !important;
+    }
+
+    [data-theme='dark'] .table-hover tbody tr:hover {
+        background-color: var(--bg-hover) !important;
+        color: var(--text-primary) !important;
+    }
+</style>
+
+<div class="py-5">
+    <div class="board-box">
+        <div class="board-header-flex">
+            <h3 class="fw-bold m-0" style="font-size: 1.5rem; letter-spacing: -0.5px;">
+                <i class="bi bi-person-check"></i> 성적 입력 대상 선택
+            </h3>
+        </div>
+        <p class="text-muted mb-4 small">성적이 이미 등록된 학생은 '수정'으로 표시됩니다.</p>
+
+        <div class="shadow-sm table-wrapper"
+            style="border-radius: 20px; overflow: hidden; border: 1px solid rgba(0,0,0,0.06);">
+            <table class="table table-hover text-center m-0" style="border-top: 3px solid #a47864;">
+                <thead class="table-light">
+                    <tr>
+                        <th style="padding: 20px 0;">이름</th>
+                        <th style="padding: 20px 0;">아이디</th>
+                        <th style="padding: 20px 0;">상태</th>
+                        <th style="padding: 20px 0;">작업</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in members %}
+                    <tr>
+                        <td class="py-3 align-middle"><strong>{{ m.name }}</strong></td>
+                        <td class="py-3 align-middle">{{ m.uid }}</td>
+                        <td class="py-3 align-middle">
+                            {% if m.score_id %}
+                            <span class="badge bg-success">등록 완료</span>
+                            {% else %}
+                            <span class="badge bg-secondary">미등록</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 align-middle">
+                            {% if m.score_id %}
+                            <a href="/score/add?uid={{ m.uid }}&name={{ m.name }}"
+                                class="btn btn-sm btn-outline-success rounded-pill px-3">
+                                <i class="bi bi-pencil-square"></i> 성적 수정
+                            </a>
+                            {% else %}
+                            <a href="/score/add?uid={{ m.uid }}&name={{ m.name }}"
+                                class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                <i class="bi bi-plus-circle"></i> 성적 입력
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,322 @@
+{% extends 'ml_layout.html' %}
+
+{% block ml_content %}
+
+<style>
+    .session-container {
+        padding: 3rem 2.5rem;
+        max-width: 1100px;
+        margin: 0 auto;
+        overflow-x: hidden;
+    }
+
+    #session17 h3 {
+        font-size: clamp(2rem, 5vw, 2.8rem);
+        font-weight: 800;
+        margin-bottom: 2rem;
+        background: linear-gradient(to right, #ec4899, #8b5cf6);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: block;
+    }
+
+    .section-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin-bottom: 2.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 2px solid var(--ml-border-soft);
+        padding-bottom: 0.75rem;
+    }
+
+    [data-theme='dark'] .section-title {
+        border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+        color: #f8fafc !important;
+    }
+
+    .viz-placeholder {
+        width: 100%;
+        min-height: 250px;
+        background: var(--ml-bg-soft);
+        border: 2px dashed var(--ml-border-soft);
+        border-radius: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .animate-on-scroll {
+        opacity: 0;
+        transform: translateY(25px);
+        transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .animate-on-scroll.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+        .session-container {
+            padding: 2.2rem 1.2rem;
+        }
+
+        #session17 h3 {
+            font-size: 1.8rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        const mainDiv = document.getElementById('session17');
+        if (mainDiv) mainDiv.classList.add('session-container');
+
+        document.querySelectorAll('.card, .theory-box, .insight-box').forEach(el => {
+            el.classList.add('animate-on-scroll');
+            observer.observe(el);
+        });
+
+        initSession17();
+    });
+
+    async function initSession17() {
+        // [Optimization] 정적 이미지 대신 MLService가 생성한 실시간/캐시 이미지를 API로 가져옵니다.
+        const filterContainer = document.getElementById('filter-viz-container');
+        const featureContainer = document.getElementById('feature-viz-container');
+
+        try {
+            const response = await fetch('/api/ml/session/17/intro');
+            const res = await response.json();
+
+            if (res.success && res.data) {
+                if (filterContainer) {
+                    filterContainer.innerHTML = `<img src="data:image/png;base64,${res.data.filter_chart}" class="img-fluid rounded shadow-sm w-100 animate-fade-in" alt="CNN Filters">`;
+                    filterContainer.classList.remove('viz-placeholder');
+                    filterContainer.classList.add('bg-white', 'p-2', 'border');
+                }
+                if (featureContainer) {
+                    featureContainer.innerHTML = `<img src="data:image/png;base64,${res.data.feature_chart}" class="img-fluid rounded shadow-sm w-100 animate-fade-in" alt="Feature Maps">`;
+                    featureContainer.classList.remove('viz-placeholder');
+                    featureContainer.classList.add('bg-white', 'p-2', 'border');
+                }
+            }
+        } catch (e) {
+            console.error("Session 17 Init Error:", e);
+        }
+    }
+</script>
+
+
+<div class="session-panel active" id="session17">
+    <div class="session-card">
+        <h3>🎯 세션 17: 합성곱 신경망 (CNN) 파헤치기
+            {% if 17 in completed_sessions %}
+            <span class="pass-badge"><i class="fas fa-check-circle"></i> 학습 완료</span>
+            {% endif %}
+        </h3>
+
+        <div class="row g-4 mb-5 mt-3">
+
+            <!-- 1. CNN 핵심 개념 -->
+            <div class="col-12 col-xl-12">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-2">
+                    <div class="card-header border-bottom-0 pt-4 pb-0 px-4" style="background: var(--ml-card-bg);">
+                        <h5 class="fw-bold" style="color: var(--ml-text-main);">
+                            <i class="fas fa-eye text-primary me-2"></i>이미지 인식의 절대 강자, CNN
+                        </h5>
+                    </div>
+                    <div class="card-body px-4 py-3">
+                        <p class="text-muted mb-4" style="line-height: 1.7;">
+                            단순한 밀집 신경망(Dense)은 2차원 이미지를 1차원으로 길게 펴서(Flatten) 처리하기 때문에 픽셀 간의 공간적 관계를 완전히 잃어버리는 치명적인 약점이
+                            있습니다. 이를 해결하기 위해 등장한 것이 바로 <b>CNN(Convolutional Neural Network)</b>입니다.
+                        </p>
+
+                        <div class="row g-4">
+                            <!-- Convolution -->
+                            <div class="col-md-6">
+                                <div class="p-4 rounded-4 h-100"
+                                    style="background: rgba(236, 72, 153, 0.05); border-left: 4px solid #ec4899;">
+                                    <h6 class="fw-bold text-pink mb-3" style="color: #db2777;"><i
+                                            class="fas fa-search-plus me-2"></i>합성곱 (Convolution)</h6>
+                                    <p class="small text-muted mb-3">
+                                        작은 돋보기(필터/커널)가 이미지를 좌상단부터 쭉 훑어 내려가며 특정 패턴(가로선, 질감 등)이 어디에 있는지 도장 찍듯 찾아냅니다.
+                                    </p>
+                                    <span class="badge bg-pink text-white"
+                                        style="background-color: #ec4899;">#특징_추출기</span>
+                                </div>
+                            </div>
+
+                            <!-- Pooling -->
+                            <div class="col-md-6">
+                                <div class="p-4 rounded-4 h-100"
+                                    style="background: rgba(139, 92, 246, 0.05); border-left: 4px solid #8b5cf6;">
+                                    <h6 class="fw-bold text-purple mb-3" style="color: #7c3aed;"><i
+                                            class="fas fa-compress-arrows-alt me-2"></i>풀링 (Pooling)</h6>
+                                    <p class="small text-muted mb-3">
+                                        찾아낸 특징 지도의 크기를 강제로 줄압니다(주로 2x2 사이즈 내에서 가장 큰 값만 남기는 Max Pooling). 계산량을 확 줄이고,
+                                        이미지가 살짝 틀어져도 잘 인식하게 해줍니다.
+                                    </p>
+                                    <span class="badge text-white" style="background-color: #8b5cf6;">#차원_축소</span>
+                                    <span class="badge text-white" style="background-color: #8b5cf6;">#불변성</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. 필터(가중치) 시각화 분석 -->
+            <div class="col-12 col-xl-12">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-th text-info me-2"></i>눈으로 보는 CNN: 필터(가중치)와 특징 맵</h5>
+                        <p class="text-muted small mb-4">
+                            CNN이 도대체 어떻게 학습하는 걸까요? 훈련된 합성곱 층의 속치마(가중치)를 들여다보면 답이 나옵니다.
+                        </p>
+
+                        <div class="row g-4 items-center mt-2">
+                            <!-- 필터 가중치 시각화 -->
+                            <div class="col-md-6">
+                                <div class="p-4 rounded-4 h-100"
+                                    style="background: var(--ml-bg-soft); border: 1px solid var(--ml-border-soft);">
+                                    <h6 class="fw-bold text-indigo mb-3" style="color: #6610f2;"><i
+                                            class="fas fa-border-all me-2"></i>모델이 학습한 32개의 렌즈 (필터)</h6>
+
+                                    <div id="filter-viz-container" class="viz-placeholder">
+                                        <div class="text-center">
+                                            <div class="spinner-border text-primary spinner-border-sm mb-2"
+                                                role="status"></div>
+                                            <p class="extra-small text-muted">서버에서 분석된 가중치를 렌더링 중입니다...</p>
+                                        </div>
+                                    </div>
+
+                                    <p class="extra-small text-muted mt-3 mb-0" style="line-height: 1.5;">
+                                        CNN의 첫 번째 관문인 32개의 3x3 필터입니다. 밝은 픽셀은 높은 가중치를 의미하며, 각 필터마다 서로 다른 줄무늬와 덩어리 형태를 갖춰
+                                        들어오는 이미지에서 각기 다른 특징에 반응할 준비를 마쳤습니다.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- 피쳐 맵 시각화 -->
+                            <div class="col-md-6">
+                                <div class="p-4 rounded-4 h-100"
+                                    style="background: var(--ml-bg-soft); border: 1px solid var(--ml-border-soft);">
+                                    <h6 class="fw-bold text-success mb-3"><i class="fas fa-images me-2"></i>렌즈를 통과한 결과
+                                        (특성 맵)</h6>
+
+                                    <div id="feature-viz-container" class="viz-placeholder">
+                                        <div class="text-center">
+                                            <div class="spinner-border text-success spinner-border-sm mb-2"
+                                                role="status"></div>
+                                            <p class="extra-small text-muted">입력 이미지가 처리된 활성화 맵을 가져오는 중입니다...</p>
+                                        </div>
+                                    </div>
+
+                                    <p class="extra-small text-muted mt-3 mb-0" style="line-height: 1.5;">
+                                        하나의 원본 신발 이미지가 32개의 필터를 통과하면서 뻗어 나온 32장의 변형된 그림입니다. 어떤 필터는 윤곽선을 진하게, 어떤 것은 밑창만을
+                                        도드라지게 포착해냈습니다.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 실전 CNN 아키텍처 코드 -->
+            <div class="col-12 col-xl-12">
+                <div class="card border-0 shadow-sm rounded-4" style="border-left: 6px solid #e83e8c !important;">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-sitemap text-pink me-2" style="color: #e83e8c;"></i>실전
+                            CNN 아키텍처 (케라스 구축)</h5>
+                        <p class="text-muted small mb-4">
+                            "Conv-Pool-Conv-Pool-Flatten-Dense-Dense"의 아주 전형적이고 강력한 CNN 코드 구조입니다.
+                        </p>
+
+                        <div class="bg-dark text-white p-3 rounded-4 font-monospace small mb-4"
+                            style="line-height: 1.8;">
+                            <div class="mb-1"><span style="color: #4fc1ff;">model</span> = keras.Sequential()</div>
+                            <br>
+                            <div class="mb-1"><span style="color: #6a9955;"># 1. 첫 번째 합성곱 + 풀링 팀</span></div>
+                            <div class="mb-1">model.add(keras.layers.Conv2D(<span style="color: #b5cea8;">32</span>,
+                                kernel_size=<span style="color: #b5cea8;">3</span>, activation=<span
+                                    style="color: #ce9178;">'relu'</span>,</div>
+                            <div class="mb-1">
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;padding=<span
+                                    style="color: #ce9178;">'same'</span>, input_shape=(<span
+                                    style="color: #b5cea8;">28</span>, <span style="color: #b5cea8;">28</span>, <span
+                                    style="color: #b5cea8;">1</span>)))</div>
+                            <div class="mb-2">model.add(keras.layers.MaxPooling2D(<span
+                                    style="color: #b5cea8;">2</span>))</div>
+
+                            <div class="mb-1"><span style="color: #6a9955;"># 2. 두 번째 합성곱 + 풀링 팀 (더 깊고 복잡한 특징 추출)</span>
+                            </div>
+                            <div class="mb-1">model.add(keras.layers.Conv2D(<span style="color: #b5cea8;">64</span>,
+                                kernel_size=<span style="color: #b5cea8;">3</span>, activation=<span
+                                    style="color: #ce9178;">'relu'</span>, padding=<span
+                                    style="color: #ce9178;">'same'</span>))</div>
+                            <div class="mb-2">model.add(keras.layers.MaxPooling2D(<span
+                                    style="color: #b5cea8;">2</span>))</div>
+
+                            <div class="mb-1"><span style="color: #6a9955;"># 3. 쫙 펴서 분류기(Dense)로 직행</span></div>
+                            <div class="mb-1">model.add(keras.layers.Flatten())</div>
+                            <div class="mb-1">model.add(keras.layers.Dense(<span style="color: #b5cea8;">100</span>,
+                                activation=<span style="color: #ce9178;">'relu'</span>))</div>
+                            <div class="mb-1">model.add(keras.layers.Dropout(<span style="color: #b5cea8;">0.4</span>))
+                            </div>
+                            <div class="mb-0">model.add(keras.layers.Dense(<span style="color: #b5cea8;">10</span>,
+                                activation=<span style="color: #ce9178;">'softmax'</span>))</div>
+                        </div>
+
+                        <div class="row g-4 mt-2">
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-3 shadow-sm h-100" style="background: var(--ml-card-bg);">
+                                    <p class="small fw-bold text-primary mb-1"><i class="fas fa-boxes me-1"></i>
+                                        Padding='same'의 의미</p>
+                                    <p class="small mb-0 text-muted">필터를 돌릴 때 가장자리 픽셀 정보가 소외되는 것을 막기 위해, 이미지 테두리에 0을 둘러싸
+                                        원래 크기대로 특성 맵을 유지하는 기법입니다.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-3 shadow-sm h-100" style="background: var(--ml-card-bg);">
+                                    <p class="small fw-bold text-danger mb-1"><i class="fas fa-layer-group me-1"></i>
+                                        input_shape의 채널 유지</p>
+                                    <p class="small mb-0 text-muted">CNN은 흑백이라도 반드시 (너비, 높이, 채널) 3차원으로 입력받아야 하므로 끝에
+                                        <code>1</code> 채널(깊이)을 추가했습니다.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="quiz-section mt-5" id="quiz-area">
+            <div class="quiz-header">
+                <h3 class="fw-bold"><span class="emoji-bullet">📝</span> 17강 실력 점검</h3>
+                <p class="text-muted">강의에서 배운 기법을 새로운 데이터에 적용해보세요!</p>
+                <button class="btn-predict" onclick="loadQuiz(17)">문제 불러오기</button>
+            </div>
+            <div id="quiz-body"></div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

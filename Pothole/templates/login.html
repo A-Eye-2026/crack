@@ -1,0 +1,205 @@
+{% extends 'layout.html' %}
+{% block extra_style %}
+<style>
+    .login-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 80px);
+        padding: 20px;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 400px;
+        border-radius: 16px;
+        border: none;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    }
+
+    .login-card .card-body {
+        padding: 2.5rem;
+    }
+
+    .btn-accent {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+        font-weight: 600;
+        border-radius: 10px;
+        padding: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-accent:hover {
+        background-color: var(--primary-brown-dark);
+        border-color: var(--primary-brown-dark);
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(164, 120, 100, 0.35);
+    }
+
+    [data-theme='dark'] .btn-accent:hover {
+        box-shadow: 0 4px 15px rgba(255, 181, 167, 0.3);
+    }
+
+    .btn-accent:active {
+        transform: translateY(0);
+        box-shadow: none;
+    }
+
+    .login-link:hover {
+        color: var(--primary-brown-dark);
+        text-decoration: underline !important;
+    }
+
+    /* 소셜 로그인 버튼 호버 효과 */
+    #googleLoginBtn:hover,
+    #kakaoLoginBtn:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        filter: brightness(0.95) !important;
+        transition: all 0.2s ease !important;
+    }
+
+    #googleLoginBtn:active,
+    #kakaoLoginBtn:active {
+        transform: translateY(0) !important;
+        box-shadow: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-wrapper">
+    <div class="card login-card shadow">
+        <div class="card-body">
+            <h3 class="text-center mb-4" style="font-weight: 700; color: var(--deep);">로그인</h3>
+            <form action="/login" method="POST">
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight: 600;">아이디</label>
+                    <input type="text" name="uid" class="form-control" required
+                        style="border-radius: 10px; padding: 12px;">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight: 600;">비밀번호</label>
+                    <input type="password" name="upw" class="form-control" required
+                        style="border-radius: 10px; padding: 12px;">
+                </div>
+                <button type="submit" class="btn btn-accent w-100 mt-2">로그인</button>
+            </form>
+
+            <div class="d-grid gap-2 mt-3">
+                <!-- 구글 로그인 버튼 -->
+                <button type="button" id="googleLoginBtn"
+                    class="btn btn-light w-100 d-flex align-items-center justify-content-center gap-2"
+                    style="border-radius: 10px; padding: 12px; border: 1px solid #ddd; transition: all 0.3s ease; background-color: #fff;">
+                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/google/google-original.svg"
+                        alt="Google Logo" style="width: 24px; height: 24px;">
+                    <span style="font-weight: 600; color: #555;">Google 계정으로 로그인</span>
+                </button>
+
+                <!-- 카카오 로그인 버튼 -->
+                <button type="button" id="kakaoLoginBtn"
+                    class="btn w-100 d-flex align-items-center justify-content-center gap-2"
+                    style="border-radius: 10px; padding: 12px; border: none; transition: all 0.3s ease; background-color: #FEE500;">
+                    <!-- 인라인 SVG 아이콘 (절대 깨지지 않음) -->
+                    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M12 3C7.029 3 3 6.129 3 10c0 2.508 1.662 4.707 4.162 5.925l-.837 3.075c-.112.412.375.712.712.488l3.637-2.438c.45.075.938.112 1.438.112 4.971 0 9-3.129 9-7 0-3.871-4.029-7-9-7z"
+                            fill="#3C1E1E" />
+                    </svg>
+                    <span style="font-weight: 600; color: #3c1e1e;">카카오톡으로 로그인</span>
+                </button>
+            </div>
+
+            <div class="mt-4">
+                <div class="d-flex align-items-center mb-3">
+                    <hr class="flex-grow-1">
+                    <span class="mx-3 text-muted" style="font-size: 0.9rem;">계정이 없으신가요?</span>
+                    <hr class="flex-grow-1">
+                </div>
+                <div class="text-center">
+                    <a href="/join" class="login-link text-decoration-none">회원가입 하러가기</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDK 및 구글 로그인 처리 로직 -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+
+    // TODO: 파이어베이스 콘솔에서 발급받은 실제 설정값으로 변경해야 합니다. (로컬호스트도 동작함)
+    const firebaseConfig = {
+        apiKey: "AIzaSyCaXrLeoGs1nbGtwnc1a5RrzB2PNgyAWp0",
+        authDomain: "aiport260206.firebaseapp.com",
+        projectId: "aiport260206",
+        storageBucket: "aiport260206.firebasestorage.app",
+        messagingSenderId: "314711204809",
+        appId: "1:314711204809:web:a7e15fe6645ea1db347e18",
+        measurementId: "G-5B0WVSZ190"
+    };
+
+    // Firebase 초기화 (설정값이 있는 경우만 실행)
+    let auth, provider;
+    if (firebaseConfig.apiKey !== "YOUR_API_KEY_HERE") {
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        provider = new GoogleAuthProvider();
+    }
+
+    const gBtn = document.getElementById('googleLoginBtn');
+
+    // 로그인 클릭 이벤트
+    gBtn.addEventListener('click', async () => {
+        if (!auth) {
+            alert('파이어베이스 설정(firebaseConfig)이 아직 입력되지 않았습니다. 코드를 확인해주세요.');
+            return;
+        }
+
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+            const idToken = await user.getIdToken(); // ID Token 획득
+
+            // Flask 백엔드 서버로 ID Token 전송
+            const response = await fetch('/login/google', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ idToken })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                window.location.href = data.redirect;
+            } else {
+                alert(data.message || '서버 로그인 처리 실패');
+            }
+
+        } catch (error) {
+            console.error("Google Login Error: ", error);
+            if (error.code === 'auth/popup-closed-by-user') {
+                // 사용자가 팝업을 닫은 경우 무시
+                return;
+            }
+            alert('Google 로그인 중 오류가 발생했습니다: ' + error.message);
+        }
+    });
+    // 3. 카카오 로그인 처리 (REST API 인가 코드 방식)
+    document.getElementById('kakaoLoginBtn').addEventListener('click', function () {
+        // 카카오 REST API 키 (카카오 정책상 JS에서 직접 사용 가능한 공개 키입니다.
+        // 실제 보안에 민감한 Client Secret은 서버(.env)에만 보관됩니다.)
+        const REST_API_KEY = "b0d855f82cb4375b7d2e5b6ec21dc918";
+        // 현재 접속 주소(127.0.0.1 또는 192.168.0.24 등)에 상관없이 동작하도록 설정
+        const currentOrigin = window.location.origin;
+        const REDIRECT_URI = encodeURIComponent(currentOrigin + "/login/kakao/callback");
+        const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
+        location.href = kakaoAuthUrl;
+    });
+</script>
+{% endblock %}

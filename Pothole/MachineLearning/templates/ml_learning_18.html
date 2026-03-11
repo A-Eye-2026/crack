@@ -1,0 +1,290 @@
+{% extends 'ml_layout.html' %}
+
+{% block ml_content %}
+
+<style>
+    .session-container {
+        padding: 3rem 2.5rem;
+        max-width: 1100px;
+        margin: 0 auto;
+        overflow-x: hidden;
+    }
+
+    #session18 h3 {
+        font-size: clamp(2rem, 5vw, 2.8rem);
+        font-weight: 800;
+        margin-bottom: 2rem;
+        background: linear-gradient(to right, #3b82f6, #10b981);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: block;
+    }
+
+    .section-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin-bottom: 2.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 2px solid var(--ml-border-soft);
+        padding-bottom: 0.75rem;
+    }
+
+    .viz-placeholder {
+        width: 100%;
+        min-height: 350px;
+        background: var(--ml-bg-soft);
+        border: 2px dashed var(--ml-border-soft);
+        border-radius: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .btn-toggle-viz {
+        padding: 0.8rem 1.5rem;
+        border-radius: 1rem;
+        font-weight: 700;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .btn-toggle-viz.active {
+        background: var(--ml-primary);
+        color: white;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-toggle-viz:not(.active) {
+        background: var(--ml-bg-soft);
+        color: var(--ml-text-sub);
+        border-color: var(--ml-border-soft);
+    }
+
+    .insight-box {
+        background: rgba(16, 185, 129, 0.05);
+        border-left: 5px solid #10b981;
+        padding: 1.5rem;
+        border-radius: 0 1rem 1rem 0;
+        margin-top: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .session-container {
+            padding: 2.2rem 1.2rem;
+        }
+
+        #session18 h3 {
+            font-size: 1.8rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const mainDiv = document.getElementById('session18');
+        if (mainDiv) mainDiv.classList.add('session-container');
+
+        loadViz('filter');
+    });
+
+    async function loadViz(type) {
+        const container = document.getElementById('cnn-viz-container');
+        const buttons = document.querySelectorAll('.btn-toggle-viz');
+
+        // Update UI
+        buttons.forEach(btn => {
+            if (btn.dataset.type === type) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+
+        container.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p class="text-muted">실제 모델의 ${type === 'filter' ? '가중치' : '특성 맵'}을 분석 중입니다...</p>
+            </div>
+        `;
+
+        try {
+            const response = await fetch('/api/ml/session/18/visualize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: type })
+            });
+            const res = await response.json();
+
+            if (res.success) {
+                container.innerHTML = `<img src="data:image/png;base64,${res.chart}" class="img-fluid rounded shadow-sm w-100 animate-fade-in" alt="CNN Visual">`;
+                container.classList.remove('viz-placeholder');
+                container.classList.add('bg-white', 'p-3', 'border');
+
+                updateDescription(type);
+            } else {
+                container.innerHTML = `<div class="alert alert-danger">${res.error || '시각화 로딩 실패'}</div>`;
+            }
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = `<div class="alert alert-danger">서버 통신 오류가 발생했습니다.</div>`;
+        }
+    }
+
+    function updateDescription(type) {
+        const desc = document.getElementById('viz-description');
+        if (type === 'filter') {
+            desc.innerHTML = `
+                <h6 class="fw-bold text-primary mb-2"><i class="fas fa-search me-2"></i>가중치(Filter) 시각화 분석</h6>
+                <p class="small text-muted mb-0">
+                    학습된 <code>best-cnn-model.keras</code>의 첫 번째 합성곱 층에 있는 32개의 필터입니다. 
+                    각 칸은 3x3 크기의 가중치 덩어리이며, 밝은 부분은 해당 위치의 특징(가로선, 세로선 등)을 강하게 포착하도록 훈련되었음을 의미합니다.
+                </p>
+            `;
+        } else {
+            desc.innerHTML = `
+                <h6 class="fw-bold text-success mb-2"><i class="fas fa-magic me-2"></i>특성 맵(Feature Map) 시각화 분석</h6>
+                <p class="small text-muted mb-0">
+                    Fashion MNIST의 '가방' 이미지가 위의 32개 필터를 통과한 후의 모습입니다. 
+                    어떤 필터는 가방의 테두리를, 어떤 필터는 손잡이 부분을 선명하게 추출해낸 것을 확인할 수 있습니다. 
+                    이것이 바로 AI가 이미지를 이해하는 첫 번째 단계입니다.
+                </p>
+            `;
+        }
+    }
+</script>
+
+<div class="session-panel active" id="session18">
+    <div class="session-card">
+        <h3>🎯 세션 18: 합성곱의 시각화 (CNN Inside)
+            {% if 18 in completed_sessions %}
+            <span class="pass-badge"><i class="fas fa-check-circle"></i> 학습 완료</span>
+            {% endif %}
+        </h3>
+
+        <div class="row g-4 mb-5">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fw-bold mb-0"><i class="fas fa-microscope text-primary me-2"></i>실제 모델 분석기</h5>
+                            <div class="btn-group">
+                                <button class="btn btn-toggle-viz active" data-type="filter"
+                                    onclick="loadViz('filter')">가중치 시각화</button>
+                                <button class="btn btn-toggle-viz" data-type="feature_map"
+                                    onclick="loadViz('feature_map')">특성 맵 시각화</button>
+                            </div>
+                        </div>
+
+                        <div id="cnn-viz-container" class="viz-placeholder">
+                            <!-- JS Dynamic Content -->
+                        </div>
+
+                        <div id="viz-description" class="insight-box">
+                            <!-- JS Dynamic Content -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- [NEW v291] 4. 실전! CNN 내부를 꺼내는 파이썬 코드 -->
+            <div class="col-12 col-xl-12 mt-4">
+                <div class="card border-0 shadow-sm rounded-4" style="border-left: 6px solid #10b981 !important;">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-code text-success me-2"></i>핵심 파이썬 코드: 모델의 '속' 들여다보기
+                        </h5>
+                        <p class="text-muted small mb-4">
+                            가중치(필터)와 특성 맵을 추출하는 실제 Keras 코드입니다. 이 코드를 통해 딥러닝 모델의 블랙박스를 해소할 수 있습니다.
+                        </p>
+
+                        <div class="bg-dark text-white p-3 rounded-4 font-monospace small mb-4"
+                            style="line-height: 1.8;">
+                            <div class="mb-1"><span style="color: #6a9955;"># 1. 훈련된 모델 불러오기</span></div>
+                            <div class="mb-1"><span style="color: #4fc1ff;">model</span> = keras.models.load_model(<span
+                                    style="color: #ce9178;">'best-cnn-model.keras'</span>)</div>
+                            <br>
+                            <div class="mb-1"><span style="color: #6a9955;"># 2. 첫 번째 합성곱 층의 '가중치(필터)'와 '절편' 추출</span>
+                            </div>
+                            <div class="mb-1"><span style="color: #4fc1ff;">weights</span>, <span
+                                    style="color: #4fc1ff;">biases</span> = model.layers[<span
+                                    style="color: #b5cea8;">0</span>].get_weights()</div>
+                            <div class="mb-2"><span style="color: #6a9955;"># weights.shape -> (3, 3, 1, 32): 3x3 크기 필터가
+                                    32개</span></div>
+
+                            <div class="mb-1"><span style="color: #6a9955;"># 3. 중간 출력(특성 맵)을 얻기 위한 '함수형 모델' 정의</span>
+                            </div>
+                            <div class="mb-1"><span style="color: #4fc1ff;">conv_layer</span> = model.layers[<span
+                                    style="color: #b5cea8;">0</span>]</div>
+                            <div class="mb-1"><span style="color: #4fc1ff;">activation_model</span> =
+                                keras.Model(inputs=model.input, outputs=conv_layer.output)</div>
+                            <br>
+                            <div class="mb-0"><span style="color: #6a9955;"># 4. 테스트 이미지를 넣어 특성 맵 예측</span></div>
+                            <div class="mb-0"><span style="color: #4fc1ff;">feature_maps</span> =
+                                activation_model.predict(test_image)</div>
+                        </div>
+
+                        <div class="row g-4 mt-2">
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-3 shadow-sm h-100" style="background: var(--ml-card-bg);">
+                                    <p class="small fw-bold text-success mb-1"><i class="fas fa-microscope me-1"></i>
+                                        가중치 시각화의 목적</p>
+                                    <p class="small mb-0 text-muted">필터가 선명한 무늬를 띠면 학습이 잘 된 것이고, 노이즈가 심하면 학습이 덜 된 것을
+                                        의미합니다.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-3 shadow-sm h-100" style="background: var(--ml-card-bg);">
+                                    <p class="small fw-bold text-info mb-1"><i class="fas fa-layer-group me-1"></i> 계층적
+                                        특징 추출 (TIP)</p>
+                                    <p class="small mb-0 text-muted">앞쪽 층은 '선/점'에, 뒤쪽 층은 '물체의 형태'에 반응하는 계층적 구조를 이해하는 핵심
+                                        도구입니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 mt-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4">
+                    <h5 class="fw-bold mb-3"><i class="fas fa-lightbulb text-warning me-2"></i>오늘의 핵심 데이터 & 기술적 기법 (TIP)
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-4 h-100" style="background: rgba(59, 130, 246, 0.05);">
+                                <strong class="d-block mb-2 text-primary">1. 데이터 전처리 (Resize)</strong>
+                                <span class="small text-muted">Fashion MNIST는 28x28입니다. CNN 입력 시 채널 차원(1)을 반드시 추가하여 (28,
+                                    28, 1)로 변환해야 합니다.</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-4 h-100" style="background: rgba(16, 185, 129, 0.05);">
+                                <strong class="d-block mb-2 text-success">2. 특성 맵의 크기</strong>
+                                <span class="small text-muted">Padding='same'을 쓰면 입력과 출력 크기가 같지만, 풀링 전후의 시각적 선명도가 달라지는
+                                    점에 유의하세요.</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-4 h-100" style="background: rgba(139, 92, 246, 0.05);">
+                                <strong class="d-block mb-2 text-purple">3. 모델 해석력 (XAI)</strong>
+                                <span class="small text-muted">AI가 왜 이런 결정을 했는지 증명하는 '설명 가능한 AI'의 첫걸음이 바로 시각화
+                                    기법입니다.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="quiz-section mt-5" id="quiz-area">
+            <div class="quiz-header">
+                <h3 class="fw-bold"><span class="emoji-bullet">📝</span> 18강 실력 점검</h3>
+                <p class="text-muted">CNN 시각화의 원리를 정확히 이해했는지 확인해보세요!</p>
+                <button class="btn-predict" onclick="loadQuiz(18)">문제 불러오기</button>
+            </div>
+            <div id="quiz-body"></div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

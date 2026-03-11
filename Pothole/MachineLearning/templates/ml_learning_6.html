@@ -1,0 +1,224 @@
+{% extends 'ml_layout.html' %}
+
+{% block ml_content %}
+<div class="session-panel active" id="session6">
+    <div class="session-card">
+        <h3>🔧 세션 6: 특성 공학 & 규제 (Ridge/Lasso)</h3>
+        <div class="theory-box">
+            <h4>6-1. 특성 공학 (Feature Engineering)</h4>
+            <p>농어의 길이뿐만 아니라 높이, 두께를 곱하고 제곱하여 더 많은 정보를 만듭니다.</p>
+        </div>
+
+        <div id="s6-feature-explosion" class="text-center my-4"></div>
+
+        <div class="theory-box mt-5">
+            <h4>6-2. 과대적합(Overfitting)과 규제(Regularization)</h4>
+            <p>특성이 너무 많으면 모델이 훈련 데이터에만 과하게 집착하는 <strong>과대적합(Overfitting)</strong>이 생깁니다. 이는 훈련 점수는 매우 높은데 테스트 점수는 엉망인
+                상태를 말합니다.</p>
+            <div class="insight-box" style="background: #eef2f5; border-left: 5px solid #34495e;">
+                <p><strong>💡 학계 노트: L1 / L2 규제</strong></p>
+                <p class="small mb-0">학계에서는 릿지(Ridge) 방식을 가중치의 제곱합을 패널티로 주는 특성 때문에 **L2 규제**라고 부르고, 라쏘(Lasso) 방식을 가중치의
+                    절댓값 합을 패널티로 주기 때문에 **L1 규제**라고 부릅니다. 이 개념은 딥러닝에서도 **가중치 감소(Weight Decay)**라는 이름으로 필수적으로 사용됩니다.</p>
+            </div>
+            <div class="insight-box mt-3" style="background: #fff8f8; border-left: 5px solid #e74c3c;">
+                <p class="mb-0">"모델의 가중치를 억지로 작게 만들어 모델을 단순화하는 기법" 바로 이것이 <strong>규제(Regularization)</strong>입니다.</p>
+            </div>
+        </div>
+
+        <div id="s6-intro-viz" class="text-center my-4"></div>
+
+        <div class="mt-5 p-4 bg-white rounded-4 shadow-sm border">
+            <h5 class="text-center mb-4"><i class="bi bi-graph-up"></i> Alpha(규제 강도)에 따른 성능 변화</h5>
+            <div class="col-12 mb-5">
+                <h6 class="fw-bold mb-3">① 릿지(Ridge) 회귀 검증 곡선</h6>
+                <div id="s6-ridge-alpha-graph" class="text-center p-2 border rounded bg-light"
+                    style="min-height: 300px;">
+                    <div class="spinner-border text-primary mt-5"></div>
+                </div>
+                <p class="small text-muted mt-2 text-center">훈련 세트와 테스트 세트의 점수가 가장 가깝고 높은 지점이 최적의 Alpha입니다.</p>
+            </div>
+            <div class="col-12">
+                <h6 class="fw-bold mb-3">② 라쏘(Lasso) 회귀 검증 곡선</h6>
+                <div id="s6-lasso-alpha-graph" class="text-center p-2 border rounded bg-light"
+                    style="min-height: 300px;">
+                    <div class="spinner-border text-danger mt-5"></div>
+                </div>
+                <p class="small text-muted mt-2 text-center">라쏘는 가중치를 완전한 0으로 만들기 때문에 과속방지턱 구간처럼 꺾이는 점이 발생합니다.</p>
+            </div>
+        </div>
+
+        <div class="bridge-box mt-5">
+            <h4>🎯 릿지(Ridge) vs 라쏘(Lasso) 핵심 기법</h4>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="field-card p-3 h-100"
+                        style="border-top: 5px solid #3498db; background: #f0f7ff; border-radius: 12px;">
+                        <strong>릿지 회귀 (Ridge, L2)</strong>
+                        <p class="small text-muted mt-2">가중치의 <strong>제곱</strong>을 기준으로 규제합니다. 가중치를 골고루 작게 만들지만 0으로 만들지는
+                            않습니다. 일반적으로 가장 추천되는 모델입니다.</p>
+                        <code class="d-block mt-2 small">Cost = Loss + alpha * Σ(weight²)</code>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="field-card p-3 h-100"
+                        style="border-top: 5px solid #e74c3c; background: #fff5f5; border-radius: 12px;">
+                        <strong>라쏘 회귀 (Lasso, L1)</strong>
+                        <p class="small text-muted mt-2">가중치의 <strong>절댓값</strong>을 기준으로 규제합니다. 중요하지 않은 특성의 가중치를
+                            <strong>완전한 0</strong>으로 만들 수 있어 특성 선택(Feature Selection) 효과가 있습니다.
+                        </p>
+                        <code class="d-block mt-2 small">Cost = Loss + alpha * Σ|weight|</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ① — 다중 회귀 준비 (특성 생성)</h5>
+            <pre><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> <span class="func">PolynomialFeatures</span>
+
+<span class="comment"># 복합 특성을 만들어주는 도구를 준비합니다.</span>
+poly = <span class="func">PolynomialFeatures</span>(include_bias=False)
+poly.<span class="func">fit</span>([[<span class="number">2</span>, <span class="number">3</span>]])
+<span class="func">print</span>(poly.<span class="func">transform</span>([[<span class="number">2</span>, <span class="number">3</span>]])) <span class="comment"># [[2, 3, 4, 6, 9]]</span>
+
+<span class="comment"># 실제 데이터에 적용해봅니다.</span>
+train_poly = poly.<span class="func">fit_transform</span>(train_input)
+test_poly = poly.<span class="func">transform</span>(test_input)</pre>
+            <div class="code-desc"><strong>핵심:</strong> <code>PolynomialFeatures</code>는 각 특성을 제곱하고 서로 곱해서 새로운 특성을
+                만들어냅니다 (ex: $길이^2$, $길이 \times 높이$).</div>
+        </div>
+
+        <div id="s6-poly-3d-viz" class="text-center my-4"></div>
+
+        <div class="code-box">
+            <h5>💻 코드 ② — 고차원 변환 (과대적합 유도)</h5>
+            <pre><span class="comment"># 5차항(degree=5)까지 복잡하게 만들어봅니다. 특성이 무려 55개나 생깁니다!</span>
+poly = <span class="func">PolynomialFeatures</span>(degree=<span class="number">5</span>, include_bias=False)
+train_poly = poly.<span class="func">fit_transform</span>(train_input)
+test_poly = poly.<span class="func">transform</span>(test_input)</pre>
+            <div class="code-desc"><strong>핵심:</strong> 특성이 너무 분할되고 많아지면 모델이 훈련 데이터에만 완벽하게 맞춰지는 '과대적합'에 치명적으로 노출됩니다.
+            </div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ③ — 규제를 위한 스케일링 (전처리)</h5>
+            <pre><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> <span class="func">StandardScaler</span>
+
+ss = <span class="func">StandardScaler</span>()
+ss.<span class="func">fit</span>(train_poly)
+train_scaled = ss.<span class="func">transform</span>(train_poly)
+test_scaled = ss.<span class="func">transform</span>(test_poly)</pre>
+            <div class="code-desc"><strong>핵심:</strong> 릿지나 라쏘 모델은 각각의 '가중치(계수)' 길이를 봅니다. 모든 특성의 스케일이 단일화되어 있지 않으면 공정한
+                규제가 불가능합니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ④ — 릿지(Ridge) 회귀 훈련</h5>
+            <pre><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> <span class="func">Ridge</span>
+
+ridge = <span class="func">Ridge</span>() <span class="comment"># alpha의 기본값은 1.0 입니다.</span>
+ridge.<span class="func">fit</span>(train_scaled, train_target)
+
+<span class="func">print</span>(ridge.<span class="func">score</span>(train_scaled, train_target))
+<span class="func">print</span>(ridge.<span class="func">score</span>(test_scaled, test_target)) <span class="comment"># 테스트 점수가 안정화되었습니다!</span></pre>
+            <div class="code-desc"><strong>핵심:</strong> 릿지는 계수의 제곱을 기준으로 과도한 계수 값을 억제하여 예측 선을 부드럽게 안정화시킵니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ⑤ — 라쏘(Lasso) 회귀 훈련</h5>
+            <pre><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> <span class="func">Lasso</span>
+
+lasso = <span class="func">Lasso</span>()
+lasso.<span class="func">fit</span>(train_scaled, train_target)
+
+<span class="func">print</span>(lasso.<span class="func">score</span>(train_scaled, train_target))
+<span class="func">print</span>(np.<span class="func">sum</span>(lasso.<span class="func">coef_</span> == <span class="number">0</span>)) <span class="comment"># 값이 0이 된 (버려진) 가중치 개수를 볼 수 있습니다.</span></pre>
+            <div class="code-desc"><strong>핵심:</strong> 라쏘는 불필요한 특성의 계수를 0으로 만듭니다 (Feature Selection 효과).</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ⑥ — 최적의 규제 매개변수(Alpha) 찾기</h5>
+            <pre><span class="comment"># alpha 배열을 만들고 훈련/테스트 세트의 점수를 기록합니다.</span>
+<span class="comment"># 사람의 개입이 필요한 하이퍼파라미터이므로 보통 로그 스케일(0.001, 0.1, 1, 10...)로 테스트합니다.</span></pre>
+            <div class="code-desc"><strong>핵심:</strong> `alpha`가 크면 페널티가 커지면서 규제가 강해지고(과소적합 유도), 작으면 규제가 느슨해집니다(과대적합
+                유발).</div>
+        </div>
+
+        <div class="lab-box">
+            <h4>🧪 실습 — 규제 강도(Alpha) 조절하기</h4>
+            <div class="input-group-ml">
+                <div class="form-group" style="flex:2;">
+                    <label>Alpha 강도: <span id="s6-alpha-val"
+                            style="color:var(--ml-primary);font-weight:800;">0.1</span></label>
+                    <input type="range" id="s6-alpha" min="0" max="5" value="2" step="1"
+                        oninput="document.getElementById('s6-alpha-val').innerText = [0.001, 0.01, 0.1, 1, 10, 100][this.value]">
+                </div>
+                <button class="btn-predict" onclick="runSession(6)">🔧 규제 적용하기</button>
+            </div>
+        </div>
+
+        <div class="loading-spinner" id="spinner6">
+            <div class="spinner-border"></div>
+        </div>
+        <div class="result-box mt-4" id="result6"></div>
+        <div class="chart-area col-12" id="chart6"></div>
+
+        <div class="qa-box mt-5">
+            <h4>❓ 궁금할 수 있는 질문들</h4>
+            <div class="qa-item">
+                <strong>Q: 릿지와 라쏘 중 어떤 것을 써야 하나요?</strong>
+                <p class="small mb-0">A: 보통 릿지를 더 선호합니다. 하지만 특성이 너무 많고 그중 일부분만 중요하다면 중요하지 않은 특성을 0으로 만드는 라쏘가 유리할 수 있습니다.
+                </p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: Hyperparameter(하이퍼파라미터)가 뭔가요?</strong>
+                <p class="small mb-0">A: 모델이 스스로 공부하는 게 아니라, 사람이 직접 지정해줘야 하는 설정값(예: alpha, n_neighbors)을 말합니다.</p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: alpha 값이 너무 크면 어떻게 되나요?</strong>
+                <p class="small mb-0">A: 모델을 너무 억제한 나머지, 중요한 패턴까지 놓쳐버리는 '과소적합'이 발생합니다. 직선이 거의 평평해질 수도 있어요.</p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: 규제를 적용하기 전에 왜 스케일링(StandardScaler)을 꼭 해야 하나요?</strong>
+                <p class="small mb-0">A: 각 특성의 단위가 다르면 가중치의 크기도 달라집니다. 규제는 가중치의 크기를 보고 벌칙을 주기 때문에, 공정한 규제를 위해 단위를 맞추는
+                    과정이 필수입니다.</p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: 라쏘 모델에서 계수가 0이 된 특성들은 버려도 되나요?</strong>
+                <p class="small mb-0">A: 네, 모델이 판단하기에 타깃을 예측하는 데 전혀 도움이 되지 않는 정보라는 뜻입니다. 이를 통해 데이터를 효율적으로 다이어트할 수 있습니다.
+                </p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: Alpha 값은 다른 매개변수(규제나 상수)와 어떤 차이가 있나요? 코드는 어디에 있나요?</strong>
+                <p class="small mb-0">A: 일반적인 딥러닝 매개변수나 학습률(Learning Rate)은 '모델이 정답을 찾아가는 학습 속도나 알고리즘 구조'를 결정한다면, 릿지/라쏘의
+                    <b>Alpha는 오직 '가중치(계수)에 대한 수학적 벌금(Penalty)의 강도'만을 규제</b>한다는 점이 큰 차이입니다. Alpha가 커질수록 모델 가중치의 크기가 무분별하게
+                    폭발하는 것을 엄격하게 억제하여 모델을 단순화시킵니다.<br><br>💡 관련 코드는 이 페이지의 <code>💻 코드 ⑥</code> 부분에 설명되어 있으며, 실제 서버 백엔드의
+                    <code>MLService.py > session6_ridge_alpha_graph()</code> 함수 안에서 <code>Ridge(alpha=a)</code> 라는 형태로
+                    직접 적용되어 작동하고 있습니다.
+                </p>
+            </div>
+        </div>
+
+        <!-- 퀴즈 섹션 추가 -->
+        <div class="quiz-section" id="quiz-area">
+            <div class="quiz-header">
+                <h3 class="fw-bold"><span class="emoji-bullet">📝</span> 오늘의 연습문제</h3>
+                <p class="text-muted">강의에서 배운 기법을 새로운 데이터에 적용해보세요!</p>
+                <button class="btn-predict" onclick="loadQuiz({{ session_id }})">문제 불러오기</button>
+            </div>
+            <div id="quiz-body"></div>
+        </div>
+
+
+
+    </div>
+</div>
+{% endblock %}
+
+{% block ml_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSession6IntroViz();
+    });
+</script>
+{% endblock %}

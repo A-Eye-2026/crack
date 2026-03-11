@@ -1,0 +1,233 @@
+import pandas as pd
+fish = pd.read_csv('https://bit.ly/fish_csv_data')
+fish.head()
+
+
+
+print(pd.unique(fish['Species']))
+['Bream' 'Roach' 'Whitefish' 'Parkki' 'Perch' 'Pike' 'Smelt']
+
+
+fish_input = fish[['Weight','Length','Diagonal','Height','Width']].to_numpy()
+print(fish_input[:5])
+[[242.      25.4     30.      11.52     4.02  ]
+ [290.      26.3     31.2     12.48     4.3056]
+ [340.      26.5     31.1     12.3778   4.6961]
+ [363.      29.      33.5     12.73     4.4555]
+ [430.      29.      34.      12.444    5.134 ]]
+
+
+fish_target = fish['Species'].to_numpy()
+print(fish_target[:5])
+['Bream' 'Bream' 'Bream' 'Bream' 'Bream']
+from sklearn.model_selection import train_test_split
+train_input, test_input, train_target, test_target = train_test_split(
+    fish_input, fish_target, random_state=42)
+print(train_input.shape, test_input.shape)
+(119, 5) (40, 5)
+from sklearn.preprocessing import **StandardScaler**
+ss = **StandardScaler**()
+ss.fit(train_input)
+train_scaled = ss.transform(train_input)
+test_scaled = ss.transform(test_input)
+print(train_scaled[:5])
+[[ 0.91965782  0.60943175  0.81041221  1.85194896  1.00075672]
+ [ 0.30041219  1.54653445  1.45316551 -0.46981663  0.27291745]
+ [-1.0858536  -1.68646987 -1.70848587 -1.70159849 -2.0044758 ]
+ [-0.79734143 -0.60880176 -0.67486907 -0.82480589 -0.27631471]
+ [-0.71289885 -0.73062511 -0.70092664 -0.0802298  -0.7033869 ]]
+
+
+
+from sklearn.neighbors import KNeighborsClassifier
+kn = KNeighborsClassifier(n_neighbors=3)
+kn.fit(train_scaled, train_target)
+print(kn.score(train_scaled, train_target))
+print(kn.score(test_scaled, test_target))
+0.8907563025210085
+0.85
+print(kn.classes_)
+['Bream' 'Parkki' 'Perch' 'Pike' 'Roach' 'Smelt' 'Whitefish']
+print(kn.predict(test_scaled[:5]))
+['Perch' 'Smelt' 'Pike' 'Perch' 'Perch']
+print(test_scaled[:5])
+[[-0.88741352 -0.91804565 -1.03098914 -0.90464451 -0.80762518]
+ [-1.06924656 -1.50842035 -1.54345461 -1.58849582 -1.93803151]
+ [-0.54401367  0.35641402  0.30663259 -0.8135697  -0.65388895]
+ [-0.34698097 -0.23396068 -0.22320459 -0.11905019 -0.12233464]
+ [-0.68475132 -0.51509149 -0.58801052 -0.8998784  -0.50124996]]
+import numpy as np
+proba = kn.**predict_proba**(test_scaled[:5])
+print(np.round(proba, decimals=4))
+[[0.     0.     1.     0.     0.     0.     0.    ]
+ [0.     0.     0.     0.     0.     1.     0.    ]
+ [0.     0.     0.     1.     0.     0.     0.    ]
+ [0.     0.     0.6667 0.     0.3333 0.     0.    ]
+ [0.     0.     0.6667 0.     0.3333 0.     0.    ]]
+
+
+
+
+
+
+distances, indexes = kn.kneighbors(test_scaled[3:4])
+print(train_target[indexes])
+[['Roach' 'Perch' 'Perch']]
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+z = np.arange(-5, 5, 0.1)
+phi = 1 / (1 + np.exp(-z))
+plt.plot(z, phi)
+plt.xlabel('z')
+plt.ylabel('phi')
+plt.show()
+char_arr = np.array(['A', 'B', 'C', 'D', 'E'])
+print(char_arr[[True, False, True, False, False]])
+['A' 'C']
+
+
+
+bream_smelt_indexes = (train_target == 'Bream') | (train_target == 'Smelt')
+train_bream_smelt = train_scaled[bream_smelt_indexes]
+target_bream_smelt = train_target[bream_smelt_indexes]
+print(train_bream_smelt)
+[[ 0.91965782  0.60943175  0.81041221  1.85194896  1.00075672]
+ [-1.0858536  -1.68646987 -1.70848587 -1.70159849 -2.0044758 ]
+ [ 0.63818253  0.56257661  0.73223951  1.64473401  0.50705737]
+ [ 0.30041219  0.23459067  0.42823457  1.36042157  0.22329758]
+ [ 0.9027693   0.70314202  0.88858491  1.89027545  0.85537174]
+ [-1.0824759  -1.61150165 -1.62162731 -1.7000674  -1.92815631]
+ [ 0.10337949  0.04717013  0.23714575  0.88445197  0.41799764]
+ [ 1.49668216  1.03112796  1.21864741  2.44274986  1.40289707]
+ [ 0.23004337  0.23459067  0.42823457  1.3336029   0.39983213]
+ [-0.42579405 -0.29018684 -0.11028847  0.65627104 -0.26107519]
+ [ 1.28557569  0.70314202  0.89727076  1.98228866  1.06683526]
+ [ 0.93373158  0.60943175  0.83646978  1.85150445  0.97832415]
+ [ 0.80706771  0.60943175  0.81041221  1.63137406  1.0255057 ]
+ [-1.07262426 -1.52716241 -1.55214047 -1.67235972 -1.86207776]
+ [ 1.6374198   1.17169337  1.27076255  2.41341232  1.40143407]
+ [-1.07966115 -1.63961473 -1.67374245 -1.6462819  -1.87036806]
+ [-1.05151362 -1.33037084 -1.39579507 -1.47914678 -1.45146425]
+ [ 0.15967454  0.11276732  0.29794674  1.17051775  0.29205828]
+ [ 1.56705098  1.17169337  1.32287768  2.16352457  1.17174409]
+ [-0.00921063  0.1408804   0.3240043   0.94026245  0.14734384]
+ [ 0.15967454  0.1408804   0.33269016  1.26991474  0.24109734]
+ [-0.14994827  0.32830094  0.52377898  1.24719543  0.3806913 ]
+ [-0.08520896  0.04717013  0.19371647  0.95507939  0.00439718]
+ [ 0.86336276  0.42201121  0.62800925  1.5003429   0.45670601]
+ [ 0.30041219  0.11276732  0.28057503  1.31303204  0.50608204]
+ [-1.07262426 -1.45219419 -1.51739705 -1.62627903 -1.94607798]
+ [ 0.82114147  0.51572148  0.68881023  1.76102232  0.5621025 ]
+ [-1.07937967 -1.54590446 -1.56951218 -1.64420753 -2.01154694]
+ [-1.07937967 -1.62087268 -1.63899902 -1.67413775 -1.93303295]
+ [-0.29068592 -0.2058476  -0.0060582   0.89334213 -0.08697896]
+ [-1.05095067 -1.26477365 -1.30893652 -1.46447801 -1.56606541]
+ [ 0.51151865  0.51572148  0.7148678   1.54738669  0.68347   ]
+ [ 0.58188748  0.32830094  0.51509312  1.50439286  0.4404302 ]]
+print(target_bream_smelt)
+['Bream' 'Smelt' 'Bream' 'Bream' 'Bream' 'Smelt' 'Bream' 'Bream' 'Bream'
+ 'Bream' 'Bream' 'Bream' 'Bream' 'Smelt' 'Bream' 'Smelt' 'Smelt' 'Bream'
+ 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Smelt' 'Bream'
+ 'Smelt' 'Smelt' 'Bream' 'Smelt' 'Bream' 'Bream']
+from sklearn.linear_model import **LogisticRegression**
+lr = **LogisticRegression**()
+
+
+
+lr.fit(train_bream_smelt, target_bream_smelt)
+print(lr.predict(train_bream_smelt[:5]))
+['Bream' 'Smelt' 'Bream' 'Bream' 'Bream']
+print(lr.**predict_proba**(train_bream_smelt[:5]))
+[[0.99760007 0.00239993]
+ [0.02737325 0.97262675]
+ [0.99486386 0.00513614]
+ [0.98585047 0.01414953]
+ [0.99767419 0.00232581]]
+print(lr.classes_)
+['Bream' 'Smelt']
+print(lr.coef_, lr.intercept_)
+[[-0.40451732 -0.57582787 -0.66248158 -1.01329614 -0.73123131]] [-2.16172774]
+z = -0.40451732 * (train_bream_smelt[0,0]) + -0.57582787 * (train_bream_smelt[0,1])
+ + -0.66248158 * (train_bream_smelt[0,2]) + -1.01329614 * (train_bream_smelt[0,3])
+ + -0.73123131 * (train_bream_smelt[0,4]) + -2.16172774
+print(z)
+-6.0299135794102545
+decisions = lr.**decision_function**(train_bream_smelt[:5])
+print(decisions)
+[-6.02991358  3.57043428 -5.26630496 -4.24382314 -6.06135688]
+from scipy.special import **expit**
+
+▾**LogisticRegression**
+?
+i
+**LogisticRegression**()
+
+
+
+
+
+
+
+print(**expit**(decisions))
+[0.00239993 0.97262675 0.00513614 0.01414953 0.00232581]
+lr = **LogisticRegression**(C=20, max_iter=1000)
+lr.fit(train_scaled, train_target)
+print(lr.score(train_scaled, train_target))
+print(lr.score(test_scaled, test_target))
+0.9327731092436975
+0.925
+print(lr.predict(test_scaled[:5]))
+['Perch' 'Smelt' 'Pike' 'Roach' 'Perch']
+proba = lr.**predict_proba**(test_scaled[:5])
+print(np.round(proba, decimals=3))
+[[0.    0.014 0.842 0.    0.135 0.007 0.003]
+ [0.    0.003 0.044 0.    0.007 0.946 0.   ]
+ [0.    0.    0.034 0.934 0.015 0.016 0.   ]
+ [0.011 0.034 0.305 0.006 0.567 0.    0.076]
+ [0.    0.    0.904 0.002 0.089 0.002 0.001]]
+print(lr.classes_)
+['Bream' 'Parkki' 'Perch' 'Pike' 'Roach' 'Smelt' 'Whitefish']
+print(lr.coef_.shape, lr.intercept_.shape)
+
+
+
+
+
+(7, 5) (7,)
+decision = lr.**decision_function**(test_scaled[:5])
+print("5   z1 ~ z7 \n")
+for idx,z in enumerate(decision):
+    print(f"{idx}  z\n{z}\n")
+
+
+5   z1 ~ z7
+0  z
+[-6.50722813  1.03902666  5.16819138 -2.75730346  3.33655201  0.34625858
+ -0.62549703]
+1  z
+[-10.87900747   1.9441061    4.77600606  -2.42306183   2.98748716
+   7.84171376  -4.24724379]
+2  z
+[-4.33809957 -6.23690282  3.16746648  6.48091391  2.36412675  2.43431897
+ -3.87182372]
+3  z
+[-0.69143993  0.44628533  2.64291146 -1.21457286  3.2612452  -5.70143405
+  1.25700485]
+4  z
+[-6.40138611 -1.99137623  5.81526372 -0.134644    3.49905133 -0.08753486
+ -0.69937385]
+from scipy.special import **softmax**
+print("    \n")
+class_ = lr.classes_.tolist() + [" "]
+prd = lr.predict(test_scaled[:5]).reshape(5,-1)
+sm = **softmax**(decision, axis=1).round(4) * 100
+con = np.column_stack((sm,prd))
+print(pd.DataFrame(con,columns=class_))
+  Bream Parkki  Perch   Pike  Roach  Smelt Whitefish
+0   0.0   1.36   84.2   0.03  13.48   0.68      0.26  Perch
+1   0.0   0.26   4.41    0.0   0.74  94.59       0.0  Smelt
+2   0.0    0.0    3.4  93.44   1.52   1.63       0.0   Pike
+3  1.09    3.4  30.54   0.65  56.68   0.01      7.64  Roach
+4   0.0   0.04  90.43   0.24   8.92   0.25      0.13  Perch

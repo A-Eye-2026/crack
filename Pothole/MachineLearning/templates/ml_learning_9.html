@@ -1,0 +1,708 @@
+{% extends 'ml_layout.html' %}
+
+{% block ml_content %}
+<div class="session-panel active" id="session9">
+    <div class="session-card">
+        <h3>🌳 세션 9: 결정 트리와 교차 검증</h3>
+        <div class="theory-box">
+            <h4>9-1. 결정 트리 (Decision Tree)란?</h4>
+            <p>결정 트리는 마치 <strong>"스무고개 게임"</strong>과 같습니다. 데이터의 특성을 하나씩 질문하면서 점점 더 정확하게 분류해나가는 알고리즘이에요.</p>
+            <ul class="emoji-list">
+                <li><span class="emoji-bullet">🌿</span> <strong>루트 노드 (Root Node):</strong> 가장 첫 번째 질문. 가장 유용한 특성으로
+                    데이터를 둘로 나눕니다.</li>
+                <li><span class="emoji-bullet">🍃</span> <strong>리프 노드 (Leaf Node):</strong> 더 이상 나눌 수 없는 최종 답변. 가장 많은
+                    클래스가 예측값이 됩니다.</li>
+                <li><span class="emoji-bullet">✂️</span> <strong>가지치기 (Pruning):</strong> 과대적합을 방지하기 위해 트리의 깊이를 제한합니다.
+                </li>
+                <li><span class="emoji-bullet">📊</span> <strong>특성 중요도:</strong> 결정 트리는 어떤 특성이 분류에 가장 많은 기여를 했는지 알려줍니다.
+                </li>
+            </ul>
+            <div class="tip-box mt-3">
+                <strong>💡 이번 세션의 데이터:</strong> 와인의 <strong>알콜 도수(Alcohol)</strong>, <strong>당도(Sugar)</strong>,
+                <strong>pH</strong> 세 가지 특성으로 레드 와인과 화이트 와인을 구분합니다!
+            </div>
+        </div>
+
+        <div id="s9-intro-chart" class="text-center my-4" style="min-height: 200px;">
+            <div class="spinner-border text-warning"></div>
+        </div>
+
+        <div class="bridge-box mt-5">
+            <h4>🎯 결정 트리의 핵심 개념 3가지</h4>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="field-card" style="border-top: 5px solid #8e44ad;">
+                        <span class="field-icon">🎲</span>
+                        <strong class="d-block mb-1">불순도 (Impurity)</strong>
+                        <p class="extra-small text-muted mb-0">노드 안에 서로 다른 클래스가 얼마나 혼합되어 있는지 측정합니다. 50:50이면 최대 불순도, 한
+                            종류만 있으면 순수합니다.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="field-card" style="border-top: 5px solid #e67e22;">
+                        <span class="field-icon">✂️</span>
+                        <strong class="d-block mb-1">가지치기 (Pruning)</strong>
+                        <p class="extra-small text-muted mb-0">트리가 너무 깊어지면 훈련 데이터를 외워버리는 과대적합이 발생합니다.
+                            <code>max_depth</code>로 깊이를 제한합니다.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="field-card" style="border-top: 5px solid #2ecc71;">
+                        <span class="field-icon">📈</span>
+                        <strong class="d-block mb-1">정보 이득 (Information Gain)</strong>
+                        <p class="extra-small text-muted mb-0">분할 전후의 불순도 차이입니다. 정보 이득이 가장 큰 특성을 기준으로 데이터를 나눕니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 p-4 bg-white rounded-4 shadow-sm border">
+            <h5 class="text-center mb-4"><i class="bi bi-tree-fill text-success me-2"></i>결정 트리 시각화 (max_depth=3)</h5>
+            <div class="text-center mt-2 mb-3">
+                <span class="badge bg-primary me-2">훈련 점수: <span id="s9-tree-train-score">-</span></span>
+                <span class="badge bg-warning text-dark">테스트 점수: <span id="s9-tree-test-score">-</span></span>
+            </div>
+            <div id="s9-tree-chart" class="text-center" style="min-height: 300px;">
+                <div class="spinner-border text-success"></div>
+            </div>
+            <p class="small text-muted text-center mt-2">각 노드의 색이 진할수록 한쪽 클래스 비율이 높다는 뜻입니다. 주황색은 레드 와인, 파란색은 화이트 와인입니다.
+            </p>
+        </div>
+
+        <div class="theory-box mt-5">
+            <h4>9-2. 지니 불순도 (Gini Impurity)</h4>
+            <p>결정 트리가 데이터를 <strong>어떤 기준으로 나눌지</strong> 결정하는 핵심 지표입니다.</p>
+            <div class="katex-render text-center py-2">
+                $$ \text{Gini} = 1 - \sum_{i=1}^{k} p_i^2 $$
+            </div>
+            <div class="insight-box" style="background: #f5f0ff; border-left: 5px solid #8e44ad;">
+                <ul class="mb-0 small">
+                    <li><strong>순수 노드</strong> (gini=0): 한 클래스만 존재. 더 이상 나눌 필요가 없습니다.</li>
+                    <li><strong>최대 불순도</strong> (gini=0.5): 두 클래스가 정확히 반반. 가장 혼란스러운 상태입니다.</li>
+                    <li>트리는 <strong>gini 값이 가장 많이 줄어드는 방향</strong>으로 분할합니다.</li>
+                </ul>
+            </div>
+            <div id="s9-gini-chart" class="text-center my-4 mx-auto" style="min-height: 200px; max-width: 550px;">
+                <div class="spinner-border text-primary"></div>
+            </div>
+        </div>
+
+        <div class="theory-box mt-5">
+            <h4>9-3. 과대적합과 가지치기</h4>
+            <p>가지치기 없이 트리를 성장시키면 훈련 데이터를 100% 맞히지만, 새로운 데이터에서는 오히려 성능이 떨어집니다. 이를 <strong>과대적합(Overfitting)</strong>이라
+                합니다.</p>
+            <div class="comparison-box mt-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="comp-card bad">
+                            <h6>❌ 과대적합 (가지치기 없음)</h6>
+                            <p class="small">훈련 점수 99% → 테스트 점수 80%대. 훈련 데이터의 잡음까지 외워버린 상태입니다.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="comp-card good">
+                            <h6>✅ 적절한 가지치기</h6>
+                            <p class="small">훈련 점수와 테스트 점수가 비슷하게 안정됩니다. 일반화 성능이 뛰어난 상태!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="s9-overfit-chart" class="text-center my-4 mx-auto" style="min-height: 200px; max-width: 550px;">
+                <div class="spinner-border text-warning"></div>
+            </div>
+        </div>
+
+        <div class="theory-box mt-5">
+            <h4>9-4. 특성 중요도 (Feature Importance)</h4>
+            <p>결정 트리는 분류에 <strong>어떤 특성이 가장 크게 기여했는지</strong>를 자동으로 계산해줍니다. 이를 통해 보고서에 "당도가 가장 중요한 판단 기준"이라고 근거를 제시할 수
+                있습니다.</p>
+            <div id="s9-feature-chart" class="text-center my-4 mx-auto" style="min-height: 200px; max-width: 500px;">
+                <div class="spinner-border text-info"></div>
+            </div>
+            <div class="tip-box">
+                🚩 <strong>결론:</strong> 결정 트리는 표준화(스케일링)가 불필요합니다! 각 특성의 단위가 달라도 상관없이 분류할 수 있습니다.
+            </div>
+        </div>
+
+        <!-- 🧠 상식 박스: random_state=42 -->
+        <div class="theory-box mt-5"
+            style="background: linear-gradient(135deg, #fdf6e3, #fff8ef); border-left: 5px solid #f39c12;">
+            <h4>🧠 알아두면 좋은 상식</h4>
+            <div class="vocab-item">
+                <span class="vocab-term">random_state=42를 왜 쓸까?</span>
+                <p class="small mb-2">42는 더글러스 애덤스의 소설 <i>"은하수를 여행하는 히치하이커를 위한 안내서"</i>에서 "삶, 우주, 그리고 모든 것에 대한 궁극적인 답"이
+                    42라는 유명한 레퍼런스에서 유래했습니다. scikit-learn 공식 문서에서도 <code>42</code>를 예시로 사용하며, 학계와 캐글(Kaggle) 대회에서 사실상
+                    표준처럼 쓰이고 있습니다. 어떤 숫자를 넣든 결과의 품질에는 영향을 주지 않고, <strong>재현성(reproducibility)</strong>만 보장합니다.</p>
+            </div>
+            <div class="vocab-item">
+                <span class="vocab-term">criterion: gini vs entropy</span>
+                <p class="small mb-2">scikit-learn의 기본값은 <code>gini</code>이며, 실무에서도 지니 불순도가 더 많이 사용됩니다. 그 이유는
+                    <strong>계산이 훨씬 빠르기 때문</strong>입니다. 엔트로피는 로그 연산(log₂)이 필요하지만, 지니는 제곱 연산만으로 계산됩니다. 두 지표의 결과 차이는 약 2%
+                    미만으로, 현업에서는 기본값(gini)을 그대로 사용합니다.
+                </p>
+            </div>
+            <div class="vocab-item">
+                <span class="vocab-term">의학 & 금융 분야에서의 결정 트리</span>
+                <p class="small mb-2">결정 트리는 의학에서 <strong>진단 프로토콜</strong>로 사용됩니다. 예: "환자 열이 38°C 이상? → 기침 있음? → 흉부
+                    X-ray 이상? → COVID-19 의심". 금융에서는 <strong>대출 심사</strong>에 활용됩니다. 단, 법률적으로 "왜 대출이 거절되었는가"를 설명해야 하므로, 결정
+                    트리의 <strong>해석 가능성(Interpretability)</strong>이 핵심 장점입니다.</p>
+            </div>
+        </div>
+
+        <!-- 추가 코드: 로지스틱 회귀 먼저 시도 (PDF 05_01) -->
+        <div class="code-box">
+            <h5>💻 코드 ⑤-1 — 로지스틱 회귀 먼저 시도하기 (왜 결정 트리가 필요했는지)</h5>
+            <pre><span class="comment"># PDF 강의에서는 먼저 로지스틱 회귀로 와인을 분류합니다</span>
+<span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> <span class="func">StandardScaler</span>
+<span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> <span class="func">LogisticRegression</span>
+
+ss = <span class="func">StandardScaler</span>()  <span class="comment"># 로지스틱 회귀는 반드시 표준화 필요!</span>
+train_scaled = ss.<span class="func">fit_transform</span>(train_input)
+test_scaled = ss.<span class="func">transform</span>(test_input)
+
+lr = <span class="func">LogisticRegression</span>()
+lr.<span class="func">fit</span>(train_scaled, train_target)
+<span class="func">print</span>(lr.<span class="func">score</span>(train_scaled, train_target))  <span class="comment"># 약 78%… 과소 적합!</span>
+<span class="func">print</span>(lr.<span class="func">score</span>(test_scaled, test_target))   <span class="comment"># 약 78% → 80점 이하로 낮음</span>
+
+<span class="comment"># 계수(가중치)와 절편 확인</span>
+<span class="func">print</span>(lr.<span class="func">coef_</span>, lr.<span class="func">intercept_</span>)
+<span class="comment"># 알콜도수 × 0.51, 당도 × 1.67, pH × -0.69 + 절편 1.82</span>
+<span class="comment"># → 이 값이 0보다 크면 화이트, 작으면 레드로 판정</span></pre>
+            <div class="code-desc"><strong>💡 왜 결정 트리가 필요했는가:</strong> 로지스틱 회귀로는 약 78%에 그칩니다. 3개 특성으로는 직선 하나로 분리하기 어렵기
+                때문입니다. 그래서 PDF 강의에서 결정 트리를 도입합니다. <strong>→ 아래 실험 버튼으로 직접 비교해보세요!</strong></div>
+        </div>
+
+        <div class="lab-box mt-4 p-4" style="border: 2px dashed #e74c3c; background: #fef5f5; border-radius: 25px;">
+            <h5 class="fw-bold mb-3"><i class="bi bi-bar-chart-steps me-2 text-danger"></i>실험: 로지스틱 회귀 vs 결정 트리</h5>
+            <p class="small text-muted">같은 와인 데이터로 두 모델을 훈련시키고, 성능과 계수를 직접 비교합니다.</p>
+            <button class="btn btn-outline-danger rounded-pill px-4 py-2 fw-bold" onclick="runLogisticVsTree()">
+                <i class="bi bi-arrow-left-right"></i> 두 모델 비교하기
+            </button>
+            <div id="s9-lr-vs-dt-result" class="mt-4"></div>
+        </div>
+
+        <!-- 추가 코드: 표준화 불필요 증명 (PDF 05_01 핵심 포인트) -->
+        <div class="code-box mt-5">
+            <h5>💻 코드 ⑤-2 — 표준화 없이 동일한 결과 (결정 트리의 장점)</h5>
+            <pre><span class="comment"># PDF: "표준화(표준점수) 전처리를 하지 않고 결정 트리를 사용해보자"</span>
+<span class="comment"># 결정 트리는 특성값의 스케일에 영향을 받지 않는다!</span>
+
+<span class="comment"># 표준화한 데이터로 훈련</span>
+dt_scaled = <span class="func">DecisionTreeClassifier</span>(max_depth=<span class="number">3</span>, random_state=<span class="number">42</span>)
+dt_scaled.<span class="func">fit</span>(train_scaled, train_target)
+<span class="func">print</span>(dt_scaled.<span class="func">score</span>(test_scaled, test_target))   <span class="comment"># 84.15%</span>
+
+<span class="comment"># 원본 데이터로 훈련 (표준화 없이!)</span>
+dt_raw = <span class="func">DecisionTreeClassifier</span>(max_depth=<span class="number">3</span>, random_state=<span class="number">42</span>)
+dt_raw.<span class="func">fit</span>(train_input, train_target)
+<span class="func">print</span>(dt_raw.<span class="func">score</span>(test_input, test_target))      <span class="comment"># 84.15% → 동일!</span>
+
+<span class="comment"># 왜? 결정 트리는 "sugar ≤ 1.625" 처럼 한 특성씩 비교하므로</span>
+<span class="comment"># 다른 특성의 스케일과 무관하게 동일한 분류 경계를 만듭니다.</span></pre>
+            <div class="code-desc"><strong>핵심:</strong> 이것이 결정 트리가 실무에서 사랑받는 이유 중 하나입니다. <strong>전처리 없이도 동일한
+                    성능!</strong> 로지스틱 회귀, SVM, KNN 등은 반드시 표준화가 필요하지만, 결정 트리는 그렇지 않습니다.</div>
+        </div>
+
+        <div class="lab-box mt-4 p-4" style="border: 2px dashed #1abc9c; background: #f0fffe; border-radius: 25px;">
+            <h5 class="fw-bold mb-3"><i class="bi bi-shield-check me-2 text-info"></i>실험: 표준화 전/후 성능 비교</h5>
+            <p class="small text-muted">원본 데이터와 표준화된 데이터로 결정 트리를 각각 훈련시키고, 정확도와 특성 중요도가 정말 동일한지 검증합니다.</p>
+            <button class="btn btn-outline-info rounded-pill px-4 py-2 fw-bold" onclick="runScalingCompare()">
+                <i class="bi bi-clipboard-data"></i> 표준화 영향 확인하기
+            </button>
+            <div id="s9-scaling-result" class="mt-4"></div>
+        </div>
+
+        <!-- 추가 코드: 트리 해석하는 법 (PDF 05_01 보고서 작성) -->
+        <div class="code-box mt-5">
+            <h5>💻 코드 ⑤-3 — 트리를 읽고 보고서에 쓰는 법</h5>
+            <pre><span class="comment"># PDF에서 트리를 해석하는 방법 (상사에게 보고할 때!)</span>
+<span class="comment"># 트리 읽기: 노드 → 왼쪽(True) → 오른쪽(False)</span>
+
+<span class="comment"># 루트 노드: sugar ≤ 1.625  → True(왼쪽) or False(오른쪽)</span>
+<span class="comment"># depth=1 왼쪽: sugar ≤ 4.325 → 당도가 낮은 와인을 더 분리</span>
+<span class="comment"># depth=2 왼쪽: alcohol ≤ 11.025</span>
+
+<span class="comment"># 즉, 보고서에 이렇게 적으면 됩니다:</span>
+<span class="comment"># "당도 1.625 이상이고 4.325 이하인 와인 중에서</span>
+<span class="comment">#  알콜 도수가 11.025 이하이면 레드 와인으로 판정됩니다."</span>
+
+<span class="comment"># 표준화된 값(-0.239 등)이 아닌</span>
+<span class="comment"># 원본 값(1.625 등)으로 해석 가능 → 보고서에 바로 사용!</span></pre>
+            <div class="code-desc"><strong>💡실무 TIP:</strong> 표준화를 하면 노드의 기준값이 -0.239 같은 음수가 됩니다. 상사에게 "당도 -0.239 이하가 레드
+                와인"이라고 보고할 수 없죠! 그래서 결정 트리에서는 <strong>원본 데이터를 그대로 사용</strong>합니다.</div>
+        </div>
+
+        <!-- 추가 코드: 불균형 트리 (PDF: min_impurity_decrease 적용) -->
+        <div class="code-box mt-5">
+            <h5>💻 코드 ⑤-4 — 불균형 트리 (min_impurity_decrease 활용)</h5>
+            <pre><span class="comment"># max_depth 대신 min_impurity_decrease로 가지치기</span>
+<span class="comment"># 좌우가 균일하지 않은 트리가 만들어집니다</span>
+
+dt = <span class="func">DecisionTreeClassifier</span>(min_impurity_decrease=<span class="number">0.0005</span>, random_state=<span class="number">42</span>)
+dt.<span class="func">fit</span>(train_input, train_target)
+<span class="func">print</span>(dt.<span class="func">score</span>(train_input, train_target))  <span class="comment"># ~89% (max_depth=3의 85%보다 높음)</span>
+<span class="func">print</span>(dt.<span class="func">score</span>(test_input, test_target))   <span class="comment"># ~86% (과대적합 아직 적음)</span>
+
+<span class="comment"># min_impurity_decrease: 불순도가 이 값 이상 줄어들 때만 분할</span>
+<span class="comment"># 값이 클수록 → 짧은 트리 (강한 가지치기)</span>
+<span class="comment"># 값이 작을수록 → 복잡한 트리 (약한 가지치기)</span></pre>
+            <div class="code-desc"><strong>핵심:</strong> 불균형 트리는 데이터의 분포에 따라 한쪽이 더 깊어질 수 있습니다. <strong>→ 아래 실험 버튼으로 모양을
+                    확인하세요!</strong></div>
+        </div>
+
+        <div class="lab-box mt-4 p-4" style="border: 2px dashed #9b59b6; background: #fdf5ff; border-radius: 25px;">
+            <h5 class="fw-bold mb-3"><i class="bi bi-tree me-2" style="color: #9b59b6;"></i>실험: 불균형 트리 생성</h5>
+            <p class="small text-muted"><code>min_impurity_decrease=0.0005</code>로 좌우 비대칭 트리를 생성하고, max_depth 방식과의 차이를
+                확인합니다.</p>
+            <button class="btn rounded-pill px-4 py-2 fw-bold" style="background: #9b59b6; color: white;"
+                onclick="runUnbalancedTree()">
+                <i class="bi bi-diagram-3"></i> 불균형 트리 생성
+            </button>
+            <div id="s9-unbalanced-result" class="mt-4"></div>
+        </div>
+
+        <!-- 교차 검증 섹션 -->
+        <div class="theory-box mt-5">
+            <pre><span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+<span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> <span class="func">train_test_split</span>
+
+<span class="comment"># 와인 데이터를 알콜, 당도, pH 3개 특성으로 준비합니다.</span>
+data = pd.<span class="func">read_csv</span>(<span class="string">'wine.csv'</span>)
+input_data = data[['alcohol', 'sugar', 'pH']].<span class="func">to_numpy</span>()
+target = data['class'].<span class="func">to_numpy</span>()</pre>
+            <div class="code-desc"><strong>핵심:</strong> 와인 데이터의 target은 0(레드)과 1(화이트)으로 구분됩니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ② — 결정 트리 모델 생성</h5>
+            <pre><span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> <span class="func">DecisionTreeClassifier</span>
+
+dt = <span class="func">DecisionTreeClassifier</span>(random_state=<span class="number">42</span>)
+dt.<span class="func">fit</span>(train_input, train_target)
+<span class="func">print</span>(dt.<span class="func">score</span>(train_input, train_target)) <span class="comment"># 거의 100%!</span>
+<span class="func">print</span>(dt.<span class="func">score</span>(test_input, test_target))  <span class="comment"># 80%대… 과대적합!</span></pre>
+            <div class="code-desc"><strong>핵심:</strong> 가지치기 없이는 훈련 데이터를 거의 암기하므로, 과대적합이 발생합니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ③ — 가지치기 적용</h5>
+            <pre>dt = <span class="func">DecisionTreeClassifier</span>(max_depth=<span class="number">3</span>, random_state=<span class="number">42</span>)
+dt.<span class="func">fit</span>(train_input, train_target)
+<span class="func">print</span>(dt.<span class="func">score</span>(train_input, train_target)) <span class="comment"># ~85%</span>
+<span class="func">print</span>(dt.<span class="func">score</span>(test_input, test_target))  <span class="comment"># ~84% → 안정적!</span></pre>
+            <div class="code-desc"><strong>핵심:</strong> <code>max_depth=3</code>으로 트리 깊이를 제한하면 과대적합을 방지할 수 있습니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ④ — 트리 시각화</h5>
+            <pre><span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> <span class="func">plot_tree</span>
+<span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt
+
+plt.<span class="func">figure</span>(figsize=(<span class="number">10</span>,<span class="number">7</span>))
+<span class="func">plot_tree</span>(dt, filled=True, feature_names=['alcohol', 'sugar', 'pH'])
+plt.<span class="func">show</span>()</pre>
+            <div class="code-desc"><strong>핵심:</strong> <code>filled=True</code>로 클래스별 색상을 지정하면 트리의 흐름을 직관적으로 파악할 수
+                있습니다.</div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ⑤ — 특성 중요도</h5>
+            <pre><span class="func">print</span>(dt.<span class="func">feature_importances_</span>)
+<span class="comment"># [0.12, 0.87, 0.01] → 당도(sugar)가 87%를 차지!</span></pre>
+            <div class="code-desc"><strong>핵심:</strong> 세 특성의 중요도를 합하면 항상 1이 됩니다. 이를 통해 핵심 판단 근거를 보고서에 담을 수 있습니다.</div>
+        </div>
+
+        <!-- 교차 검증 섹션 -->
+        <div class="theory-box mt-5">
+            <h4>9-5. 검증 세트와 교차 검증 (Cross Validation)</h4>
+
+            <div class="qa-box mb-4">
+                <h5>❓ 깊이 파보기: 검증 세트와 교차 검증</h5>
+                <div class="qa-item">
+                    <strong>1. 왜 갑자기 '검증 세트(Validation Set)'가 등장했나요? 기존(훈련/테스트)과 뭐가 다르죠?</strong>
+                    <p class="small mb-0">A: 이전까지는 훈련 세트로 공부하고 테스트 세트로 시험을 쳤습니다. 그런데 모델 성능을 높이려고 하이퍼파라미터(트리 깊이 등)를 계속
+                        튜닝하면서 테스트 세트에 맞춰서 수정하다 보면, 결국 <strong>테스트 세트의 정답지마저 유출(Data Leakage)</strong>되어 진짜 실력을 알 수 없게
+                        됩니다. 그래서 <strong>튜닝용 모의고사인 '검증 세트'</strong>를 훈련 세트 안에서 따로 떼어내어 사용하는 것입니다.</p>
+                </div>
+                <div class="qa-item">
+                    <strong>2. CV와 Fold는 무엇이고, 에포크(Epoch)와는 어떻게 다른가요?</strong>
+                    <p class="small mb-0">A: <strong>에포크(8강)</strong>는 '같은 데이터'를 반복해서 여러 번 학습하는 횟수입니다(SGD). 반면
+                        <strong>Fold(폴드)</strong>는 데이터를 케이크 조각처럼 K개로 나누는 '데이터의 덩어리'를 뜻하고, <strong>CV(Cross Validation,
+                            교차 검증)</strong>는 이 K개의 폴드 중 1개를 번갈아가며 검증용으로 쓰는 '평가 기법'입니다. 에포크는 모델을 학습시키는 방법, CV는 성능을 평가하는
+                        방법으로 목적이 완전히 다릅니다. 당연히 딥러닝을 포함한 앞으로의 모든 모델 평가에서 CV 기법을 쓸 수 있습니다!
+                    </p>
+                </div>
+            </div>
+
+            <p>"시험 문제를 한 종류만 풀어보고 실력을 판단하면 공정할까?" 교차 검증은 데이터를 <strong>K등분(Fold)</strong>하여 돌아가며 검증함으로써 더 정확한 성능 평가를 합니다.
+            </p>
+            <div class="insight-box" style="background: #e8f8f5; border-left: 5px solid #2ecc71;">
+                <ul class="mb-0 small">
+                    <li><strong>K-Fold:</strong> 데이터를 K등분 → 한 조각을 테스트, 나머지로 훈련 → K번 반복</li>
+                    <li><strong>장점:</strong> 훈련 데이터를 최대한 활용할 수 있고, 특정 데이터 배치에 따른 점수 편차를 줄여 평가가 훨씬 안정적입니다.</li>
+                    <li><strong>한계:</strong> K번 훈련해야 하므로 시간이 K배 소요됩니다.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ⑥ — 5-Fold 교차 검증</h5>
+            <pre><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> <span class="func">cross_validate</span>
+
+scores = <span class="func">cross_validate</span>(dt, train_input, train_target, cv=<span class="number">5</span>, return_train_score=True)
+<span class="func">print</span>(np.<span class="func">mean</span>(scores['test_score']))  <span class="comment"># 평균 검증 점수</span></pre>
+            <div class="code-desc"><strong>핵심:</strong> <code>cv=5</code>는 5등분을 의미합니다. 검증 점수의 평균이 최종 성능 지표로 사용됩니다.</div>
+        </div>
+
+        <div class="lab-box mt-4 p-4" style="border: 2px dashed #2ecc71; background: #f6fff6; border-radius: 25px;">
+            <h5 class="fw-bold mb-3"><i class="bi bi-bar-chart-fill me-2 text-success"></i>실습: 5-Fold 교차 검증 실행</h5>
+            <p class="small text-muted">데이터를 5등분하여 교차 검증을 수행합니다. 결과로 각 폴드의 정확도가 막대 그래프로 표시됩니다.</p>
+            <button class="btn btn-success rounded-pill px-4 py-2 fw-bold" onclick="runCrossValidation()">
+                <i class="bi bi-play-fill"></i> 교차 검증 실행
+            </button>
+            <div id="s9-cv-result" class="mt-4"></div>
+        </div>
+
+        <!-- 하이퍼파라미터 튜닝 인터랙티브 섹션 -->
+        <div class="theory-box mt-5">
+            <h4>9-6. 하이퍼파라미터 (Hyperparameter) 튜닝이란?</h4>
+            <div class="qa-box mb-4">
+                <h5>❓ 깊이 파보기: 하이퍼파라미터</h5>
+                <div class="qa-item">
+                    <strong>1. 하이퍼파라미터 튜닝은 왜 쓰나요?</strong>
+                    <p class="small mb-0">A: 모델이 스스로 학습할 수 <strong>없는</strong> 설정값들을 '하이퍼파라미터(Hyperparameter)'라고 부릅니다.
+                        예를 들어 트리의 최대 깊이(max_depth)나 가지치기 최소 조건 같은 값들입니다. 이런 값들을 사람이 직접 조금씩 바꿔가면서 <strong>과대적합도 피하고 성능도
+                            제일 높게 나오는 황금 비율</strong>을 찾는 과정을 '튜닝'이라고 합니다.</p>
+                </div>
+            </div>
+
+            <div class="lab-box p-4" style="border: 2px dashed #007bff; background: #f8fbff; border-radius: 25px;">
+                <h5 class="fw-bold mb-3"><i class="bi bi-sliders me-2 text-primary"></i>실험: 하이퍼파라미터 직접 튜닝해보기</h5>
+                <p class="small text-muted">아래 슬라이더를 움직여 파라미터 값을 조절해보세요. 설정값에 따라 훈련/검증 점수가 어떻게 변하고 트리의 모양은 어떻게 달라지는지
+                    우측에서 즉시 확인할 수 있습니다.</p>
+
+                <div class="row gx-4">
+                    <!-- 패널 1: 슬라이더 컨트롤 -->
+                    <div class="col-md-5 border-end">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-primary d-flex justify-content-between">
+                                <span>max_depth (트리의 최대 깊이)</span>
+                                <span id="s9-val-depth" class="badge bg-primary">5</span>
+                            </label>
+                            <input type="range" class="form-range" id="s9-slide-depth" min="2" max="20" step="1"
+                                value="5" oninput="updateS9HyperVal('depth', this.value); runS9HyperTuning()">
+                            <p class="text-muted" style="font-size: 0.75rem;">값을 키울수록 트리가 깊어지며 훈련 세트에 맞춰집니다(과대적합 위험).
+                            </p>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-success d-flex justify-content-between">
+                                <span>min_impurity_decrease (최소 불순도 감소)</span>
+                                <span id="s9-val-impurity" class="badge bg-success">0.0001</span>
+                            </label>
+                            <input type="range" class="form-range" id="s9-slide-impurity" min="0.0001" max="0.005"
+                                step="0.0001" value="0.0001"
+                                oninput="updateS9HyperVal('impurity', this.value); runS9HyperTuning()">
+                            <p class="text-muted" style="font-size: 0.75rem;">가지치기를 할 때 필요한 최소 개선량입니다. 값이 크면 가지치기가 듬성듬성
+                                일어납니다.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-warning d-flex justify-content-between">
+                                <span>min_samples_split (분할 최소 샘플)</span>
+                                <span id="s9-val-split" class="badge bg-warning text-dark">2</span>
+                            </label>
+                            <input type="range" class="form-range" id="s9-slide-split" min="2" max="50" step="2"
+                                value="2" oninput="updateS9HyperVal('split', this.value); runS9HyperTuning()">
+                            <p class="text-muted" style="font-size: 0.75rem;">노드를 또 분할하기 위해 필요한 최소 데이터 개수입니다.</p>
+                        </div>
+                    </div>
+
+                    <!-- 패널 2: 실시간 결과 시각화 -->
+                    <div class="col-md-7">
+                        <div id="s9-hyper-result"
+                            class="h-100 d-flex flex-column align-items-center justify-content-center text-center p-3"
+                            style="background: white; border-radius: 15px; border: 1px solid #e9ecef; min-height: 250px;">
+                            <i class="bi bi-magic text-muted mb-2" style="font-size: 2rem;"></i>
+                            <p class="text-muted small">좌측 슬라이더를 조작하면 이 곳에 실시간 성능 점수와 시각화가 나타납니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 그리드 서치 섹션 -->
+        <div class="theory-box mt-5">
+            <h4>9-7. 자동화: 그리드 서치 (Grid Search)</h4>
+            <p>위 실험처럼 사람이 일일이 슬라이더를 돌리기엔 경우의 수가 너무 많습니다. 하이퍼파라미터의 <strong>최적 조합</strong>을 찾는 자동 탐색 기법입니다. 사전에 정한 후보 값들의
+                모든 조합을 시도하고, 교차 검증을 통해 가장 성능이 좋은 조합을 선정합니다.</p>
+            <div class="row g-3 mt-3">
+                <div class="col-md-4">
+                    <div class="p-3 border rounded-4 bg-white shadow-sm text-center">
+                        <strong class="d-block mb-1">max_depth</strong>
+                        <p class="small text-muted mb-0">트리의 최대 깊이. 깊을수록 복잡해지지만 과대적합 위험 증가</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 border rounded-4 bg-white shadow-sm text-center">
+                        <strong class="d-block mb-1">min_impurity_decrease</strong>
+                        <p class="small text-muted mb-0">분할 시 최소 불순도 감소량. 미세한 개선은 무시</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 border rounded-4 bg-white shadow-sm text-center">
+                        <strong class="d-block mb-1">min_samples_split</strong>
+                        <p class="small text-muted mb-0">노드 분할에 필요한 최소 샘플 수</p>
+                    </div>
+                </div>
+            </div>
+            <div class="insight-box mt-3" style="background: #fef9e7; border-left: 5px solid #f1c40f;">
+                <h6 class="fw-bold">⏱️ 그리드 서치 시간복잡도 계산 (PDF에서 강조!)</h6>
+                <p class="small mb-1">만약 3개 하이퍼파라미터를 다음과 같이 설정하면:</p>
+                <ul class="small mb-1">
+                    <li><code>min_impurity_decrease</code>: 9개 값 (0.0001~0.001)</li>
+                    <li><code>max_depth</code>: 15개 값 (5~20)</li>
+                    <li><code>min_samples_split</code>: 10개 값 (2~100)</li>
+                </ul>
+                <p class="small mb-0"><strong>조합 수 = 9 × 15 × 10 = 1,350</strong> → 5-Fold 교차 검증 시 <strong>총
+                        6,750번</strong> 모델을 훈련합니다! 이것이 랜덤 서치가 필요한 이유입니다.</p>
+            </div>
+            <div class="insight-box mt-3" style="background: #eaf2f8; border-left: 5px solid #3498db;">
+                <h6 class="fw-bold">📋 DecisionTreeClassifier 주요 매개변수 총정리</h6>
+                <table class="table mb-0" style="font-size: 0.95rem;">
+                    <tr>
+                        <td><code>criterion</code></td>
+                        <td>분할 측정 기준 (default: gini)</td>
+                    </tr>
+                    <tr>
+                        <td><code>splitter</code></td>
+                        <td>분할 전략 (default: best)</td>
+                    </tr>
+                    <tr>
+                        <td><code>max_depth</code></td>
+                        <td>트리의 최대 깊이</td>
+                    </tr>
+                    <tr>
+                        <td><code>min_samples_split</code></td>
+                        <td>분할 필요 최소 샘플 수 (default: 2)</td>
+                    </tr>
+                    <tr>
+                        <td><code>min_samples_leaf</code></td>
+                        <td>리프 노드 최소 샘플 수 (default: 1)</td>
+                    </tr>
+                    <tr>
+                        <td><code>max_features</code></td>
+                        <td>분할에 사용할 특성의 최대 수</td>
+                    </tr>
+                    <tr>
+                        <td><code>max_leaf_nodes</code></td>
+                        <td>리프 노드 최대 수</td>
+                    </tr>
+                    <tr>
+                        <td><code>min_impurity_decrease</code></td>
+                        <td>분할 시 최소 불순도 감소량</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ⑦ — 그리드 서치</h5>
+            <pre><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> <span class="func">GridSearchCV</span>
+
+params = {
+    'min_impurity_decrease': np.<span class="func">arange</span>(<span class="number">0.0001</span>, <span class="number">0.001</span>, <span class="number">0.0001</span>),
+    'max_depth': <span class="func">range</span>(<span class="number">3</span>, <span class="number">15</span>),
+    'min_samples_split': <span class="func">range</span>(<span class="number">2</span>, <span class="number">30</span>, <span class="number">5</span>)
+}
+gs = <span class="func">GridSearchCV</span>(DecisionTreeClassifier(random_state=<span class="number">42</span>), params, n_jobs=-<span class="number">1</span>, cv=<span class="number">5</span>)
+gs.<span class="func">fit</span>(train_input, train_target)
+<span class="func">print</span>(gs.<span class="func">best_params_</span>) <span class="comment"># 최적의 하이퍼파라미터 조합</span></pre>
+            <div class="code-desc"><strong>핵심:</strong> <code>n_jobs=-1</code>은 CPU 모든 코어를 사용해 병렬 처리합니다. 수백~수천 개 조합을
+                자동으로 탐색합니다.</div>
+        </div>
+
+        <div class="lab-box mt-4 p-4" style="border: 2px dashed #8e44ad; background: #faf5ff; border-radius: 25px;">
+            <h5 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap-fill me-2" style="color: #8e44ad;"></i>실습: 그리드 서치 실행
+            </h5>
+            <p class="small text-muted">9×12×6 = 648가지 조합을 각각 5-Fold 교차 검증으로 테스트합니다. (약 30초~1분 소요)</p>
+            <button class="btn rounded-pill px-4 py-2 fw-bold" style="background: #8e44ad; color: white;"
+                onclick="runGridSearch()">
+                <i class="bi bi-search"></i> 그리드 서치 실행
+            </button>
+            <div id="s9-gs-result" class="mt-4"></div>
+        </div>
+
+        <!-- 랜덤 서치 섹션 -->
+        <div class="theory-box mt-5">
+            <h4>9-8. 랜덤 서치 (Randomized Search)</h4>
+            <p>그리드 서치는 모든 조합을 시도하지만, <strong>후보 범위가 넓으면 시간이 기하급수적으로 증가</strong>합니다. 랜덤 서치는 확률 분포에서 <strong>무작위로
+                    샘플링</strong>하여 효율적으로 최적값을 찾습니다.</p>
+            <div class="insight-box" style="background: #fff3e0; border-left: 5px solid #e67e22;">
+                <ul class="mb-0 small">
+                    <li><strong>균등 분포 (Uniform):</strong> 실수값 범위에서 고르게 샘플링</li>
+                    <li><strong>정수 균등 분포 (Randint):</strong> 정수값 범위에서 고르게 샘플링</li>
+                    <li><strong>n_iter:</strong> 탐색 횟수를 제한하여 시간을 통제합니다</li>
+                </ul>
+                <div class="mt-3 text-center">
+                    <button class="btn btn-sm btn-outline-warning text-dark fw-bold"
+                        onclick="showS9Distributions(this)">
+                        <i class="bi bi-bar-chart-line-fill"></i> Randint & Uniform 분포 시각화 보기
+                    </button>
+                </div>
+                <div id="s9-dist-viz" class="mt-3 text-center" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="code-box">
+            <h5>💻 코드 ⑧ — 랜덤 서치</h5>
+            <pre><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> <span class="func">RandomizedSearchCV</span>
+<span class="keyword">from</span> scipy.stats <span class="keyword">import</span> uniform, randint
+
+params = {
+    'min_impurity_decrease': <span class="func">uniform</span>(<span class="number">0.0001</span>, <span class="number">0.001</span>),
+    'max_depth': <span class="func">randint</span>(<span class="number">3</span>, <span class="number">30</span>),
+    'min_samples_split': <span class="func">randint</span>(<span class="number">2</span>, <span class="number">25</span>),
+    'min_samples_leaf': <span class="func">randint</span>(<span class="number">1</span>, <span class="number">25</span>)
+}
+
+rs = <span class="func">RandomizedSearchCV</span>(dt, params, n_iter=<span class="number">100</span>, n_jobs=-<span class="number">1</span>, cv=<span class="number">5</span>)
+rs.<span class="func">fit</span>(train_input, train_target)</pre>
+            <div class="code-desc"><strong>핵심:</strong> <code>n_iter=100</code>은 100번만 무작위 조합을 시도합니다. 그리드 서치보다 훨씬 빠르면서도
+                좋은 결과를 얻을 수 있습니다.</div>
+        </div>
+
+        <div class="lab-box mt-4 p-4" style="border: 2px dashed #e67e22; background: #fffbf5; border-radius: 25px;">
+            <h5 class="fw-bold mb-3"><i class="bi bi-shuffle me-2 text-warning"></i>실습: 랜덤 서치 실행</h5>
+            <p class="small text-muted">확률 분포에서 100회 무작위 샘플링으로 최적 조합을 탐색합니다.</p>
+            <button class="btn btn-warning rounded-pill px-4 py-2 fw-bold" onclick="runRandomSearch()">
+                <i class="bi bi-dice-5-fill"></i> 랜덤 서치 실행
+            </button>
+            <div id="s9-rs-result" class="mt-4"></div>
+        </div>
+
+        <div class="vocab-box mt-5">
+            <h5>📗 세션 9 용어 사전</h5>
+            <div class="vocab-item"><span class="vocab-term">결정 트리 (Decision Tree):</span> if/else 질문을 반복하여 데이터를 분류하는
+                알고리즘</div>
+            <div class="vocab-item"><span class="vocab-term">지니 불순도 (Gini Impurity):</span> 노드에 서로 다른 클래스가 얼마나 섞여있는지
+                측정하는 기준</div>
+            <div class="vocab-item"><span class="vocab-term">가지치기 (Pruning):</span> <code>max_depth</code> 등을 사용해 트리의
+                과도한 성장을 방지하는 기법</div>
+            <div class="vocab-item"><span class="vocab-term">교차 검증 (Cross Validation):</span> 데이터를 K등분하여 번갈아 사용함으로써 안정적
+                성능 평가</div>
+            <div class="vocab-item"><span class="vocab-term">그리드 서치 (Grid Search):</span> 하이퍼파라미터의 모든 조합을 완전탐색하는 기법
+            </div>
+            <div class="vocab-item"><span class="vocab-term">랜덤 서치 (Random Search):</span> 확률 분포에서 무작위 샘플링으로 최적값을 효율적으로
+                탐색</div>
+        </div>
+
+        <!-- 와인 분류 실습 -->
+        <div class="lab-box mt-5"
+            style="border: 2px dashed var(--ml-primary); background: #fffcf9; border-radius: 25px; padding: 2rem;">
+            <h4 class="mb-4"><i class="bi bi-cup-hot-fill me-2"></i>실전 — 이 와인은 레드? 화이트?</h4>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="d-flex justify-content-between small fw-bold">
+                        <span>알콜 도수</span>
+                        <span class="slider-val-badge"><span id="s9-alcohol-val">10.5</span></span>
+                    </label>
+                    <input type="range" id="s9-alcohol" class="form-range" value="10.5" min="8" max="15" step="0.1"
+                        oninput="document.getElementById('s9-alcohol-val').innerText = parseFloat(this.value).toFixed(1)">
+                </div>
+                <div class="col-md-3">
+                    <label class="d-flex justify-content-between small fw-bold">
+                        <span>당도</span>
+                        <span class="slider-val-badge"><span id="s9-sugar-val">5.0</span></span>
+                    </label>
+                    <input type="range" id="s9-sugar" class="form-range" value="5" min="0.5" max="20" step="0.1"
+                        oninput="document.getElementById('s9-sugar-val').innerText = parseFloat(this.value).toFixed(1)">
+                </div>
+                <div class="col-md-3">
+                    <label class="d-flex justify-content-between small fw-bold">
+                        <span>pH</span>
+                        <span class="slider-val-badge"><span id="s9-ph-val">3.20</span></span>
+                    </label>
+                    <input type="range" id="s9-ph" class="form-range" value="3.2" min="2.5" max="4.0" step="0.01"
+                        oninput="document.getElementById('s9-ph-val').innerText = parseFloat(this.value).toFixed(2)">
+                </div>
+                <div class="col-md-3">
+                    <label class="d-flex justify-content-between small fw-bold">
+                        <span>깊이</span>
+                        <span class="slider-val-badge"><span id="s9-depth-val">5</span></span>
+                    </label>
+                    <input type="range" id="s9-depth" class="form-range" value="5" min="1" max="15" step="1"
+                        oninput="document.getElementById('s9-depth-val').innerText = this.value">
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <button class="btn-predict px-5" onclick="runSession(9)">
+                    <i class="bi bi-cup-straw me-2"></i> 와인 분류하기
+                </button>
+            </div>
+        </div>
+
+        <div class="loading-spinner" id="spinner9">
+            <div class="spinner-border"></div>
+        </div>
+        <div class="result-box mt-4" id="result9"></div>
+        <div class="chart-area col-12" id="chart9"></div>
+
+        <div class="qa-box mt-5">
+            <h4>❓ 궁금할 수 있는 질문들</h4>
+            <div class="qa-item">
+                <strong>Q: 결정 트리는 분류만 가능한가요?</strong>
+                <p class="small mb-0">A: 아닙니다. <code>DecisionTreeRegressor</code>를 사용하면 회귀 문제(가격 예측 등)에도 사용할 수 있습니다. 리프
+                    노드에서 클래스 대신 평균값을 반환합니다.</p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: 로지스틱 회귀보다 결정 트리가 더 좋은 건가요?</strong>
+                <p class="small mb-0">A: 경우에 따라 다릅니다. 결정 트리는 비선형 경계를 자연스럽게 만들 수 있고, 결과를 해석하기 쉽습니다. 반면 로지스틱 회귀는 확률값을 제공하고
+                    대규모 데이터에서 더 안정적입니다.</p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: 교차 검증은 왜 단순 train/test 분할보다 좋은가요?</strong>
+                <p class="small mb-0">A: 단순 분할은 어떤 데이터가 테스트 세트에 들어가느냐에 따라 결과가 크게 달라질 수 있습니다. 교차 검증은 모든 데이터를 균등하게 사용하므로
+                    운이 아닌 진짜 실력을 측정합니다.</p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: 그리드 서치 vs 랜덤 서치, 어떤 것을 써야 하나요?</strong>
+                <p class="small mb-0">A: 후보값이 적고 정확한 탐색이 필요하면 그리드 서치, 탐색 범위가 넓거나 시간이 부족하면 랜덤 서치가 효율적입니다. 실무에서는 먼저 랜덤 서치로
+                    대략적인 범위를 좁힌 후, 그리드 서치로 미세 조정하는 방법을 많이 씁니다.</p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: 결정 트리에서 표준화(스케일링)는 필요한가요?</strong>
+                <p class="small mb-0">A: 필요 없습니다! 결정 트리는 각 특성을 독립적으로 비교(≤ / > 기준)하기 때문에, 특성의 스케일이 달라도 성능에 영향을 주지 않습니다.
+                    이는 로지스틱 회귀나 SVM과의 큰 차이점입니다.</p>
+            </div>
+            <div class="qa-item">
+                <strong>Q: min_samples_split과 min_samples_leaf의 차이는?</strong>
+                <p class="small mb-0">A: <code>min_samples_split</code>은 노드를 분할하기 위한 최소 샘플 수이고,
+                    <code>min_samples_leaf</code>는 리프 노드에 남아있어야 할 최소 샘플 수입니다. 둘 다 과대적합을 방지하는 역할을 합니다.
+                </p>
+            </div>
+        </div>
+
+        <!-- 퀴즈 섹션 추가 -->
+        <div class="quiz-section" id="quiz-area">
+            <div class="quiz-header">
+                <h3 class="fw-bold"><span class="emoji-bullet">📝</span> 오늘의 연습문제</h3>
+                <p class="text-muted">강의에서 배운 기법을 새로운 데이터에 적용해보세요!</p>
+                <button class="btn-predict" onclick="loadQuiz({{ session_id }})">문제 불러오기</button>
+            </div>
+            <div id="quiz-body"></div>
+        </div>
+
+
+
+    </div>
+</div>
+{% endblock %}
+
+{% block ml_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSession9IntroViz();
+    });
+</script>
+{% endblock %}

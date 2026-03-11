@@ -1,0 +1,485 @@
+import pandas as pd
+
+
+
+
+fish = pd.read_csv('https://bit.ly/fish_csv_data')
+fish.head()
+fish_input = fish[['Weight','Length','Diagonal','Height','Width']].to_numpy()
+fish_target = fish['Species'].to_numpy()
+print(fish_target)
+['Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream'
+ 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream'
+ 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream'
+ 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Bream' 'Roach'
+ 'Roach' 'Roach' 'Roach' 'Roach' 'Roach' 'Roach' 'Roach' 'Roach' 'Roach'
+ 'Roach' 'Roach' 'Roach' 'Roach' 'Roach' 'Roach' 'Roach' 'Roach' 'Roach'
+ 'Roach' 'Whitefish' 'Whitefish' 'Whitefish' 'Whitefish' 'Whitefish'
+ 'Whitefish' 'Parkki' 'Parkki' 'Parkki' 'Parkki' 'Parkki' 'Parkki'
+ 'Parkki' 'Parkki' 'Parkki' 'Parkki' 'Parkki' 'Perch' 'Perch' 'Perch'
+ 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch'
+ 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch'
+ 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch'
+ 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch'
+ 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch'
+ 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Perch' 'Pike'
+ 'Pike' 'Pike' 'Pike' 'Pike' 'Pike' 'Pike' 'Pike' 'Pike' 'Pike' 'Pike'
+ 'Pike' 'Pike' 'Pike' 'Pike' 'Pike' 'Pike' 'Smelt' 'Smelt' 'Smelt' 'Smelt'
+ 'Smelt' 'Smelt' 'Smelt' 'Smelt' 'Smelt' 'Smelt' 'Smelt' 'Smelt' 'Smelt'
+ 'Smelt']
+from sklearn.model_selection import train_test_split
+import numpy as np
+np.set_printoptions(precision=6, suppress=True)
+train_input, test_input, train_target, test_target = train_test_split(
+    fish_input, fish_target, random_state=42)
+print('train_input')
+print(train_input)
+
+
+
+
+
+
+train_input
+[[ 720.       35.       40.6      16.3618    6.09  ]
+ [ 500.       45.       48.        6.96      4.896 ]
+ [   7.5      10.5      11.6       1.972     1.16  ]
+ [ 110.       22.       23.5       5.5225    3.995 ]
+ [ 140.       20.7      23.2       8.5376    3.2944]
+ [  69.       18.2      20.3       5.2983    2.8217]
+ [ 110.       21.       22.5       5.6925    3.555 ]
+ [ 620.       34.5      39.7      15.5227    5.2801]
+ [ 130.       21.3      22.8       6.384     3.534 ]
+ [  85.       20.       21.        5.082     2.772 ]
+ [ 685.       36.5      39.       10.881     6.864 ]
+ [ 500.       31.       36.2      14.3714    4.8146]
+ [ 514.       32.8      34.       10.03      6.018 ]
+ [ 200.       23.       25.8      10.3458    3.6636]
+ [1000.       44.       46.6      12.4888    7.5958]
+ [ 714.       36.       41.5      16.517     5.8515]
+ [   8.7      11.3      12.6       1.9782    1.2852]
+ [1000.       43.       45.2      11.9328    7.2772]
+ [ 110.       20.8      23.1       6.1677    3.3957]
+ [ 430.       29.       34.       12.444     5.134 ]
+ [ 456.       42.5      45.5       7.28      4.3225]
+ [ 925.       39.5      45.3      18.7542    6.7497]
+ [ 950.       51.7      55.1       8.9262    6.1712]
+ [ 250.       27.5      28.9       7.2828    4.5662]
+ [ 170.       20.7      23.2       9.396     3.4104]
+ [ 475.       31.       36.2      14.2628    5.1042]
+ [ 145.       22.7      24.2       5.9532    3.63  ]
+ [ 300.       37.3      39.8       6.2884    4.0198]
+ [ 242.       25.4      30.       11.52      4.02  ]
+ [ 650.       39.       41.4      11.1366    6.003 ]
+ [ 120.       19.       21.3       8.3922    2.9181]
+ [ 145.       22.       24.3       6.6339    3.5478]
+ [ 125.       21.       22.5       5.6925    3.6675]
+ [ 850.       36.       41.6      16.8896    6.1984]
+ [   0.       20.5      22.8       6.4752    3.3516]
+ [ 840.       35.       37.3      11.4884    7.7957]
+ [ 725.       35.       40.9      16.36      6.0532]
+ [ 680.       35.       40.6      15.4686    6.1306]
+ [ 690.       37.       39.3      10.5717    6.3666]
+ [  80.       19.       20.2       5.6358    3.0502]
+ [ 120.       20.       22.2       6.216     3.5742]
+ [1600.       60.       64.        9.6       6.144 ]
+ [ 265.       27.5      28.9       7.0516    4.335 ]
+ [  12.2      12.2      13.4       2.0904    1.3936]
+ [ 345.       38.5      41.        6.396     3.977 ]
+ [ 160.       22.5      25.        6.4       3.8   ]
+ [ 850.       40.       42.3      11.9286    7.1064]
+ [  55.       14.7      16.5       6.8475    2.3265]
+ [  32.       13.7      14.7       3.528     1.9992]
+ [ 975.       41.       45.9      18.6354    6.7473]
+ [ 320.       30.       31.6       7.6156    4.7716]
+ [   9.7      11.       12.        2.196     1.38  ]
+ [1100.       42.       44.6      12.8002    6.8684]
+ [  60.       15.5      17.4       6.5772    2.3142]
+ [  19.7      14.3      15.2       2.8728    2.0672]
+ [ 145.       24.       25.5       6.375     3.825 ]
+ [ 197.       25.6      27.        6.561     4.239 ]
+ [ 272.       27.       30.6       8.568     4.7736]
+ [ 450.       29.7      34.7      13.6024    4.9274]
+ [ 700.       37.       39.4      10.835     6.2646]
+ [ 820.       40.       42.5      11.135     6.63  ]
+ [ 161.       23.4      26.7       6.9153    3.6312]
+ [  40.       14.1      16.2       4.1472    2.268 ]
+ [  85.       19.6      20.8       5.1376    3.0368]
+ [ 100.       18.       19.2       5.2224    3.3216]
+ [ 950.       41.       46.5      17.6235    6.3705]
+ [ 140.       22.5      25.        6.55      3.325 ]
+ [ 390.       30.       35.       12.67      4.69  ]
+ [ 150.       22.       24.7       5.8045    3.7544]
+ [ 273.       25.       28.       11.088     4.144 ]
+ [ 900.       40.       42.5      11.73      7.225 ]
+ [ 556.       34.5      36.5      10.2565    6.3875]
+ [ 130.       22.5      24.        5.856     3.624 ]
+ [ 115.       21.       22.5       5.9175    3.3075]
+ [1550.       60.       64.        9.6       6.144 ]
+ [1650.       63.4      68.       10.812     7.48  ]
+ [ 135.       22.       23.5       5.875     3.525 ]
+ [ 450.       30.       35.1      14.0049    4.8438]
+ [ 700.       36.       38.3      10.6091    6.7408]
+ [ 340.       32.       37.3      13.9129    5.0728]
+ [ 800.       36.4      39.6      11.7612    6.5736]
+ [ 540.       43.       45.8       7.786     5.1296]
+ [ 363.       29.       33.5      12.73      4.4555]
+ [ 700.       33.       38.5      14.938     5.1975]
+ [  87.       19.8      22.2       5.6166    3.1746]
+ [   5.9       8.4       8.8       2.112     1.408 ]
+ [ 770.       48.       51.2       7.68      5.376 ]
+ [ 500.       29.7      34.5      14.1795    5.2785]
+ [ 430.       38.       40.5       7.29      4.5765]
+ [  90.       17.7      19.8       7.4052    2.673 ]
+ [ 390.       31.7      35.        9.485     5.355 ]
+ [ 300.       28.7      30.1       7.5852    4.6354]
+ [ 200.       23.5      26.8       7.3968    4.1272]
+ [  12.2      13.       13.8       2.277     1.2558]
+ [ 540.       31.       34.       10.744     6.562 ]
+ [ 169.       24.       27.2       7.5344    3.8352]
+ [ 130.       22.       23.5       6.11      3.525 ]
+ [ 685.       34.       39.2      15.9936    5.3704]
+ [ 306.       28.       30.8       8.778     4.6816]
+ [   9.8      12.       13.2       2.2044    1.1484]
+ [ 300.       34.       37.8       5.7078    4.158 ]
+ [  78.       18.8      21.2       5.5756    2.9044]
+ [   9.8      11.2      12.4       2.0832    1.2772]
+ [ 290.       26.3      31.2      12.48      4.3056]
+ [ 290.       26.       29.2       8.8768    4.4968]
+ [ 300.       35.       38.8       5.9364    4.3844]
+ [ 260.       27.5      28.9       7.1672    4.335 ]
+ [ 180.       25.       26.5       6.4395    3.6835]
+ [ 900.       39.       41.4      11.1366    7.4934]
+ [ 120.       22.       23.5       5.64      3.525 ]
+ [  40.       15.       16.        3.824     2.432 ]
+ [1015.       40.       42.4      12.3808    7.4624]
+ [  19.9      15.       16.2       2.9322    1.8792]
+ [ 575.       34.       39.5      15.1285    5.5695]
+ [ 300.       26.       29.       11.368     4.234 ]
+ [ 250.       28.       29.4       7.8204    4.2042]
+ [ 600.       32.       37.2      14.9544    5.1708]
+ [ 150.       22.5      24.        6.792     3.624 ]
+ [ 300.       27.3      28.7       8.323     5.1373]]
+print(train_input.shape)
+(119, 5)
+print('test_input')
+print(test_input)
+test_input
+[[  78.       18.7      19.4       5.1992    3.1234]
+ [  13.4      12.4      13.5       2.43      1.269 ]
+ [ 200.       32.3      34.8       5.568     3.3756]
+ [ 270.       26.       28.7       8.3804    4.2476]
+ [ 150.       23.       24.5       5.2185    3.626 ]
+ [1000.       37.       42.6      18.957     6.603 ]
+ [   7.       10.6      11.6       1.7284    1.1484]
+ [ 180.       25.2      27.9       7.0866    3.906 ]
+ [ 188.       24.6      26.2       6.7334    4.1658]
+ [1250.       56.       59.7      10.6863    6.9849]
+ [ 650.       33.5      38.7      14.4738    5.7276]
+ [1000.       40.       43.5      12.354     6.525 ]
+ [ 600.       32.       37.2      15.438     5.58  ]
+ [ 150.       20.       22.4       8.8928    3.2928]
+ [ 700.       35.       40.5      16.2405    5.589 ]
+ [ 920.       38.5      44.1      18.0369    6.3063]
+ [1000.       43.5      46.       12.604     8.142 ]
+ [ 218.       26.5      28.        7.168     4.144 ]
+ [ 225.       24.       25.5       7.293     3.723 ]
+ [ 700.       33.       38.3      14.8604    5.2854]
+ [  10.       11.8      13.1       2.2139    1.2838]
+ [ 610.       33.5      38.6      15.633     5.1338]
+ [ 500.       31.5      36.4      13.7592    4.368 ]
+ [ 500.       30.7      36.2      14.2266    4.9594]
+ [ 955.       38.5      44.       18.084     6.292 ]
+ [1100.       43.       45.5      12.5125    7.4165]
+ [ 170.       23.5      25.        6.275     3.725 ]
+ [ 270.       26.5      29.3       8.1454    4.2485]
+ [   6.7       9.8      10.8       1.7388    1.0476]
+ [   9.9      11.8      13.1       2.2139    1.1659]
+ [ 510.       42.5      45.5       6.825     4.459 ]
+ [  70.       17.4      18.5       4.588     2.9415]
+ [  51.5      16.2      17.2       4.5924    2.6316]
+ [ 567.       46.       48.7       7.792     4.87  ]
+ [ 340.       26.5      31.1      12.3778    4.6961]
+ [ 120.       22.       23.5       6.11      3.4075]
+ [ 160.       22.5      25.3       7.0334    3.8203]
+ [ 120.       21.       23.7       6.1146    3.2943]
+ [ 145.       21.5      24.1       9.7364    3.1571]
+ [ 820.       39.       41.3      12.4313    7.3514]]
+
+
+
+
+print(test_input.shape)
+(40, 5)
+print('train_target : '+ train_target)
+['train_target : Bream' 'train_target : Pike' 'train_target : Smelt'
+ 'train_target : Perch' 'train_target : Parkki' 'train_target : Roach'
+ 'train_target : Perch' 'train_target : Bream' 'train_target : Perch'
+ 'train_target : Perch' 'train_target : Perch' 'train_target : Bream'
+ 'train_target : Perch' 'train_target : Parkki' 'train_target : Perch'
+ 'train_target : Bream' 'train_target : Smelt' 'train_target : Perch'
+ 'train_target : Roach' 'train_target : Bream' 'train_target : Pike'
+ 'train_target : Bream' 'train_target : Pike' 'train_target : Perch'
+ 'train_target : Parkki' 'train_target : Bream' 'train_target : Perch'
+ 'train_target : Pike' 'train_target : Bream' 'train_target : Perch'
+ 'train_target : Parkki' 'train_target : Roach' 'train_target : Perch'
+ 'train_target : Bream' 'train_target : Roach' 'train_target : Perch'
+ 'train_target : Bream' 'train_target : Bream' 'train_target : Perch'
+ 'train_target : Perch' 'train_target : Roach' 'train_target : Pike'
+ 'train_target : Perch' 'train_target : Smelt' 'train_target : Pike'
+ 'train_target : Roach' 'train_target : Perch' 'train_target : Parkki'
+ 'train_target : Perch' 'train_target : Bream' 'train_target : Perch'
+ 'train_target : Smelt' 'train_target : Perch' 'train_target : Parkki'
+ 'train_target : Smelt' 'train_target : Perch' 'train_target : Perch'
+ 'train_target : Roach' 'train_target : Bream' 'train_target : Perch'
+ 'train_target : Perch' 'train_target : Roach' 'train_target : Roach'
+ 'train_target : Perch' 'train_target : Perch' 'train_target : Bream'
+ 'train_target : Roach' 'train_target : Bream' 'train_target : Roach'
+ 'train_target : Parkki' 'train_target : Perch' 'train_target : Perch'
+ 'train_target : Perch' 'train_target : Perch' 'train_target : Pike'
+ 'train_target : Pike' 'train_target : Perch' 'train_target : Bream'
+ 'train_target : Perch' 'train_target : Bream' 'train_target : Whitefish'
+ 'train_target : Pike' 'train_target : Bream' 'train_target : Bream'
+ 'train_target : Roach' 'train_target : Perch' 'train_target : Pike'
+ 'train_target : Bream' 'train_target : Pike' 'train_target : Parkki'
+ 'train_target : Roach' 'train_target : Perch' 'train_target : Roach'
+ 'train_target : Smelt' 'train_target : Whitefish' 'train_target : Roach'
+ 'train_target : Perch' 'train_target : Bream' 'train_target : Whitefish'
+ 'train_target : Smelt' 'train_target : Pike' 'train_target : Roach'
+ 'train_target : Smelt' 'train_target : Bream' 'train_target : Roach'
+ 'train_target : Pike' 'train_target : Perch' 'train_target : Perch'
+ 'train_target : Perch' 'train_target : Perch' 'train_target : Perch'
+ 'train_target : Perch' 'train_target : Smelt' 'train_target : Bream'
+ 'train_target : Parkki' 'train_target : Perch' 'train_target : Bream'
+ 'train_target : Perch' 'train_target : Perch']
+print(test_target)
+
+
+
+
+
+
+['Perch' 'Smelt' 'Pike' 'Whitefish' 'Perch' 'Bream' 'Smelt' 'Roach'
+ 'Perch' 'Pike' 'Bream' 'Whitefish' 'Bream' 'Parkki' 'Bream' 'Bream'
+ 'Perch' 'Perch' 'Perch' 'Bream' 'Smelt' 'Bream' 'Bream' 'Bream' 'Bream'
+ 'Perch' 'Perch' 'Whitefish' 'Smelt' 'Smelt' 'Pike' 'Perch' 'Perch' 'Pike'
+ 'Bream' 'Perch' 'Roach' 'Roach' 'Parkki' 'Perch']
+from sklearn.preprocessing import StandardScaler
+ss = StandardScaler()
+ss.fit(train_input)
+train_scaled = ss.transform(train_input)
+test_scaled = ss.transform(test_input)
+print(train_scaled[:5])
+[[ 0.919658  0.609432  0.810412  1.851949  1.000757]
+ [ 0.300412  1.546534  1.453166 -0.469817  0.272917]
+ [-1.085854 -1.68647  -1.708486 -1.701598 -2.004476]
+ [-0.797341 -0.608802 -0.674869 -0.824806 -0.276315]
+ [-0.712899 -0.730625 -0.700927 -0.08023  -0.703387]]
+print(test_scaled[:5])
+[[-0.887414 -0.918046 -1.030989 -0.904645 -0.807625]
+ [-1.069247 -1.50842  -1.543455 -1.588496 -1.938032]
+ [-0.544014  0.356414  0.306633 -0.81357  -0.653889]
+ [-0.346981 -0.233961 -0.223205 -0.11905  -0.122335]
+ [-0.684751 -0.515091 -0.588011 -0.899878 -0.50125 ]]
+from sklearn.linear_model import **SGDClassifier**
+sc = **SGDClassifier**(loss='**log_loss**', max_iter=10, random_state=42)
+sc.fit(train_scaled, train_target)
+print(sc.score(train_scaled, train_target))
+print(sc.score(test_scaled, test_target))
+0.773109243697479
+0.775
+/usr/local/lib/python3.12/dist-packages/sklearn/linear_model/_stochastic_gradient.p
+y:738: ConvergenceWarning: Maximum number of iteration reached before convergence. C
+onsider increasing max_iter to improve the fit.
+  warnings.warn(
+sc.**partial_fit**(train_scaled, train_target)
+print(sc.score(train_scaled, train_target))
+print(sc.score(test_scaled, test_target))
+0.7983193277310925
+0.775
+
+
+
+
+
+
+
+
+import numpy as np
+sc = **SGDClassifier**(loss='**log_loss**', random_state=42)
+train_score = []
+test_score = []
+classes = np.unique(train_target)
+for _ in range(0, 300):
+    sc.**partial_fit**(train_scaled, train_target, classes=classes)
+    train_score.append(sc.score(train_scaled, train_target))
+    test_score.append(sc.score(test_scaled, test_target))
+import matplotlib.pyplot as plt
+plt.plot(train_score)
+plt.plot(test_score)
+plt.xlabel('epoch')
+plt.ylabel('accuracy')
+plt.show()
+
+
+
+
+
+
+
+
+sc = **SGDClassifier**(loss='**log_loss**', max_iter=100, tol=None, random_state=42)
+sc.fit(train_scaled, train_target)
+print(sc.score(train_scaled, train_target))
+print(sc.score(test_scaled, test_target))
+0.957983193277311
+0.925
+sc.predict(test_scaled[:5])
+proba = sc.predict_proba(test_scaled[:5])
+np.round(proba, decimals=3)
+array([[0.   , 0.003, 0.774, 0.   , 0.219, 0.   , 0.005],
+       [0.   , 0.001, 0.015, 0.   , 0.04 , 0.945, 0.   ],
+       [0.   , 0.   , 0.011, 0.96 , 0.02 , 0.008, 0.001],
+       [0.   , 0.   , 0.525, 0.   , 0.423, 0.   , 0.052],
+       [0.   , 0.   , 0.688, 0.   , 0.306, 0.   , 0.006]])
+
+
+
+
+
+
+sc.classes_
+array(['Bream', 'Parkki', 'Perch', 'Pike', 'Roach', 'Smelt', 'Whitefish'],
+      dtype='<U9')
+sc_hinge = **SGDClassifier**(loss='**hinge**', max_iter=100, tol=None, random_state=42)
+sc_hinge.fit(train_scaled, train_target)
+print(sc_hinge.score(train_scaled, train_target))
+print(sc_hinge.score(test_scaled, test_target))
+0.9495798319327731
+0.925
+sc_hinge.predict(test_scaled[:5])
+array(['Perch', 'Smelt', 'Pike', 'Perch', 'Perch'], dtype='<U9')
+sc_hinge.**partial_fit**(train_scaled, train_target)
+print(sc_hinge.score(train_scaled, train_target))
+print(sc_hinge.score(test_scaled, test_target))
+0.907563025210084
+0.925
+from sklearn.metrics import hinge_loss
+train_score = []
+test_score = []
+train_loss = []
+test_loss = []
+classes = np.unique(train_target)
+sc_hinge_test = **SGDClassifier**(loss='**hinge**', max_iter=1, tol=None, random_state=42)
+for _ in range(300):
+    sc_hinge_test.**partial_fit**(train_scaled, train_target, classes=classes)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    train_score.append(sc_hinge_test.score(train_scaled, train_target))
+    test_score.append(sc_hinge_test.score(test_scaled, test_target))
+    train_decision = sc_hinge_test.decision_function(train_scaled)
+    test_decision = sc_hinge_test.decision_function(test_scaled)
+    train_loss.append(hinge_loss(train_target, train_decision))
+    test_loss.append(hinge_loss(test_target, test_decision))
+fig, ax1 = plt.subplots(figsize=(10,6))
+ax1.plot(train_score,
+         color='blue',
+         linewidth=2.5,
+         label='Train Accuracy')
+ax1.plot(test_score,
+         color='orange',
+         linewidth=2.5,
+         label='Test Accuracy')
+ax1.set_xlabel('Epoch', fontsize=12)
+ax1.set_ylabel('Accuracy', fontsize=12)
+ax1.tick_params(axis='y')
+ax2 = ax1.twinx()
+ax2.plot(train_loss,
+         color='green',
+         linestyle='--',
+         linewidth=2,
+         alpha=0.8,
+         label='Train Loss')
+ax2.plot(test_loss,
+         color='red',
+         linestyle='--',
+         linewidth=2,
+         alpha=0.8,
+         label='Test Loss')
+ax2.set_ylabel('Loss', fontsize=12)
+lines1, labels1 = ax1.get_legend_handles_labels()
+lines2, labels2 = ax2.get_legend_handles_labels()
+ax1.legend(lines1 + lines2, labels1 + labels2, loc='center right')
+plt.title('Accuracy & Loss over Epochs', fontsize=14)
+plt.grid(alpha=0.3)
+
+
+plt.tight_layout()
+plt.show()
+patience = 10
+best_loss = float('inf')
+patience_counter = 0
+early_stop_epoch = 0
+train_score_early = []
+test_score_early = []
+train_loss_early = []
+test_loss_early = []
+sc_hinge_test_early = **SGDClassifier**(loss='**hinge**', max_iter=1, tol=None, random_stat
+for epoch in range(300):
+    sc_hinge_test_early.**partial_fit**(train_scaled, train_target, classes=classes)
+    train_score_early.append(sc_hinge_test_early.score(train_scaled, train_target))
+    test_score_early.append(sc_hinge_test_early.score(test_scaled, test_target))
+    train_decision_early = sc_hinge_test_early.decision_function(train_scaled)
+    test_decision_early = sc_hinge_test_early.decision_function(test_scaled)
+    current_test_loss = hinge_loss(test_target, test_decision_early)
+    train_loss_early.append(hinge_loss(train_target, train_decision_early))
+    test_loss_early.append(current_test_loss)
+
+
+
+
+    if current_test_loss < best_loss:
+        best_loss = current_test_loss
+        patience_counter = 0
+        early_stop_epoch = epoch
+    else:
+        patience_counter += 1
+    if patience_counter >= patience:
+        print(f"Early stopping at epoch {epoch}")
+        break
+Early stopping at epoch 23
+fig, ax1 = plt.subplots(figsize=(10,6))
+ax1.plot(train_score_early, color='blue', linewidth=2, label='Train Acc')
+ax1.plot(test_score_early, color='orange', linewidth=2, label='Test Acc')
+ax1.axvline(x=early_stop_epoch,
+            color='black',
+            linestyle=':',
+            linewidth=2,
+            label='Early Stop')
+ax1.set_xlabel('Epoch')
+ax1.set_ylabel('Accuracy')
+ax2 = ax1.twinx()
+ax2.plot(train_loss_early, color='green', linestyle='--', label='Train Loss')
+ax2.plot(test_loss_early, color='red', linestyle='--', label='Test Loss')
+ax2.set_ylabel('Loss')
+lines1, labels1 = ax1.get_legend_handles_labels()
+lines2, labels2 = ax2.get_legend_handles_labels()
+ax1.legend(lines1 + lines2, labels1 + labels2, loc='center right')
+plt.title('Accuracy & Loss with Early Stopping')
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
