@@ -1,0 +1,55 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow border-0">
+            <div class="card-header bg-success text-white py-3"><h4>실시간 도로 파손 제보</h4></div>
+            <div class="card-body p-4">
+                <form action="/report/submit" method="POST" onsubmit="return validateForm()">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">위치 선택</label>
+                        <div class="input-group">
+                            <input type="text" id="address" name="address" class="form-control" placeholder="주소를 검색하세요" readonly required>
+                            <button type="button" class="btn btn-primary" onclick="searchAddress()">주소 검색</button>
+                        </div>
+                        <input type="hidden" id="lat" name="lat">
+                        <input type="hidden" id="lng" name="lng">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">파손 정도</label>
+                        <select name="severity" class="form-select" required>
+                            <option value="" disabled selected>선택하세요</option>
+                            <option value="상">매우 심함</option>
+                            <option value="중">보통</option>
+                            <option value="하">경미함</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 py-2">제보하기</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=f2b7565033531bba4528b5c87e33fa8d&libraries=services"></script>
+<script>
+function searchAddress() {
+    new daum.Postcode({
+        oncomplete: function(data) {
+            var addr = data.address;
+            document.getElementById("address").value = addr;
+
+            var geocoder = new kakao.maps.services.Geocoder(); // 여기서 'services'를 읽어옵니다.
+            geocoder.addressSearch(addr, function(results, status) {
+                if (status === kakao.maps.services.Status.OK) {
+                    document.getElementById("lat").value = results[0].y;
+                    document.getElementById("lng").value = results[0].x;
+                    alert("✅ 위치 좌표 추출에 성공했습니다!");
+                }
+            });
+        }
+    }).open();
+}
+</script>
+{% endblock %}

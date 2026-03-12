@@ -1,0 +1,58 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3 class="mb-4"><i class="bi bi-map-fill"></i> 도로 파손 현황 지도</h3>
+    
+    <div id="map" style="width:100%; height:600px; border-radius: 15px; border: 2px solid #28a745;"></div>
+</div>
+
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=f2b7565033531bba4528b5c87e33fa8d"></script>
+
+<script>
+    var mapContainer = document.getElementById('map');
+    var mapOption = {
+        center: new kakao.maps.LatLng(37.2635, 127.0286),
+        level: 8
+    };
+    var map = new kakao.maps.Map(mapContainer, mapOption);
+
+    // app.py에서 넘겨준 이름 'potholes'를 사용합니다.
+    var potholeData = {{ potholes | tojson }};
+
+    potholeData.forEach(function(item) {
+        // [중요] app.py의 SELECT 순서에 따라 인덱스 수정
+        // id(0), address(1), severity(2), lat(3), lng(4)
+        var lat = item[6];
+        var lng = item[7];
+
+        if (lat && lng) {
+            var markerPosition = new kakao.maps.LatLng(lat, lng);
+            var marker = new kakao.maps.Marker({
+                position: markerPosition,
+                map: map
+            });
+
+            // 인덱스 1은 address, 2는 severity입니다.
+            var content = '<div style="padding:10px; min-width:150px;">' +
+                          '<strong>위치:</strong> ' + (item[1] || '정보 없음') + '<br>' +
+                          '<strong>위험도:</strong> ' + item[2] +
+                          '</div>';
+
+            var infowindow = new kakao.maps.InfoWindow({
+                content: content,
+                removable: true
+            });
+
+            kakao.maps.event.addListener(marker, 'click', function() {
+                infowindow.open(map, marker);
+            });
+        }
+    });
+
+    if (potholeData.length > 0) {
+        // 첫 번째 데이터의 lat(3), lng(4)로 중심 이동
+        map.setCenter(new kakao.maps.LatLng(potholeData[0][3], potholeData[0][4]));
+    }
+</script>
+{% endblock %}

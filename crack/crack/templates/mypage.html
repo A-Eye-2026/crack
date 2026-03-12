@@ -1,0 +1,68 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-11">
+        <div class="card shadow border-0">
+            <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="bi bi-gear-fill"></i> ITS-Guard 통합 관리자 모드</h4>
+                <span class="badge bg-danger">ADMIN ONLY</span>
+            </div>
+            <div class="card-body p-4">
+                <h5 class="text-muted mb-4"><i class="bi bi-table"></i> 전체 도로 제보 및 처리 현황</h5>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>제보자ID</th>
+                                <th>제보 위치</th>
+                                <th>위험도</th>
+                                <th>현재 상태</th>
+                                <th>상태 변경</th>
+                                <th>제보일</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in reports %}
+                            <tr>
+                                <td><strong>{{ report.reporter_id }}</strong><br><small class="text-muted">({{ report.reporter_name }})</small></td>
+                                <td>{{ report.address }}</td>
+                                <td>
+                                    {% if report.severity == 'High' %}
+                                        <span class="badge bg-danger">위험</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">보통</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if report.status == '완료' %}
+                                        <span class="text-success fw-bold">처리완료</span>
+                                    {% else %}
+                                        <span class="text-muted">검토대기</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form action="/admin/update_status/{{ report.id }}" method="POST" class="d-flex gap-1">
+                                        <select name="status" class="form-select form-select-sm" style="width: 100px;">
+                                            <option value="검토중" {% if report.status == '검토중' %}selected{% endif %}>검토중</option>
+                                            <option value="완료" {% if report.status == '완료' %}selected{% endif %}>완료</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-primary btn-sm">변경</button>
+                                    </form>
+                                </td>
+                                <td><small>{{ report.created_at.strftime('%Y-%m-%d') }}</small></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">등록된 제보 내역이 없습니다.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
