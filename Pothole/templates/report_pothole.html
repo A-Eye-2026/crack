@@ -1,7 +1,9 @@
 {% extends 'layout.html' %}
 {% block content %}
 
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=2fdbc6be83597f5e57fc1db99f057a4b"></script>
+<!-- Leaflet 지도 -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <!-- 타이틀 -->
 <div class="py-5 text-center">
@@ -18,10 +20,7 @@
             <div class="card-body">
                 <h3 class="fs-4 text-body-emphasis">📸 사진 파일 등록하기</h3>
                 <p>JPG, PNG 파일을 업로드하면 AI가 포트홀 여부를 분석합니다.</p>
-
                 <input type="file" id="img-input" accept=".jpg,.jpeg,.png" class="form-control mb-3">
-
-                <!-- 사진 미리보기 -->
                 <div id="img-preview-wrap" style="display:none;" class="mb-3">
                     <img id="img-preview" src="" alt="미리보기"
                          class="img-fluid rounded mb-1"
@@ -29,7 +28,6 @@
                     <div id="img-file-name" class="text-muted small"></div>
                     <div id="img-gps-status" class="mt-1"></div>
                 </div>
-
                 <button class="btn btn-primary" id="img-submit-btn"
                         onclick="submitReport('image')" disabled>
                     사진 신고 접수하기
@@ -44,20 +42,15 @@
             <div class="card-body">
                 <h3 class="fs-4 text-info">🎥 영상 파일 등록하기</h3>
                 <p>MP4, AVI, MOV 파일을 업로드하면 AI가 포트홀 여부를 분석합니다.</p>
-
                 <input type="file" id="vid-input" accept=".mp4,.avi,.mov" class="form-control mb-3">
-
-                <!-- 영상 미리보기 -->
                 <div id="vid-preview-wrap" style="display:none;" class="mb-3">
-                    <video id="vid-preview" controls
-                           class="rounded mb-1"
+                    <video id="vid-preview" controls class="rounded mb-1"
                            style="width:100%; max-height:200px;"></video>
                     <div id="vid-file-name" class="text-muted small"></div>
                     <div id="vid-gps-status" class="mt-1">
                         <span class="badge bg-warning text-dark">📍 GPS 없음 — 지도에서 위치 선택 필요</span>
                     </div>
                 </div>
-
                 <button class="btn btn-info text-white" id="vid-submit-btn"
                         onclick="submitReport('video')" disabled>
                     영상 신고 접수하기
@@ -68,14 +61,19 @@
 
 </div>
 
-<!-- 지도 카드 (GPS 없을 때 표시) -->
+<!-- 지도 카드 -->
 <div class="row g-4 pb-4" id="map-section" style="display:none;">
     <div class="col">
         <div class="card shadow-sm border-warning">
             <div class="card-body">
-                <h5 class="text-warning">📍 위치 직접 선택</h5>
-                <p>지도를 클릭해서 신고 위치를 선택해주세요.</p>
-                <div id="map" style="width:100%; height:300px; border-radius:6px; border:1px solid #dee2e6;"></div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="text-warning mb-0">📍 위치 직접 선택</h5>
+                    <button class="btn btn-outline-primary btn-sm" onclick="moveToCurrentLocation()">
+                        🎯 현재 위치로 이동
+                    </button>
+                </div>
+                <p class="text-muted small">지도를 클릭해서 신고 위치를 선택해주세요.</p>
+                <div id="map" style="width:100%; height:300px; border-radius:6px; border:1px solid #dee2e6; z-index:0;"></div>
                 <div id="coords-display" class="text-muted small mt-2">위치를 선택하면 좌표가 표시돼요</div>
             </div>
         </div>
@@ -92,22 +90,22 @@
 <div id="result" class="pb-4"></div>
 
 <script>
-    let selectedLat = null;
-    let selectedLon = null;
-    let map = null;
-    let marker = null;
+    var selectedLat = null;
+    var selectedLon = null;
+    var map         = null;
+    var marker      = null;
 
     // ── 사진 선택 ──
     document.getElementById('img-input').addEventListener('change', function(e) {
-        const file = e.target.files[0];
+        var file = e.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
+        var reader = new FileReader();
         reader.onload = function(ev) {
             document.getElementById('img-preview').src = ev.target.result;
             document.getElementById('img-preview-wrap').style.display = 'block';
             document.getElementById('img-file-name').textContent =
-                `📁 ${file.name} (${(file.size / 1024).toFixed(1)}KB)`;
+                '📁 ' + file.name + ' (' + (file.size / 1024).toFixed(1) + 'KB)';
         };
         reader.readAsDataURL(file);
         checkGPS(file);
@@ -115,118 +113,143 @@
 
     // ── 영상 선택 ──
     document.getElementById('vid-input').addEventListener('change', function(e) {
-        const file = e.target.files[0];
+        var file = e.target.files[0];
         if (!file) return;
 
-        const url = URL.createObjectURL(file);
+        var url = URL.createObjectURL(file);
         document.getElementById('vid-preview').src = url;
         document.getElementById('vid-preview-wrap').style.display = 'block';
         document.getElementById('vid-file-name').textContent =
-            `🎥 ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`;
+            '🎥 ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + 'MB)';
 
         showMap();
         document.getElementById('vid-submit-btn').disabled = false;
     });
 
-    // ── GPS 확인 (사진만) ──
+    // ── GPS 확인 ──
     function checkGPS(file) {
-        const reader = new FileReader();
+        var reader = new FileReader();
         reader.onload = function(e) {
-            const arr = new Uint8Array(e.target.result);
-            const isJpeg = arr[0] === 0xFF && arr[1] === 0xD8;
+            var arr    = new Uint8Array(e.target.result);
+            var isJpeg = arr[0] === 0xFF && arr[1] === 0xD8;
 
-            if (isJpeg) {
-                document.getElementById('img-gps-status').innerHTML =
-                    '<span class="badge bg-success">📡 GPS 정보 확인 중...</span>';
-            } else {
-                document.getElementById('img-gps-status').innerHTML =
-                    '<span class="badge bg-warning text-dark">📍 GPS 없음 — 지도에서 위치 선택 필요</span>';
-            }
+            document.getElementById('img-gps-status').innerHTML = isJpeg
+                ? '<span class="badge bg-success">📡 GPS 정보 확인 중...</span>'
+                : '<span class="badge bg-warning text-dark">📍 GPS 없음 — 지도에서 위치 선택 필요</span>';
+
             showMap();
             document.getElementById('img-submit-btn').disabled = false;
         };
         reader.readAsArrayBuffer(file.slice(0, 100));
     }
 
-    // ── 카카오맵 초기화 ──
+    // ── Leaflet 지도 초기화 ──
     function showMap() {
         document.getElementById('map-section').style.display = 'block';
+        if (map) return;
 
-        if (!map) {
-            const container = document.getElementById('map');
-            map = new kakao.maps.Map(container, {
-                center: new kakao.maps.LatLng(37.5665, 126.9780),
-                level: 5
-            });
+        map = L.map('map').setView([37.5665, 126.9780], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
 
-            kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
-                const latlng = mouseEvent.latLng;
-                selectedLat = latlng.getLat().toFixed(6);
-                selectedLon = latlng.getLng().toFixed(6);
+        map.on('click', function(e) {
+            selectedLat = e.latlng.lat.toFixed(6);
+            selectedLon = e.latlng.lng.toFixed(6);
 
-                if (marker) marker.setMap(null);
-                marker = new kakao.maps.Marker({ position: latlng });
-                marker.setMap(map);
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([selectedLat, selectedLon]).addTo(map);
+
+            document.getElementById('coords-display').textContent =
+                '📍 위도: ' + selectedLat + '  경도: ' + selectedLon;
+        });
+
+        // 지도 뜨자마자 현재 위치로 이동
+        moveToCurrentLocation();
+    }
+
+    // ── 현재 위치로 이동 ──
+    function moveToCurrentLocation() {
+        if (!navigator.geolocation) {
+            alert('이 브라우저는 위치 서비스를 지원하지 않아요!');
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                var lat = pos.coords.latitude;
+                var lon = pos.coords.longitude;
+
+                // 지도 이동
+                map.setView([lat, lon], 16);
+
+                // 마커 찍기
+                selectedLat = lat.toFixed(6);
+                selectedLon = lon.toFixed(6);
+
+                if (marker) map.removeLayer(marker);
+                marker = L.marker([lat, lon]).addTo(map)
+                    .bindPopup('📍 현재 위치').openPopup();
 
                 document.getElementById('coords-display').textContent =
-                    `📍 위도: ${selectedLat}  경도: ${selectedLon}`;
-            });
-        }
+                    '📍 위도: ' + selectedLat + '  경도: ' + selectedLon;
+            },
+            function(err) {
+                // 위치 권한 거부 등
+                console.log('위치 가져오기 실패:', err.message);
+            }
+        );
     }
 
     // ── 신고 제출 ──
     async function submitReport(fileType) {
-        const inputId  = fileType === 'image' ? 'img-input' : 'vid-input';
-        const fileInput = document.getElementById(inputId);
+        var inputId   = fileType === 'image' ? 'img-input' : 'vid-input';
+        var fileInput = document.getElementById(inputId);
         if (!fileInput.files[0]) return;
 
         document.getElementById('loading').style.display = 'block';
-        document.getElementById('result').innerHTML = '';
+        document.getElementById('result').innerHTML      = '';
         document.getElementById('img-submit-btn').disabled = true;
         document.getElementById('vid-submit-btn').disabled = true;
 
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+        var formData = new FormData();
+        formData.append('file',      fileInput.files[0]);
         formData.append('file_type', fileType);
         if (selectedLat) formData.append('latitude',  selectedLat);
         if (selectedLon) formData.append('longitude', selectedLon);
 
-        const endpoint = fileType === 'image' ? '/report/image' : '/report/video';
+        var endpoint = fileType === 'image' ? '/report/image' : '/report/video';
 
         try {
-            const res  = await fetch(endpoint, { method: 'POST', body: formData });
-            const data = await res.json();
+            var res  = await fetch(endpoint, { method: 'POST', body: formData });
+            var data = await res.json();
 
             document.getElementById('loading').style.display = 'none';
 
             if (res.ok) {
-                const conf = (data.ai_result.confidence * 100).toFixed(0);
-                document.getElementById('result').innerHTML = `
-                    <div class="alert alert-success">
-                        <h5 class="alert-heading">✅ 신고가 접수됐어요!</h5>
-                        <hr>
-                        <p class="mb-0">
-                            신고번호: <strong>#${data.report_id ?? '대기중'}</strong><br>
-                            파일 종류: ${fileType === 'image' ? '📸 사진' : '🎥 영상'}<br>
-                            위치: ${data.location.latitude}, ${data.location.longitude}<br>
-                            AI 탐지: ${data.ai_result.label} (${conf}% 확신)<br>
-                            상태: ${data.ai_result.status === 'auto_accepted' ? '✅ 자동 승인' : '⏳ 검토 대기'}
-                        </p>
-                    </div>`;
+                var conf = (data.ai_result.confidence * 100).toFixed(0);
+                document.getElementById('result').innerHTML =
+                    '<div class="alert alert-success">' +
+                    '<h5 class="alert-heading">✅ 신고가 접수됐어요!</h5><hr>' +
+                    '<p class="mb-0">' +
+                    '신고번호: <strong>#' + (data.report_id ?? '대기중') + '</strong><br>' +
+                    '파일 종류: ' + (fileType === 'image' ? '📸 사진' : '🎥 영상') + '<br>' +
+                    '위치: ' + data.location.latitude + ', ' + data.location.longitude + '<br>' +
+                    'AI 탐지: ' + data.ai_result.label + ' (' + conf + '% 확신)<br>' +
+                    '상태: ' + (data.ai_result.status === 'auto_accepted' ? '✅ 자동 승인' : '⏳ 검토 대기') +
+                    '</p></div>';
             } else {
-                document.getElementById('result').innerHTML = `
-                    <div class="alert alert-danger">
-                        <h5 class="alert-heading">❌ 오류가 발생했어요</h5>
-                        <p class="mb-0">${data.error}</p>
-                    </div>`;
+                document.getElementById('result').innerHTML =
+                    '<div class="alert alert-danger">' +
+                    '<h5 class="alert-heading">❌ 오류가 발생했어요</h5>' +
+                    '<p class="mb-0">' + data.error + '</p></div>';
             }
         } catch (err) {
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('result').innerHTML = `
-                <div class="alert alert-danger">
-                    <h5 class="alert-heading">❌ 서버 연결 실패</h5>
-                    <p class="mb-0">Flask 서버가 켜져 있는지 확인해요! (python app.py)</p>
-                </div>`;
+            document.getElementById('result').innerHTML =
+                '<div class="alert alert-danger">' +
+                '<h5 class="alert-heading">❌ 서버 연결 실패</h5>' +
+                '<p class="mb-0">Flask 서버가 켜져 있는지 확인해요! (python app.py)</p></div>';
         }
 
         document.getElementById('img-submit-btn').disabled = false;
