@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Crack{% endblock %}</title>
+
+    <!-- Modern Typography: Inter & Outfit -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <script>
+        // Critical: Apply classes immediately before first paint to prevent flashes
+        (function () {
+            const isTopMobile = window.top.innerWidth <= 600.98;
+            if (isTopMobile) {
+                document.documentElement.classList.add('is-mobile-ui');
+            }
+            const isDualActive = sessionStorage.getItem('dualViewActive') === 'true';
+            if (isDualActive && window.top === window.self) {
+                document.documentElement.classList.add('is-restoring-dual');
+            }
+            if (window.top !== window.self) {
+                document.documentElement.classList.add('is-dual-frame');
+            }
+        })();
+    </script>
+
+    <style>
+        :root {
+            --bg-main: #F2F0EB;
+            --text-asphalt: #333333;
+            --point-orange: #FF8C00;
+            --accent-soft: rgba(255, 140, 0, 0.1);
+            --white: #FFFFFF;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #E2E2E2;
+            color: var(--text-asphalt);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100dvh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dual-view-wrapper {
+            display: flex;
+            width: 100vw;
+            height: 100dvh;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .app-container,
+        #secondary-view {
+            height: 100dvh;
+            aspect-ratio: 9 / 16;
+            max-width: 56.25dvh;
+            background-color: var(--bg-main);
+            position: relative;
+            box-shadow: 0 0 80px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 32px;
+        }
+
+        #secondary-view {
+            width: 0;
+            max-width: 0;
+            visibility: hidden;
+            opacity: 0;
+            transform: translateX(40px);
+        }
+
+        #secondary-view.active {
+            width: auto;
+            max-width: 56.25dvh;
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        @media (max-width: 600px) {
+            #secondary-view {
+                display: none !important;
+            }
+
+            .app-container {
+                max-width: 100% !important;
+                border-radius: 0 !important;
+            }
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 58px;
+        }
+
+        /* Hide all scrollbars globally */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        * {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            /* Thin bar */
+            background-color: var(--point-orange);
+            /* Orange color */
+            width: 0%;
+            /* Initial width */
+            transition: width 0.1s ease-out;
+            /* Smooth transition for width changes */
+            z-index: 101;
+            /* Above header content */
+        }
+
+        .brand {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--text-asphalt);
+            text-transform: uppercase;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand i {
+            color: var(--point-orange);
+        }
+
+        main {
+            flex: 1;
+            padding: 24px 20px;
+            overflow-y: auto;
+        }
+
+        .card {
+            background: #FFFFFF;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            margin-bottom: 12px;
+        }
+
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            padding: 6px 10px 10px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            min-height: 52px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-asphalt);
+            text-decoration: none;
+            font-size: 0.8rem;
+            opacity: 0.5;
+            gap: 2px;
+            transition: var(--transition);
+        }
+
+        .nav-item i {
+            font-size: 1.4rem;
+            margin-bottom: 2px;
+        }
+
+        .nav-item.active {
+            opacity: 1;
+            color: var(--point-orange);
+        }
+
+        .is-dual-frame header {
+            min-height: 58px;
+            background: rgba(255, 255, 255, 0.8) !important;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+        }
+
+        .is-dual-frame header .brand,
+        .is-dual-frame header .auth-tools {
+            visibility: hidden;
+        }
+
+        .is-dual-frame #scroll-indicator {
+            visibility: visible !important;
+        }
+
+        .btn-auth-outline {
+            background: transparent;
+            color: var(--text-asphalt);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            /* Even lighter border */
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .btn-auth-solid {
+            background: var(--point-orange);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            border: none !important;
+            /* Force remove any default borders */
+            cursor: pointer;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .is-mobile-ui header {
+            min-height: 38px !important;
+            padding: 4px 16px !important;
+        }
+
+        .is-mobile-ui .bottom-nav {
+            min-height: 48px !important;
+            /* Adjusted mobile min-height */
+            padding: 4px 10px 6px !important;
+            /* Adjusted mobile padding */
+        }
+
+        /* Global Modal Styles */
+        .global-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .global-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .global-modal-content {
+            width: 85%;
+            max-width: 320px;
+            background: #fff;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .global-modal-overlay.active .global-modal-content {
+            transform: scale(1);
+        }
+
+        .gmodal-item {
+            padding: 18px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .gmodal-item i {
+            color: var(--point-orange);
+        }
+
+        .gmodal-divider {
+            height: 1px;
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .gmodal-item.cancel {
+            color: #FF4D4D;
+        }
+
+        #custom-toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: #333;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 12px;
+            z-index: 10000;
+            transition: all 0.4s ease;
+            opacity: 0;
+        }
+
+        #custom-toast.active {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-4px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(4px);
+            }
+        }
+
+        .shake {
+            animation: shake 0.5s ease;
+            border-color: var(--point-orange) !important;
+        }
+
+            {
+            % block extra_style %
+        }
+
+            {
+            % endblock %
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dual-view-wrapper">
+        <div class="app-container">
+            <header>
+                <a href="/" class="brand"><i class="bi bi-lightning-charge-fill"></i> CRACK</a>
+                <div class="auth-tools" style="display:flex; gap:12px; align-items:center;">
+                    {% if session.get('user_id') %}
+                    <button onclick="toggleDualView()" class="btn-auth-outline"
+                        style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-layout-split"></i>
+                    </button>
+                    <a href="/logout" class="btn-auth-outline" style="color: #FF4D4D;"><i
+                            class="bi bi-box-arrow-right"></i> Logout</a>
+                    {% else %}
+                    <a href="/login" class="btn-auth-outline btn-login">Login</a>
+                    <a href="/signup" class="btn-auth-solid">Sign Up</a>
+                    {% endif %}
+                </div>
+                <!-- Scroll Progress Indicator (Scroll Indicator) -->
+                <div id="scroll-indicator"
+                    style="position: absolute; bottom: 0; left: 0; height: 2px; width: 0%; background: var(--point-orange); z-index: 101; transition: width 0.1s ease-out; opacity: 0.8;">
+                </div>
+            </header>
+            <main>{% block content %}{% endblock %}</main>
+            <nav class="bottom-nav">
+                <a href="/alert" class="nav-item {{ 'active' if request.path == '/alert' else '' }}"><i
+                        class="bi bi-bell-fill"></i> Alert</a>
+                <a href="/report" class="nav-item {{ 'active' if request.path == '/report' else '' }}"><i
+                        class="bi bi-plus-circle-fill"></i> Report</a>
+                <a href="/status"
+                    class="nav-item {{ 'active' if request.path == '/status' or request.path == '/' else '' }}"><i
+                        class="bi bi-file-text-fill"></i> Status</a>
+                <a href="/mypage" class="nav-item {{ 'active' if request.path == '/mypage' else '' }}"
+                    onclick="return checkMyPage(event)"><i class="bi bi-person-fill"></i> My</a>
+            </nav>
+        </div>
+        <div id="secondary-view">
+            <div style="position: absolute; top: 16px; right: 16px; z-index: 100;">
+                <button onclick="closeDualView()"
+                    style="width:40px;height:40px;border-radius:50%;border:none;background:rgba(0,0,0,0.05);cursor:pointer;">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <iframe id="sec-frame" src="about:blank" style="width:100%; height:100%; border:none;"></iframe>
+        </div>
+    </div>
+
+    <div id="custom-toast">
+        <i class="bi bi-info-circle-fill"></i> <span id="toast-message"></span>
+    </div>
+
+    <div id="global-upload-modal" class="global-modal-overlay" onclick="closeGlobalModal()">
+        <div class="global-modal-content" onclick="event.stopPropagation()">
+            <div class="gmodal-item" onclick="handleGlobalModalAction('FILE')"><i
+                    class="bi bi-collection-play-fill"></i> 이 디바이스에서 추가하기</div>
+            <div id="gmodal-camera-option" class="gmodal-item" onclick="handleGlobalModalAction('CAMERA')"><i
+                    class="bi bi-camera-reels-fill"></i> 직접 사진/영상 촬영하기</div>
+            <div class="gmodal-divider"></div>
+            <div class="gmodal-item cancel" onclick="closeGlobalModal()">취소</div>
+        </div>
+    </div>
+
+    <script>
+        let modalOriginSource = null;
+
+        function showToast(msg) {
+            const toast = document.getElementById('custom-toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.add('active');
+            setTimeout(() => toast.classList.remove('active'), 3000);
+        }
+
+        function openGlobalUploadModal(source) {
+            modalOriginSource = source;
+            const overlay = document.getElementById('global-upload-modal');
+            const cameraOpt = document.getElementById('gmodal-camera-option');
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 1024;
+            if (cameraOpt) cameraOpt.style.display = isMobile ? 'flex' : 'none';
+            overlay.classList.add('active');
+        }
+
+        function closeGlobalModal() {
+            document.getElementById('global-upload-modal').classList.remove('active');
+        }
+
+        function handleGlobalModalAction(action) {
+            closeGlobalModal();
+            if (modalOriginSource) {
+                modalOriginSource.postMessage({ type: 'MODAL_ACTION_SELECTED', action: action }, '*');
+            } else {
+                window.postMessage({ type: 'MODAL_ACTION_SELECTED', action: action }, '*');
+            }
+        }
+
+        const shakeElement = (el) => {
+            if (!el) return;
+            el.classList.remove('shake');
+            void el.offsetWidth;
+            el.classList.add('shake');
+            setTimeout(() => el.classList.remove('shake'), 600);
+        };
+
+        window.addEventListener('message', function (e) {
+            if (!e.data) return;
+            if (e.data.type === 'SHAKE_LOGIN') shakeElement(document.querySelector('.btn-login'));
+            else if (e.data.type === 'SHOW_TOAST') showToast(e.data.message);
+            else if (e.data.type === 'REQUEST_UPLOAD_MODAL') openGlobalUploadModal(e.source);
+        });
+
+        function toggleDualView() {
+            const sec = document.getElementById('secondary-view');
+            const frame = document.getElementById('sec-frame');
+            if (!sec.classList.contains('active')) {
+                sec.classList.add('active');
+                sessionStorage.setItem('dualViewActive', 'true');
+                if (frame.src === "about:blank") {
+                    frame.src = sessionStorage.getItem('savedIframeUrl') || window.location.pathname;
+                }
+            } else { closeDualView(); }
+        }
+
+        function closeDualView() {
+            document.getElementById('secondary-view').classList.remove('active');
+            sessionStorage.setItem('dualViewActive', 'false');
+        }
+
+        function checkMyPage(e) {
+            {% if not session.get('user_id') %}
+            e.preventDefault();
+            shakeElement(document.querySelector('.btn-login'));
+            if (window.top !== window.self) window.top.postMessage({ type: 'SHAKE_LOGIN' }, '*');
+            showToast('로그인을 먼저 해주세요');
+            return false;
+            {% endif %}
+            return true;
+        }
+
+        (function () {
+            // 이중 뷰(iframe) 독립성 유지
+            if (window.top !== window.self) {
+                sessionStorage.setItem('savedIframeUrl', window.location.pathname);
+            } else {
+                const isDual = sessionStorage.getItem('dualViewActive') === 'true';
+                if (isDual) {
+                    document.getElementById('secondary-view').classList.add('active');
+                    document.getElementById('sec-frame').src = sessionStorage.getItem('savedIframeUrl') || window.location.pathname;
+                }
+            }
+
+            // SPA Routing: 메뉴 클릭 시 부드러운 전환 (페이지 새로고침 방지)
+            document.addEventListener('click', async function (e) {
+                const link = e.target.closest('.nav-item, .brand');
+                if (!link) return;
+
+                if (e.defaultPrevented) return; // checkMyPage 등에서 차단된 경우 무시
+
+                const href = link.getAttribute('href');
+                if (!href || href.startsWith('http') || href.startsWith('#')) return;
+
+                e.preventDefault();
+
+                try {
+                    const response = await fetch(href);
+                    const html = await response.text();
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+                    const newMain = doc.querySelector('main');
+                    if (newMain) {
+                        const mainElem = document.querySelector('main');
+                        mainElem.innerHTML = newMain.innerHTML;
+                        mainElem.scrollTop = 0; // 스크롤 초기화
+                    }
+
+                    const finalUrl = new URL(response.url).pathname;
+
+                    document.querySelectorAll('.bottom-nav .nav-item').forEach(nav => {
+                        nav.classList.toggle('active', nav.getAttribute('href') === finalUrl);
+                    });
+
+                    window.history.pushState({}, '', finalUrl);
+                    if (window.top !== window.self) {
+                        sessionStorage.setItem('savedIframeUrl', finalUrl);
+                    }
+
+                    // 스크립트 재실행 (모달 오픈 등 동적 함수 바인딩 유지)
+                    const scripts = document.querySelector('main').querySelectorAll('script');
+                    scripts.forEach(oldScript => {
+                        const newScript = document.createElement('script');
+                        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                        oldScript.parentNode.replaceChild(newScript, oldScript);
+                    });
+
+                } catch (err) {
+                    window.location.href = href;
+                }
+            });
+
+            // 뒤로가기/앞으로가기 처리
+            window.addEventListener('popstate', async function (e) {
+                const href = window.location.pathname;
+                try {
+                    const response = await fetch(href);
+                    const html = await response.text();
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+                    const newMain = doc.querySelector('main');
+                    if (newMain) {
+                        const mainElem = document.querySelector('main');
+                        mainElem.innerHTML = newMain.innerHTML;
+                        mainElem.scrollTop = 0;
+                        document.querySelectorAll('.bottom-nav .nav-item').forEach(nav => {
+                            nav.classList.toggle('active', nav.getAttribute('href') === href);
+                        });
+                        const scripts = document.querySelector('main').querySelectorAll('script');
+                        scripts.forEach(oldScript => {
+                            const newScript = document.createElement('script');
+                            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                            oldScript.parentNode.replaceChild(newScript, oldScript);
+                        });
+                    }
+                } catch (err) {
+                    window.location.reload();
+                }
+            });
+
+            // Scroll Indicator Logic
+            const mainContent = document.querySelector('main');
+            const indicator = document.getElementById('scroll-indicator');
+            if (mainContent && indicator) {
+                mainContent.addEventListener('scroll', () => {
+                    const scrollHeight = mainContent.scrollHeight - mainContent.clientHeight;
+                    const scrolled = scrollHeight > 0 ? (mainContent.scrollTop / scrollHeight) * 100 : 0;
+                    indicator.style.width = scrolled + "%";
+                });
+            }
+        })();
+    </script>
+</body>
+
+</html>

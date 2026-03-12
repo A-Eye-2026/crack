@@ -1,0 +1,175 @@
+{% extends 'layout.html' %}
+
+{% block title %}Report - Crack{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 24px;">
+    <h2 style="font-size: 1.5rem; margin-bottom: 4px;">Report Pothole</h2>
+    <p style="font-size: 0.9rem; opacity: 0.6;">포트홀 사진 또는 영상을 찍어 신고해 주세요.</p>
+</div>
+
+<div class="report-form card" style="margin-bottom: 24px;">
+    <div class="upload-area" onclick="openUploadModal()"
+        style="border: 2px dashed rgba(51, 51, 51, 0.1); border-radius: 20px; text-align: center; margin-bottom: 24px; cursor: pointer; transition: background 0.2s; aspect-ratio: 16 / 9; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+        <i class="bi bi-camera-reels-fill" style="font-size: 2.5rem; color: var(--point-orange); opacity: 0.8;"></i>
+        <p id="selected-file-name" style="margin-top: 12px; font-weight: 600;">사진/영상 첨부 또는 직접 촬영</p>
+        <span style="font-size: 0.75rem; opacity: 0.5;">동영상은 최대 500MB까지 가능합니다.</span>
+    </div>
+
+    <!-- Hidden Inputs (이 영역의 accept/capture 속성은 제거하고 아래쪽에 통일된 input 사용) -->
+
+    <div class="form-group" style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">제목</label>
+        <input type="text" id="report-title" placeholder="신고 제목을 입력해주세요"
+            style="width: 100%; padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.9rem;">
+    </div>
+
+    <div class="form-group" style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">위치 설정</label>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" placeholder="지도에서 핀을 찍거나 주소를 입력"
+                style="flex: 1; padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.9rem;">
+            <button class="btn-auth-outline" style="padding: 12px;"><i class="bi bi-geo-alt"></i></button>
+        </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 30px;">
+        <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">추가 설명</label>
+        <textarea id="report-content" rows="3" placeholder="상황에 대한 상세 내용을 적어주세요 (선택)"
+            style="width: 100%; padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.9rem; resize: none;"></textarea>
+    </div>
+
+    <button id="submit-btn" class="btn-point" style="width: 100%; border-radius: 16px;" onclick="submitReport()">
+        신고 제출하기
+    </button>
+</div>
+
+<div id="map-placeholder"
+    style="margin-top: 12px; height: 180px; background: #eee; border-radius: 24px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.8rem;">
+    지도 영역 (지도 라이브러리 연동 시 여기에 맵이 표시됩니다)
+</div>
+
+<!-- Hidden Inputs for Upload (capture 속성 제거하여 OS 기본 UI 팝업 유도) -->
+<input type="file" id="file-input" accept="image/*,video/*" style="display: none;" onchange="handleFileSelection(this)">
+<input type="file" id="camera-input" accept="image/*,video/*" style="display: none;"
+    onchange="handleFileSelection(this)">
+
+<script>
+    function openUploadModal() {
+        // Request global modal from parent (layout.html)
+        if (window.top !== window.self) {
+            window.top.postMessage({ type: 'REQUEST_UPLOAD_MODAL' }, '*');
+        } else {
+            // If running standalone (not in dual view)
+            if (typeof openGlobalUploadModal === 'function') {
+                openGlobalUploadModal(window);
+            }
+        }
+    }
+
+    // Listen for Modal Choice from Global Parent
+    window.addEventListener('message', function (event) {
+        if (event.data.type === 'MODAL_ACTION_SELECTED') {
+            const action = event.data.action;
+            if (action === 'FILE') {
+                document.getElementById('file-input').click();
+            } else if (action === 'CAMERA') {
+                // 권한 요청 브라우저 알림 제거 및 바로 실행 유도
+                document.getElementById('camera-input').click();
+            }
+        }
+    });
+
+    // Also handle direct calls if in the same window context
+    const originalPostMessage = window.postMessage;
+    window.postMessage = function (data, target) {
+        if (data && data.type === 'MODAL_ACTION_SELECTED') {
+            const event = new MessageEvent('message', { data: data });
+            window.dispatchEvent(event);
+        }
+        originalPostMessage.apply(this, arguments);
+    };
+    function validateFileSize(input) {
+        if (input.files && input.files[0]) {
+            const fileSize = input.files[0].size; // In bytes
+            const maxSize = 500 * 1024 * 1024; // 500MB
+            if (fileSize > maxSize) {
+                if (window.top !== window.self) {
+                    window.top.postMessage({ type: 'SHOW_TOAST', message: '파일 용량이 너무 큽니다 (최대 500MB)' }, '*');
+                } else {
+                    if (typeof showToast === 'function') showToast('파일 용량이 너무 큽니다 (최대 500MB)');
+                    else alert('파일 용량이 너무 큽니다 (최대 500MB)');
+                }
+                input.value = ""; // Clear selection
+                return false;
+            }
+        }
+        return true;
+    }
+
+    let selectedFile = null;
+
+    function handleFileSelection(input) {
+        if (!validateFileSize(input)) return;
+        if (input.files && input.files[0]) {
+            selectedFile = input.files[0];
+            const fileNameDisplay = document.getElementById('selected-file-name');
+            if (fileNameDisplay) {
+                // UI 업데이트: 선택된 파일명 표시
+                fileNameDisplay.innerText = selectedFile.name;
+                fileNameDisplay.style.color = "var(--point-orange)";
+            }
+        }
+    }
+
+    async function submitReport() {
+        const title = document.getElementById('report-title')?.value || '';
+        const content = document.getElementById('report-content')?.value || '';
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('content', content);
+
+        if (selectedFile) {
+            formData.append('file', selectedFile);
+        } else {
+            showToastMsg('사진이나 영상을 먼저 첨부해주세요.');
+            return;
+        }
+
+        showToastMsg('제보 제출 중...');
+        const submitBtn = document.getElementById('submit-btn');
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/report', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                showToastMsg('제보가 성공적으로 접수되었습니다!');
+                // 잠시 후 홈으로 자동 이동
+                setTimeout(() => window.location.href = '/', 1500);
+            } else {
+                showToastMsg('제출 실패: ' + result.message);
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        } catch (error) {
+            showToastMsg('서버 연결 오류');
+            console.error('Submit Error:', error);
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+
+    function showToastMsg(msg) {
+        if (window.top !== window.self) {
+            window.top.postMessage({ type: 'SHOW_TOAST', message: msg }, '*');
+        } else {
+            if (typeof showToast === 'function') showToast(msg);
+            else alert(msg);
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'layout.html' %}
+
+{% block title %}Alert - Crack{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 24px;">
+    <h2 style="font-size: 1.5rem; margin-bottom: 4px;">Smart Alerts</h2>
+    <p style="font-size: 0.9rem; opacity: 0.6;">AI가 탐지한 고위험 포트홀 알림</p>
+</div>
+
+<div class="alert-feed">
+    {% for alert in alerts %}
+    <div class="card" style="border-left: 5px solid var(--point-orange); margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <span class="badge"
+                style="background: var(--accent-soft); color: var(--point-orange); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">
+                Confidence {{ alert.confidence * 100 }}%
+            </span>
+            <span style="font-size: 0.75rem; opacity: 0.5;">{{ alert.time }}</span>
+        </div>
+        <h3 style="font-size: 1rem; margin-bottom: 4px;">포트홀 탐지 알림</h3>
+        <p style="font-size: 0.85rem; display: flex; align-items: center; gap: 6px; opacity: 0.8;">
+            <i class="bi bi-geo-alt-fill" style="color: var(--point-orange);"></i>
+            {{ alert.location }}
+        </p>
+        <div style="margin-top: 10px; display: flex; gap: 8px;">
+            <button class="btn-auth-solid" style="padding: 5px 12px; font-size: 0.75rem;">현장 확인</button>
+            <button class="btn-auth-outline" style="padding: 5px 12px; font-size: 0.75rem;">지도 보기</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

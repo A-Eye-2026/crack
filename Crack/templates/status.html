@@ -1,0 +1,79 @@
+{% extends 'layout.html' %}
+
+{% block title %}Status - Crack{% endblock %}
+
+{% block content %}
+<div class="tabs" style="display: flex; gap: 20px; border-bottom: 1px solid rgba(0,0,0,0.05); margin-bottom: 20px;">
+    <div id="tab-reports" onclick="switchTab('reports')"
+        style="padding: 10px 0; border-bottom: 2px solid var(--point-orange); font-weight: 700; color: var(--point-orange); cursor: pointer; transition: all 0.2s;">
+        나의 신고내역</div>
+    <div id="tab-notices" onclick="switchTab('notices')"
+        style="padding: 10px 0; opacity: 0.4; cursor: pointer; transition: all 0.2s;">
+        공지사항</div>
+</div>
+
+<div id="reports-section" class="status-list">
+    {% for report in reports %}
+    <div class="card" style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h4 style="font-size: 1rem; margin-bottom: 4px;">{{ report.title }}</h4>
+            <span style="font-size: 0.8rem; opacity: 0.5;">{{ report.date }}</span>
+        </div>
+        <div style="text-align: right;">
+            <span
+                style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; 
+                {{ 'background: #E3F2FD; color: #2196F3;' if report.status == '접수완료' else 'background: #FFF3E0; color: #FF9800;' }}">
+                {{ report.status }}
+            </span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div id="notices-section" class="notice-section" style="display: none;">
+    <h3 style="font-size: 1.2rem; margin-bottom: 16px;">Notice</h3>
+    <div
+        style="background: var(--accent-soft); padding: 16px; border-radius: 16px; border: 1px solid rgba(255,140,0,0.1); margin-bottom: 12px;">
+        <p style="font-size: 0.9rem; color: var(--point-orange); font-weight: 600; margin-bottom: 4px;">[안내] 앱 안정화 작업 예정
+        </p>
+        <p style="font-size: 0.8rem; opacity: 0.7;">3월 15일 새벽 서비스 점검이 예정되어 있습니다.</p>
+    </div>
+</div>
+
+<script>
+    function switchTab(tab) {
+        const reportsTab = document.getElementById('tab-reports');
+        const noticesTab = document.getElementById('tab-notices');
+        const reportsSection = document.getElementById('reports-section');
+        const noticesSection = document.getElementById('notices-section');
+
+        if (tab === 'reports') {
+            reportsTab.style.borderBottom = '2px solid var(--point-orange)';
+            reportsTab.style.color = 'var(--point-orange)';
+            reportsTab.style.fontWeight = '700';
+            reportsTab.style.opacity = '1';
+
+            noticesTab.style.borderBottom = 'none';
+            noticesTab.style.color = 'inherit';
+            noticesTab.style.fontWeight = '400';
+            noticesTab.style.opacity = '0.4';
+
+            reportsSection.style.display = 'block';
+            noticesSection.style.display = 'none';
+        } else {
+            noticesTab.style.borderBottom = '2px solid var(--point-orange)';
+            noticesTab.style.color = 'var(--point-orange)';
+            noticesTab.style.fontWeight = '700';
+            noticesTab.style.opacity = '1';
+
+            reportsTab.style.borderBottom = 'none';
+            reportsTab.style.color = 'inherit';
+            reportsTab.style.fontWeight = '400';
+            reportsTab.style.opacity = '0.4';
+
+            reportsSection.style.display = 'none';
+            noticesSection.style.display = 'block';
+        }
+    }
+</script>
+{% endblock %}
