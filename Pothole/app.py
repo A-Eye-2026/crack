@@ -2,16 +2,13 @@
 # 📦 필요한 도구 (import)
 # ================================================================
 
-from flask import Flask, request, jsonify ,send_from_directory, render_template, session, redirect
+from flask import Flask, request, jsonify ,send_from_directory, render_template
 from PIL import Image
 from PIL.ExifTags import TAGS,GPSTAGS
 from datetime import datetime
 from werkzeug.utils import secure_filename
-from ultralytics import YOLO # pip install ultralytics
-
 import os
 import mysql.connector
-import random
 
 # ================================================================
 # ⚙️ 기본 설정
@@ -30,8 +27,6 @@ DB_CONFIG = {
     'password': '1234',
     'database': 'road'
 }
-
-model = YOLO('best.pt')
 
 # ================================================================
 # 🔧 유틸 함수 0 — DB 연결
@@ -79,23 +74,16 @@ def get_gps_from_exif(image_path):
         return None, None
 
 # ================================================================
-# 🤖 유틸 함수 3 — AI 이미지 분석 (임시 함수)
+# 🤖 유틸 함수 3 — AI 이미지 분석 (임시 가짜 함수)
 # ================================================================
 def analyze_image(file_path):
-    # 나중에 학습된 YOLO 코드로 이 함수만 교체!
-    results = model(file_path)
-    if len(results[0].boxes) == 0:
-        return {
-            "label": "unknown",
-            "confidence": 0.0
-        }
-
-    confidence = float(results[0].boxes.conf[0])
-    label = results[0].names[int(results[0].boxes.cls[0])]
+    # ⚠️ 테스트용 가짜 결과
+    # 나중에 팀원 YOLO 코드로 이 함수만 교체하면 됨!
     return {
-        "label": label,
-        "confidence": round(confidence, 2)
+        "label"     : "pothole",
+        "confidence": 0.92
     }
+
 # ================================================================
 # 🛣️ API 1 — 이미지 신고 업로드
 # POST /report/image
@@ -160,6 +148,8 @@ def upload_image():
 
     if confidence >= 0.8:
         status = 'auto_accepted'
+    elif confidence >= 0.5:
+        status = 'review_pending'
     else:
         status = 'ai_rejected'
 
@@ -289,31 +279,15 @@ def get_status(report_id):
 # ================================================================
 @app.route('/report_pothole')
 def report_page():
-    if 'user_id' not in session:
-        return redirect('/login')
     return render_template('report_pothole.html')
 
 @app.route('/dashboard_admin')
 def dashboard_admin():
-    if 'user_id' not in session:
-        return redirect('/login')
-    if session.get('user_role') != 'admin':
-        return "<script>alert('관리자만 접근 가능합니다.');history.back();</script>"
     return render_template('dashboard_admin.html')
 
 @app.route('/report/video', methods=['POST'])
 def upload_video():
     pass  # 나중에 구현
-
-# 테스트용 임시 로그인 - 나중에 삭제!
-@app.route('/test_login')
-def test_login():
-    session['user_id']   = 1       # members 테이블에 넣은 id
-    session['user_name'] = 'test1'
-    session['user_role'] = 'admin' # 또는 'user'
-    return "<script>alert('테스트 로그인 완료!');location.href='/report_pothole';</script>"
- #http://localhost:5678/test_login
-app.secret_key = 'pothole_secret_key'
 
 if __name__ == '__main__':
     app.run(debug=True, port=5678)

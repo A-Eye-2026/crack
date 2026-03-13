@@ -127,21 +127,115 @@
     });
 
     // ── GPS 확인 ──
-    function checkGPS(file) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var arr    = new Uint8Array(e.target.result);
-            var isJpeg = arr[0] === 0xFF && arr[1] === 0xD8;
+function checkGPS(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var view = new DataView(e.target.result);
 
-            document.getElementById('img-gps-status').innerHTML = isJpeg
-                ? '<span class="badge bg-success">📡 GPS 정보 확인 중...</span>'
-                : '<span class="badge bg-warning text-dark">📍 GPS 없음 — 지도에서 위치 선택 필요</span>';
-
+        // JPEG 확인
+        if (view.getUint16(0, false) !== 0xFFD8) {
+            document.getElementById('img-gps-status').innerHTML =
+                '<span class="badge bg-warning text-dark">📍 GPS 없음 — 지도에서 위치 선택 필요</span>';
             showMap();
             document.getElementById('img-submit-btn').disabled = false;
-        };
-        reader.readAsArrayBuffer(file.slice(0, 100));
-    }
+            return;
+        }
+
+        // EXIF GPS 파싱
+        var gps = extractGPS(view);
+
+        if (gps) {
+            selectedLat = gps.lat.toFixed(6);
+            selectedLon = gps.lon.toFixed(6);
+            document.getElementById('img-gps-status').innerHTML =
+                '<span class="badge bg-success">📡 GPS 자동 추출 완료! (' + selectedLat + ', ' + selectedLon + ')</span>';
+            showMap();
+            // GPS 위치로 지도 이동!
+            map.setView([selectedLat, selectedLon], 16);
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([selectedLat, selectedLon]).addTo(map)
+                .bindPopup('📍 사진 촬영 위치').openPopup();
+            document.getElementById('coords-display').textContent =
+                '📍 위도: ' + selectedLat + '  경도: ' + selectedLon;
+        } else {
+            document.getElementById('img-gps-status').innerHTML =
+                '<span class="badge bg-warning text-dark">📍 GPS 없음 — 지도에서 위치 선택 필요</span>';
+            showMap();
+        }
+
+        document.getElementById('img-submit-btn').disabled = false;
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function extractGPS(view) {
+    try {
+        var offset = 2;
+        while (offset < view.byteLength) {
+            var marker = view.getUint16(offset, false);
+            offset += 2;
+            if (marker === 0xFFE1) {
+                // EXIF 발견
+                var exifOffset = offset + 2;
+                var little = view.getUint16(exifOffset + 6, false) === 0x4949;
+                var ifdOffset = view.getUint32(exifOffset + 10, little) + exifOffset + 6;
+                var entries = view.getUint16(ifdOffset, little);
+
+                for (var i = 0; i < entries; i++) {
+                    var entry = ifdOffset + 2 + i * 12;
+                    if (view.getUint16(entry, little) === 0x8825) {
+                        // GPS IFD 발견
+                        var gpsOffset = view.getUint32(entry + 8, little) + exifOffset + 6;
+                        var gpsEntries = view.getUint16(gpsOffset, little);
+                        var gpsData = {};
+
+                        for (var j = 0; j < gpsEntries; j++) {
+                            var gpsEntry = gpsOffset + 2 + j * 12;
+                            var tag = view.getUint16(gpsEntry, little);
+                            gpsData[tag] = { entry: gpsEntry, little: little, view: view, base: exifOffset + 6 };
+                        }
+
+                        // 위도/경도 읽기
+                        var lat = readDMS(gpsData[2]);
+                        var latRef = readASCII(gpsData[1]);
+                        var lon = readDMS(gpsData[4]);
+                        var lonRef = readASCII(gpsData[3]);
+
+                        if (lat && lon) {
+                            return {
+                                lat: latRef === 'S' ? -lat : lat,
+                                lon: lonRef === 'W' ? -lon : lon
+                            };
+                        }
+                    }
+                }
+            }
+            offset += view.getUint16(offset, false);
+        }
+    } catch(e) {}
+    return null;
+}
+
+function readDMS(gps) {
+    if (!gps) return null;
+    try {
+        var view = gps.view, entry = gps.entry, little = gps.little, base = gps.base;
+        var offset = view.getUint32(entry + 8, little) + base;
+        var d = view.getUint32(offset, little) / view.getUint32(offset + 4, little);
+        var m = view.getUint32(offset + 8, little) / view.getUint32(offset + 12, little);
+        var s = view.getUint32(offset + 16, little) / view.getUint32(offset + 20, little);
+        return d + m / 60 + s / 3600;
+    } catch(e) { return null; }
+}
+
+function readASCII(gps) {
+    if (!gps) return '';
+    try {
+        var view = gps.view, entry = gps.entry, little = gps.little, base = gps.base;
+        var offset = view.getUint32(entry + 8, little) + base;
+        return String.fromCharCode(view.getUint8(offset));
+    } catch(e) { return ''; }
+}
 
     // ── Leaflet 지도 초기화 ──
     function showMap() {
