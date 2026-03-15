@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRACK Admin Alerts</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Pretendard", "Noto Sans KR", Arial, sans-serif;
+    }
+
+    body {
+      background: #f3f3f3;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .phone {
+      width: 390px;
+      height: 844px;
+      background: #efede9;
+      border-radius: 36px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #ddd;
+      position: relative;
+    }
+
+    .topbar {
+      height: 92px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 26px;
+      border-bottom: 1px solid #efefef;
+    }
+
+    .brand {
+      font-size: 23px;
+      font-weight: 800;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .top-actions button {
+      height: 44px;
+      padding: 0 14px;
+      border: 1px solid #ddd;
+      border-radius: 18px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .page-subtitle {
+      font-size: 15px;
+      color: #888;
+      margin-bottom: 20px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .summary-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 14px 10px;
+      text-align: center;
+      border: 1px solid #f0f0f0;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.03);
+    }
+
+    .summary-label {
+      font-size: 12px;
+      color: #777;
+      margin-bottom: 6px;
+    }
+
+    .summary-value {
+      font-size: 18px;
+      font-weight: 800;
+      color: #222;
+    }
+
+    .location-bar {
+      margin-bottom: 12px;
+    }
+
+    .address-open-btn {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid #ccc;
+      border-radius: 16px;
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      text-align: left;
+    }
+
+    .location-icon {
+      font-size: 18px;
+      color: #ff8c00;
+    }
+
+    .filter-info {
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #666;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .alert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .alert-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 15px 16px;
+      border-left: 5px solid #ff9800;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    .alert-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+      gap: 10px;
+    }
+
+    .alert-status {
+      font-size: 13px;
+      font-weight: 700;
+      color: #444;
+    }
+
+    .alert-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      line-height: 1.3;
+      letter-spacing: -0.3px;
+      color: #111;
+    }
+
+    .alert-location-wrap p {
+      margin-bottom: 2px;
+      font-size: 14px;
+      color: #222;
+      font-weight: 500;
+    }
+
+    .distance-text {
+      font-size: 11px;
+      color: #888;
+    }
+
+    .alert-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .admin-btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .check-btn {
+      background: linear-gradient(135deg, #ff9800, #ff7a00);
+      color: white;
+      border: none;
+      padding: 9px 15px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 4px 10px rgba(255, 140, 0, 0.16);
+    }
+
+    .check-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .sub-btn {
+      background: #fff;
+      color: #444;
+      border: 1px solid #e3e3e3;
+      padding: 9px 15px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .sub-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .bottom-nav {
+      height: 98px;
+      background: #fff;
+      border-top: 1px solid #ececec;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: center;
+      text-align: center;
+    }
+
+    .nav-item {
+      text-decoration: none;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .empty-message {
+      background: #fff;
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+      color: #888;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 20px;
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 340px;
+      background: #fff;
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .search-row input {
+      flex: 1;
+      height: 44px;
+      border: 1px solid #ddd;
+      border-radius: 14px;
+      padding: 0 12px;
+      outline: none;
+    }
+
+    .search-row button {
+      height: 44px;
+      padding: 0 14px;
+      border: none;
+      border-radius: 14px;
+      background: #ff8c00;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .result-list {
+      max-height: 260px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .result-item {
+      border: 1px solid #eee;
+      border-radius: 14px;
+      padding: 12px;
+      cursor: pointer;
+      background: #fff;
+    }
+
+    .result-item:hover {
+      border-color: #ffb15a;
+      background: #fff8f0;
+    }
+
+    .result-main {
+      font-size: 14px;
+      font-weight: 600;
+      color: #222;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .modal-close-btn {
+      height: 40px;
+      padding: 0 14px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .loading-text,
+    .empty-result-text {
+      padding: 14px 4px;
+      color: #888;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    @media (max-width: 430px) {
+      body {
+        padding: 0;
+      }
+
+      .phone {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+      }
+    }
+
+    .risk-row {
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .risk-text {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+    }
+
+    .risk-high {
+      color: #e74c3c;
+    }
+
+    .risk-medium {
+      color: #f39c12;
+    }
+
+    .risk-low {
+      color: #27ae60;
+    }
+
+    .alert-time-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      min-width: 92px;
+    }
+
+    .alert-time {
+      font-size: 13px;
+      color: #222;
+      white-space: nowrap;
+    }
+
+    .detail-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 120;
+      padding: 18px;
+    }
+
+    .detail-modal-backdrop.show {
+      display: flex;
+    }
+
+    .detail-modal-card {
+      width: 100%;
+      max-width: 350px;
+      background: #fff;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+    }
+
+    .detail-thumb-box {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      background: #ececec;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .detail-thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .detail-thumb-placeholder {
+      font-size: 16px;
+      color: #666;
+      font-weight: 600;
+    }
+
+    .detail-map-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 24px;
+      font-weight: 700;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .detail-content-box {
+      padding: 18px 16px 20px;
+    }
+
+    .detail-content-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #111;
+      margin-bottom: 10px;
+      line-height: 1.35;
+    }
+
+    .detail-content-text {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.55;
+      margin-bottom: 10px;
+    }
+
+    .detail-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .detail-chip {
+      display: inline-block;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #fff4e8;
+      color: #ff7a00;
+    }
+
+    .detail-close-wrap {
+      margin-top: 14px;
+    }
+
+    .detail-time-risk-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .detail-time-text {
+      font-size: 13px;
+      color: #666;
+      white-space: nowrap;
+    }
+
+    .detail-risk-badge {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+    }
+
+    .detail-risk-high {
+      color: #e74c3c;
+    }
+
+    .detail-risk-medium {
+      color: #f39c12;
+    }
+
+    .detail-risk-low {
+      color: #27ae60;
+    }
+
+    .detail-close-btn {
+      width: 100%;
+      height: 44px;
+      border: none;
+      border-radius: 14px;
+      background: #222;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <header class="topbar">
+      <div class="brand">CRACK</div>
+      <div class="top-actions">
+        <button type="button">관리메뉴</button>
+        <button type="button" onclick="location.href='/logout'">로그아웃</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <h1 class="page-title">Admin Alerts</h1>
+      <p class="page-subtitle">관리자용 사건 모니터링 및 조치 화면</p>
+
+      <section class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-label">전체</div>
+          <div class="summary-value">{{ incidents|length }}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">접수/확인</div>
+          <div class="summary-value">
+            {{ incidents|selectattr('status', 'in', ['접수완료', '확인중'])|list|length }}
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">처리 필요</div>
+          <div class="summary-value">{{ incidents|length }}</div>
+        </div>
+      </section>
+
+      <div class="location-bar">
+        <button class="address-open-btn" type="button" onclick="openAddressModal()">
+          <span class="location-icon">🟠</span>
+          <span id="selectedAddressText">{{ selected_address if selected_address else '지역 필터 검색' }}</span>
+        </button>
+      </div>
+
+      <div class="filter-info">
+        {% if filter_type == 'radius' %}
+          선택 주소 기준 반경 {{ radius_m }}m 내 사건을 보고 있습니다.
+        {% elif filter_type == 'region' %}
+          {{ selected_address }} 지역 사건을 보고 있습니다.
+        {% else %}
+          전체 지역 사건을 보고 있습니다.
+        {% endif %}
+      </div>
+
+      <section class="alert-list">
+        {% for incident in incidents %}
+        <article class="alert-card">
+          <div class="alert-top">
+            <span class="alert-status">{{ incident.status }}</span>
+
+            <div class="alert-time-wrap">
+              <span class="alert-time">{{ incident.first_created_at.strftime('%m-%d %H:%M') }}</span>
+
+              {% set score = incident.risk_score|float %}
+              <div class="risk-row">
+                {% if score >= 80 %}
+                  <span class="risk-text risk-high">위험도 높음</span>
+                {% elif score >= 50 %}
+                  <span class="risk-text risk-medium">위험도 중간</span>
+                {% else %}
+                  <span class="risk-text risk-low">위험도 낮음</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <h2 class="alert-title">{{ incident.title }}</h2>
+
+          <div class="alert-location-wrap">
+            <p>{{ incident.location }}</p>
+            {% if incident.distance_m is not none %}
+            <div class="distance-text">선택 위치에서 약 {{ incident.distance_m }}m</div>
+            {% endif %}
+          </div>
+
+          <div class="alert-bottom">
+            <div></div>
+            <div class="admin-btn-group">
+              <button
+                class="sub-btn"
+                type="button"
+                onclick="openDetailModal(
+                  '{{ incident.title|e }}',
+                  '{{ incident.location|e }}',
+                  '{{ incident.status|e }}',
+                  '{{ incident.first_created_at.strftime('%m-%d %H:%M') }}',
+                  '{{ incident.risk_score|default(0) }}',
+                  '{{ incident.image_path|default('', true)|e }}',
+                  '{{ incident.latitude|default('', true) }}',
+                  '{{ incident.longitude|default('', true) }}'
+                )"
+              >
+                현장 확인
+              </button>
+              <button class="check-btn" type="button">상태 변경</button>
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+
+        {% if incidents|length == 0 %}
+        <div class="empty-message">
+          현재 표시할 사건이 없습니다.
+        </div>
+        {% endif %}
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <a href="/alerts" class="nav-item">Alerts</a>
+      <a href="#" class="nav-item">Manage</a>
+      <a href="#" class="nav-item">Status</a>
+      <a href="/mypage" class="nav-item">My</a>
+    </nav>
+
+    <div class="modal-backdrop" id="addressModal">
+      <div class="modal">
+        <div class="modal-title">지역 검색</div>
+
+        <div class="search-row">
+          <input type="text" id="addressKeyword" placeholder="예: 수원시, 수원, 수원시 장안구" />
+          <button type="button" onclick="searchAddress()">검색</button>
+        </div>
+
+        <div class="result-list" id="addressResultList">
+          <div class="empty-result-text">지역명을 입력하고 검색해주세요.</div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="modal-close-btn" type="button" onclick="closeAddressModal()">닫기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-modal-backdrop" id="detailModal">
+      <div class="detail-modal-card">
+        <div class="detail-thumb-box">
+          <img id="detailImage" class="detail-thumb-img" src="" alt="사건 썸네일">
+          <div id="detailPlaceholder" class="detail-thumb-placeholder">썸네일 : 사진 및 영상</div>
+
+          <button class="detail-map-btn" type="button" onclick="openMapFromDetail()" title="지도 보기">📍</button>
+        </div>
+
+        <div class="detail-content-box">
+          <div class="detail-meta-row">
+            <span id="detailStatus" class="detail-chip">상태</span>
+
+            <div class="detail-time-risk-wrap">
+              <span id="detailTime" class="detail-time-text">00-00 00:00</span>
+              <span id="detailRiskBadge" class="detail-risk-badge">위험도 높음</span>
+            </div>
+          </div>
+
+          <div id="detailTitle" class="detail-content-title">사건 제목</div>
+          <div id="detailLocation" class="detail-content-text">사건 위치</div>
+
+          <div class="detail-close-wrap">
+            <button class="detail-close-btn" type="button" onclick="closeDetailModal()">닫기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+function openAddressModal() {
+  document.getElementById('addressModal').classList.add('show');
+}
+
+function closeAddressModal() {
+  document.getElementById('addressModal').classList.remove('show');
+}
+
+async function searchAddress() {
+  const keyword = document.getElementById('addressKeyword').value.trim();
+  const resultList = document.getElementById('addressResultList');
+
+  if (!keyword) {
+    window.location.href = '/alerts';
+    return;
+  }
+
+  resultList.innerHTML = '<div class="loading-text">검색 중...</div>';
+
+  try {
+    const response = await fetch(`/api/address/search?q=${encodeURIComponent(keyword)}`);
+    const data = await response.json();
+
+    if (!data.success || !data.items || data.items.length === 0) {
+      resultList.innerHTML = '<div class="empty-result-text">검색 결과가 없습니다.</div>';
+      return;
+    }
+
+    resultList.innerHTML = '';
+
+    data.items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'result-item';
+      div.innerHTML = `<div class="result-main">${item.address_name}</div>`;
+      div.onclick = () => selectAddress(item);
+      resultList.appendChild(div);
+    });
+
+  } catch (error) {
+    console.error(error);
+    resultList.innerHTML = '<div class="empty-result-text">검색 중 오류가 발생했습니다.</div>';
+  }
+}
+
+function selectAddress(item) {
+  if (item.is_city_district) {
+    let url = `/alerts?city=${encodeURIComponent(item.city)}`;
+
+    if (item.district) {
+      url += `&district=${encodeURIComponent(item.district)}`;
+    }
+
+    window.location.href = url;
+    return;
+  }
+
+  const radius = 700;
+  const url = `/alerts?lat=${item.latitude}&lng=${item.longitude}&radius_m=${radius}&address=${encodeURIComponent(item.address_name)}`;
+  window.location.href = url;
+}
+
+let currentDetailLat = '';
+let currentDetailLng = '';
+
+function openDetailModal(title, location, status, time, riskScore, imagePath, lat, lng) {
+  document.getElementById('detailTitle').textContent = title || '제목 없음';
+  document.getElementById('detailLocation').textContent = location || '위치 정보 없음';
+  document.getElementById('detailStatus').textContent = status || '상태 없음';
+  document.getElementById('detailTime').textContent = time || '';
+
+  const score = Number(riskScore || 0);
+  let riskText = '위험도 낮음';
+  let riskClass = 'detail-risk-low';
+
+  if (score >= 80) {
+    riskText = '위험도 높음';
+    riskClass = 'detail-risk-high';
+  } else if (score >= 50) {
+    riskText = '위험도 중간';
+    riskClass = 'detail-risk-medium';
+  }
+
+  const riskBadge = document.getElementById('detailRiskBadge');
+  riskBadge.textContent = riskText;
+  riskBadge.className = `detail-risk-badge ${riskClass}`;
+
+  const detailImage = document.getElementById('detailImage');
+  const detailPlaceholder = document.getElementById('detailPlaceholder');
+
+  if (imagePath && imagePath.trim() !== '') {
+    let finalImagePath = imagePath.trim();
+
+    if (!finalImagePath.startsWith('/')) {
+      finalImagePath = '/uploads/' + finalImagePath;
+    }
+
+    detailImage.src = finalImagePath;
+    detailImage.style.display = 'block';
+    detailPlaceholder.style.display = 'none';
+
+    detailImage.onerror = function () {
+      detailImage.src = '';
+      detailImage.style.display = 'none';
+      detailPlaceholder.style.display = 'block';
+    };
+  } else {
+    detailImage.src = '';
+    detailImage.style.display = 'none';
+    detailPlaceholder.style.display = 'block';
+  }
+
+  currentDetailLat = lat || '';
+  currentDetailLng = lng || '';
+
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function closeDetailModal() {
+  document.getElementById('detailModal').classList.remove('show');
+}
+
+function openMapFromDetail() {
+  if (!currentDetailLat || !currentDetailLng) {
+    alert('지도에 표시할 좌표 정보가 없습니다.');
+    return;
+  }
+
+  const mapUrl = `https://map.kakao.com/link/map/사건위치,${currentDetailLat},${currentDetailLng}`;
+  window.open(mapUrl, '_blank');
+}
+
+document.getElementById('detailModal').addEventListener('click', function(e) {
+  if (e.target.id === 'detailModal') {
+    closeDetailModal();
+  }
+});
+
+document.getElementById('addressKeyword').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    searchAddress();
+  }
+});
+
+document.getElementById('addressModal').addEventListener('click', function(e) {
+  if (e.target.id === 'addressModal') {
+    closeAddressModal();
+  }
+});
+</script>
+</body>
+</html>
