@@ -16,7 +16,11 @@ from service import MemberService # crack. 제거
 # base_dir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
-app.secret_key = 'its_guard_secret_key' # 이 줄이 없으면 세션 에러가 납니다.
+app.secret_key = 'its_guard'
+# app.secret.key 에 its_guard라고 해놓은 이유
+# session 데이터 암호화
+# 데이터 위조 방지 (쿠키 보안)
+# 사용자 메시지 출력.
 
 UPLOAD_FOLDER = 'uploads/'
 if not os.path.exists(UPLOAD_FOLDER):
@@ -49,7 +53,7 @@ def login():
                 session['user_role'] = user['role']
 
                 # 이제 DB에서 'role'을 가져왔으니 에러 없이 잘 들어갈 겁니다.
-                session['user_role'] = user['role']
+                # session['user_role'] = user['role']
 
                 return redirect(url_for('index'))
             else:
@@ -101,6 +105,46 @@ def update_status(report_id):
     finally:
         conn.close()
 
+@app.route('/update_report_status', methods=['POST']) # 서비스 사용자가 제보한 도로 파손(포트홀), 사건의 처리 상태를 업데이트하는
+# 뒷단 백엔드로직. 예를들어, 대기 중인 제보를 확인 완료상태로 바꿀 때 실행되는 기능.
+# 상태를 수정 하는 것이므로 보안상 POST 방식 사용
+def update_report_status():
+    data = request.get_json()
+    # 프론트엔드(자바스크립트) 에서 보낸 JSON 데이터를 파이썬 딕셔너리 형태로 변환해서 가져옴.
+    report_id = data.get('id')
+    # 보내온 데이터 중 어떤 제보물을 어떤 상태로 바꿀지 변수에 저장함.
+    new_status = data.get('status')
+
+    db = Session.get_conn()
+
+    # try: 일단이 코드를 실행해
+    # except: 만약 에러가 나면 rollback() 을 통해서 데이터를 원래대로 복구
+    # finally: 성공하든 실패하든 마지막엔 반드시 DB 연결을 닫아서 자원 낭비를 줄임
+    try:
+        # DB 연결 및 업데이트 (MySQL 예시)
+        with db.cursor() as cursor:
+            cursor = db.cursor()
+            sql = "UPDATE reports SET status = %s WHERE id = %s"
+            cursor.execute(sql, (new_status, report_id))
+            # 실제 MySQL에 보낼 명려문. reports 테이블에서 특정 id를 찾아서 상태를 업데이트하라고 시키는 핵심코드
+
+            if new_status == '처리완료':
+                # 해당 제보를 작성한 유저를 찾아서 포인트를 10점 올리는 쿼리
+                # reports 테이블에 user_id가 저장되어 있다는 가정하에 작성된 서브쿼리문
+                point_sql = """
+                                    UPDATE users
+                                    SET point = point + 10
+                                    WHERE user_id = (SELECT user_id FROM reports WHERE id = %s)
+                """
+                cursor.execute(point_sql, (report_id,))
+        db.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "message":str(e)})
+    finally:
+        db.close()
+
 @app.route('/report') # 제보를 할 수 있는 기능. 주소창 https://192.168.0.157:5001/report
 def report_page():
     if 'user_id' not in session:
@@ -115,34 +159,74 @@ def report_submit():
     user_uid = session.get('user_uid')
     address = request.form.get('address')
     severity = request.form.get('severity')
+    # 지도를 안 쓰면 이 값들이 빈 문자열 ('')이나 None으로 올 수 있음.
     lat = request.form.get('lat')
-    lng = request.form.get('lng') # lon이 아닌 lng로 받기
+    lng = request.form.get('lng')
 
-    # 좌표가 비어있으면 뒤로 가기
-    if not lat or not lng:
-        return "<script>alert('좌표 데이터가 없습니다. 주소를 다시 검색해주세요.'); history.back();</script>"
-
+    # [수정] 좌표 검증 로직 삭제
+    # 이제 좌표가 없어도 아래로 내려가서 자동으로 DB에 저장됨.)
     # 주소에서 지역명 추출
     region_name = None
     if address:
-        if '경기도' in address: region_name = '경기도'
-        elif '강원도' in address: region_name = '강원도'
-        elif '충청도' in address: region_name = '충청도'
+        if '경기도' in address:
+            region_name = '경기도'
+        elif '강원도' in address:
+            region_name = '강원도'
+        elif '충청도' in address:
+            region_name = '충청도'
 
     conn = Session.get_conn()
     try:
         with conn.cursor() as cur:
-            # DB 컬럼 개수(8개)와 VALUES 개수(8개)를 정확히 맞춤
+            # lat, lng 값이 비어있을 경우 DB에 NULL로 들어가도록 None 처리를 해줌.
+            # 파이썬의 None MySQL의 null과 대응됨.
+            p_lat = lat if lat else None
+            p_lng = lng if lng else None
+
             sql = """
                 INSERT INTO potholes (reporter_id, address, severity, status, points, lat, lng, region_name)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """
-            cur.execute(sql, (user_uid, address, severity, '검토중', 10, lat, lng, region_name))
+            cur.execute(sql, (user_uid, address, severity, '검토중', 10, p_lat, p_lng, region_name))
             conn.commit()
             return "<script>alert('제보가 완료되었습니다! 10포인트가 적립됩니다.'); location.href='/';</script>"
     except Exception as e:
         print(f"저장 에러: {e}")
         return f"<script>alert('저장 실패: {e}'); history.back();</script>"
+    finally:
+        conn.close()
+
+@app.route('/report/quick', methods=['POST'])
+def quick_report():
+    """
+    지도(좌표) 없이 버튼 클릭만으로 즉시 제보와 포인트를 지급하는 로직
+    """
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_uid = session.get('user_uid')
+    # 사용자가 선택한 제보 유형 (예: 포트홀, 파손 등)을 받아옵니다.
+    severity = request.form.get('severity')
+
+    conn = Session.get_conn()
+    try:
+        with conn.cursor() as cur:
+            # 1. 제보 내역 저장 (지도 정보 없이 기본 데이터만 입력)
+            # 상태는 '검토중'으로 설정하고, 즉시 10포인트를 부여합니다.
+            sql = """
+                        INSERT INTO potholes (reporter_id, severity, status, points)
+                        VALUES (%s, %s, %s, %s)
+            """
+            # 2. (선택사항) members 테이블에 포인트 합계를 별도로 관리한다면 아래 쿼리 실행
+            # sql_member = "UPDATE members SET points = points + 10 WHERE uid = %s"
+            # cur.execute(sql,_member, (user_uid,))
+
+            conn.commit()
+            return "<script>alert('제보가 완료되었습니다. 10포인트가 적립됩니다.');location.href='/';</script>"
+    except Exception as e:
+        conn.rollback()
+        print(f" 제보 에러 : {e}")
+        return f"<script>alert('처리 중 오류가 발생했습니다.');history.back();</script>"
     finally:
         conn.close()
 
@@ -182,7 +266,7 @@ def join():
         conn.close()
 
 
-@app.route('/mypage') # 관리자 모드 페이지. 주소창에 https://192.168.0.157:5001/mypage
+@app.route('/mypage')
 def mypage():
     if 'user_id' not in session:
         return redirect(url_for('login'))
@@ -190,39 +274,37 @@ def mypage():
     user_uid = session['user_uid']
     conn = Session.get_conn()
     try:
-        # pymysql.cursors.DictCursor 로 수정 (점 확인!)
         with conn.cursor(pymysql.cursors.DictCursor) as cur:
-
-            # 1. [필수] 먼저 members 테이블에서 사용자 정보를 가져와야 합니다.
+            # 1. 사용자 정보 조회
             user_sql = "SELECT id, name, uid, role, created_at FROM members WHERE uid = %s"
             cur.execute(user_sql, (user_uid,))
-            user_data = cur.fetchone()  # 여기서 사용자 한 명의 정보가 담깁니다.
+            user_data = cur.fetchone()
 
-            print(f"DEBUG: DB 조회 결과 -> {user_data}")
-
-            if not user_data:
-                return f"<script>alert('사용자 정보 없음! (세션ID: {user_uid})');history.back();</script>"
-
-            # 2. 사용자가 제보한 내용 가져오기 (potholes 테이블)
+            # 2. 제보 내역 조회 (potholes 테이블 사용)
             report_sql = """
-                SELECT id, address, severity, status, points, created_at 
-                FROM potholes 
+                SELECT id, severity as type, address, status, created_at as date
+                FROM potholes
                 WHERE reporter_id = %s 
                 ORDER BY created_at DESC
             """
             cur.execute(report_sql, (user_uid,))
-            my_reports = cur.fetchall()  # 여러 건이므로 fetchall
+            my_reports = cur.fetchall()
 
-            # 3. 총 포인트 합계 계산
+            print(f"조회된 제보 건수 : {len(my_reports)}")
+
+            # 3. 총 포인트 합산 (중복 코드 제거 및 테이블명 통일)
             sum_sql = "SELECT SUM(points) as total_points FROM potholes WHERE reporter_id = %s"
             cur.execute(sum_sql, (user_uid,))
             result = cur.fetchone()
+
             total_points = result['total_points'] if result and result['total_points'] else 0
 
+            # 4. 결과 전달
             return render_template('mypage.html',
                                    user=user_data,
                                    reports=my_reports,
                                    total_points=total_points)
+
     except Exception as e:
         print(f"에러 발생: {e}")
         return f"<script>alert('오류가 발생했습니다: {e}');history.back();</script>"
@@ -230,30 +312,39 @@ def mypage():
         conn.close()
 
 
-
 @app.route('/update', methods=['POST'])
-# 개인정보수정, 사용자가 입력한 새로운 정보를 DB에 UPDATE 하는 로직.
-# 비밀번호 변경 여부에 따라서 쿼리를 나누는 것이 좋을 것 같아서 나누었음//
 def update():
-    new_name = request.form.get('new_name')
-    new_addr = request.form.get('new_addr')
-    new_pw = request.form.get('new_pw')
+    # 1. 폼 데이터 수집 (HTML의 name 속성과 일치해야 함)
+    new_name = request.form.get('name')
+    new_pw = request.form.get('password')
 
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']  # 세션에 저장된 DB 고유 번호(PK) 사용
     conn = Session.get_conn()
+
     try:
         with conn.cursor() as cur:
-            if new_pw: # 비밀번호도 변경할 경우
-                sql = "UPDATE members SET naem = %s, address=%s, password=%s WHERE id=%s"
-                cur.execute(sql, (new_name, new_addr, new_pw, session['user_id']))
-            else: # 비밀번호는 유지 할 경우
-                sql = "UPDATE members SET name=%s, address=%s WHERE id=%s"
-                cur.execute(sql, (new_name, new_addr, session['user_id']))
+            if new_pw:  # 새 비밀번호가 입력된 경우
+                # [확인됨] DB 컬럼명이 'password'이므로 아래와 같이 수정
+                sql = "UPDATE members SET name = %s, password = %s WHERE id = %s"
+                cur.execute(sql, (new_name, new_pw, user_id))
+            else:  # 비밀번호는 그대로 두고 이름만 변경할 경우
+                sql = "UPDATE members SET name = %s WHERE id = %s"
+                cur.execute(sql, (new_name, user_id))
+
             conn.commit()
-            session['user_name'] = new_name # 세션 이름 정보도 갱신
-            return "<script>alert('개인정보가 수정되었습니다.');location.href='/update';</script>"
+
+            # 2. 실시간 세션 정보 갱신 (화면 상단 이름 변경용)
+            session['user_name'] = new_name
+
+            return "<script>alert('성공적으로 수정되었습니다.'); location.href='/update';</script>"
+
     except Exception as e:
         conn.rollback()
-        return f"<script>alert('정보 수정 중 오류 발생');history.back();</script>"
+        print(f"Update Error: {e}")
+        return f"<script>alert('오류가 발생했습니다: {e}'); history.back();</script>"
     finally:
         conn.close()
 
@@ -278,9 +369,40 @@ def withdraw():
         conn.close()
 
 
-# Flask에서 '근처 포트홀 조회' API 생성.
-# 사용자의 현재 위치 좌표(위도, 경도)를 받아서, DB내 의 포트홀 좌표들과 비교해 반경 100m 이내에 있는 것들만 반환하는 로직.
-# 이 코드는 시스템의 심장부와 같은 역할을 하는 핵심 로직이에요.
+@app.route('/update_page')  # 1. 앞에 / 추가
+def update_page():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    conn = Session.get_conn()
+    try:
+        # 2. pymysql.cursors.DictCursor (마침표 확인)
+        with conn.cursor(pymysql.cursors.DictCursor) as cur:
+            # 3. password 뒤 콤마 제거
+            sql = "SELECT name, uid, password FROM members WHERE id = %s"
+            cur.execute(sql, (user_id,))
+            user_data = cur.fetchone()
+
+            # 4. 사용자의 제보 내역도 같이 가져와야 마이페이지가 깨지지 않습니다.
+            cur.execute("SELECT * FROM potholes WHERE reporter_id = %s", (user_id,))
+            my_reports = cur.fetchall()
+
+            # 5. 포인트 합계도 가져오기
+            cur.execute("SELECT SUM(points) as total_points FROM potholes WHERE reporter_id = %s", (user_id,))
+            total_points = cur.fetchone()['total_points'] or 0
+
+        # 핵심: show_edit=True 라는 신호를 보내서 HTML에서 입력창을 띄우게 합니다.
+        return render_template('mypage.html',
+                               user=user_data,
+                               reports=my_reports,
+                               total_points=total_points,
+                               show_edit=True)
+    except Exception as e:
+        print(f"Error: {e}")
+        return redirect('/mypage')
+    finally:
+        conn.close()
 
 @app.route('/check_pothole', methods=['POST'])
 def check_pothole():
@@ -320,20 +442,6 @@ def check_pothole():
         print(f"포트홀 조회 에러 : {e}")
         return jsonify({"status": "error", "message": "조회 중 오류 발생"}), 500
 
-    finally:
-        conn.close()
-
-@app.route('/map')
-def view_map():
-    conn = Session.get_conn()
-    try:
-        with conn.cursor() as cur:
-            # lat, lng가 있는 데이터만 가져와서 지도에 표시
-            sql = "SELECT id, address, severity, lat, lng FROM potholes WHERE lat IS NOT NULL"
-            cur.execute(sql)
-            potholes_list = cur.fetchall()
-            # 변수명을 potholes로 통일하세요!
-            return render_template('map.html', potholes=potholes_list)
     finally:
         conn.close()
 

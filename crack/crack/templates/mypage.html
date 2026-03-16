@@ -1,63 +1,79 @@
-{% extends 'layout.html' %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>마이페이지 - ITS-Guard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        .status-btn { font-size: 0.7rem; padding: 1px 5px; vertical-align: middle; }
+    </style>
+</head>
+<body class="bg-light">
 
-{% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-11">
-        <div class="card shadow border-0">
-            <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
-                <h4 class="mb-0"><i class="bi bi-gear-fill"></i> ITS-Guard 통합 관리자 모드</h4>
-                <span class="badge bg-danger">ADMIN ONLY</span>
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <h4 class="card-title">{{ user.name }} 님</h4>
+                    <p class="text-muted">@{{ user.uid }}</p>
+                    <hr>
+                    <h5>💰 총 보유 포인트</h5>
+                    <h3 class="text-primary">{{ total_points }} P</h3>
+                    <div class="mt-4 d-grid gap-2">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="location.href='/update_page'">정보 수정</button>
+                        <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#withdrawModal">회원 탈퇴</button>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-4">
-                <h5 class="text-muted mb-4"><i class="bi bi-table"></i> 전체 도로 제보 및 처리 현황</h5>
+        </div>
 
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle border">
-                        <thead class="table-secondary">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">📋 나의 제보 내역</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <thead class="table-light">
                             <tr>
-                                <th>제보자ID</th>
-                                <th>제보 위치</th>
-                                <th>위험도</th>
-                                <th>현재 상태</th>
-                                <th>상태 변경</th>
-                                <th>제보일</th>
+                                <th>유형</th><th>주소</th><th>상태</th><th>포인트</th><th>날짜</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for report in reports %}
-                            <tr>
-                                <td><strong>{{ report.reporter_id }}</strong><br><small class="text-muted">({{ report.reporter_name }})</small></td>
-                                <td>{{ report.address }}</td>
-                                <td>
-                                    {% if report.severity == 'High' %}
-                                        <span class="badge bg-danger">위험</span>
-                                    {% else %}
-                                        <span class="badge bg-warning text-dark">보통</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if report.status == '완료' %}
-                                        <span class="text-success fw-bold">처리완료</span>
-                                    {% else %}
-                                        <span class="text-muted">검토대기</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <form action="/admin/update_status/{{ report.id }}" method="POST" class="d-flex gap-1">
-                                        <select name="status" class="form-select form-select-sm" style="width: 100px;">
-                                            <option value="검토중" {% if report.status == '검토중' %}selected{% endif %}>검토중</option>
-                                            <option value="완료" {% if report.status == '완료' %}selected{% endif %}>완료</option>
-                                        </select>
-                                        <button type="submit" class="btn btn-primary btn-sm">변경</button>
-                                    </form>
-                                </td>
-                                <td><small>{{ report.created_at.strftime('%Y-%m-%d') }}</small></td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">등록된 제보 내역이 없습니다.</td>
-                            </tr>
-                            {% endfor %}
+                        {% for report in reports %}
+                        <tr>
+                            <td><span class="badge bg-info text-dark">{{ report.type if report.type else '보통' }}</span>
+                            </td>
+
+                            <td>{{ report.address if report.address else '좌표 제보' }}</td>
+
+                            <td>
+                                {% if report.status == '검토중' %}
+                                <span class="text-warning">● {{ report.status }}</span>
+                                <button onclick="changeStatus({{ report.id }})"
+                                        class="btn btn-outline-success btn-sm ms-1 status-btn">완료하기
+                                </button>
+
+                                {# 이 부분이 핵심입니다: '완료' 또는 '처리완료' 둘 다 초록색으로 표시 #}
+                                {% elif report.status == '완료' or report.status == '처리완료' %}
+                                <span class="text-success">● 완료</span>
+
+                                {% else %}
+                                <span class="text-danger">● {{ report.status }}</span>
+                                {% endif %}
+                            </td>
+
+                            <td>+{{ report.points if report.points else 0 }}</td>
+
+                            <td>{{ report.date if report.date else '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">아직 제보 내역이 없습니다.</td>
+                        </tr>
+                        {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -65,4 +81,52 @@
         </div>
     </div>
 </div>
-{% endblock %}
+
+<div class="modal fade" id="withdrawModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">정말 탈퇴하시겠습니까?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/withdraw" method="POST">
+                <div class="modal-body">
+                    <p>탈퇴 시 제보 내역과 포인트가 모두 삭제됩니다.</p>
+                    <input type="password" name="password_confirm" class="form-control" placeholder="비밀번호 입력" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn btn-danger">탈퇴하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function changeStatus(reportId) {
+    if (!confirm("해당 제보를 '완료' 상태로 변경하시겠습니까?")) return;
+
+    // 백엔드와 약속한 '처리완료' 상태를 보냅니다.
+    fetch('/update_report_status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            id: reportId,
+            status: '처리완료'  // 파이썬의 if new_status == '처리완료'와 일치시킴
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert("변경 성공 및 10포인트가 적립되었습니다!");
+            location.reload(); // 화면을 새로고침해서 '완료' 상태 반영
+        } else {
+            alert("실패: " + data.message);
+        }
+    })
+    .catch(err => alert("서버 통신 에러가 발생했습니다."));
+}
+</script>
+</body>
+</html>
