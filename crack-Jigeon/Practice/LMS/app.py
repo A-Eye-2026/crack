@@ -24,7 +24,8 @@ from decimal import Decimal
 
 # 주소 검색 시 도시 입력만으로도 해당 행정구 목록을 제공하기 위한 지역 데이터 사전
 KAKAO_REST_API_KEY = "035c39ca6433bc71c470c3174e362005"
-DEFAULT_RADIUS_M = 700
+KAKAO_JS_KEY = "c5746d6486744a8c50f393b8c15d47e9"
+DEFAULT_RADIUS_M = 500
 CITY_DISTRICT_MAP = {
         "수원시": ["장안구", "권선구", "팔달구", "영통구"],
         "성남시": ["수정구", "중원구", "분당구"],
@@ -38,6 +39,53 @@ CITY_DISTRICT_MAP = {
             "서초구", "강남구", "송파구", "강동구"
         ]
     }
+
+
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    summary = {
+        "today_count": 24,
+        "pending_count": 10,
+        "processing_count": 6,
+        "rejected_count": 3
+    }
+
+    incidents = [
+        {
+            "id": 101,
+            "location": "광주 동구 충장로",
+            "risk_text": "높음",
+            "status": "반려",
+            "created_at": "08:52"
+        },
+        {
+            "id": 103,
+            "location": "광주 서구 화정동",
+            "risk_text": "중간",
+            "status": "처리중",
+            "created_at": "09:48"
+        },
+        {
+            "id": 102,
+            "location": "광주 남구 봉선동",
+            "risk_text": "낮음",
+            "status": "처리완료",
+            "created_at": "09:15"
+        },
+        {
+            "id": 101,
+            "location": "광주 동구 충장로",
+            "risk_text": "높음",
+            "status": "처리중",
+            "created_at": "08:52"
+        }
+    ]
+
+    return render_template(
+        'admin_dashboard.html',
+        summary=summary,
+        incidents=incidents
+    )
 
 
 # 두 좌표 사이 실제 거리를 계산하여 위치 기반 사건 필터링에 사용하는 함수
@@ -418,6 +466,10 @@ def alert_page():
     search_district = request.args.get('district', '', type=str).strip()
     selected_status = request.args.get('status', '', type=str).strip()
 
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 4, type=int)
+    is_api = request.args.get('api', '0') == '1'
+
     user_role = session.get('user_role', 'user')
     conn = Session.get_connection()
     try:
@@ -435,37 +487,56 @@ def alert_page():
                     i.status,
                     i.risk_score,
                     i.first_created_at,
-                    i.last_checked_at,
-
-                    COUNT(r.id) + CASE WHEN i.member_id IS NOT NULL THEN 1 ELSE 0 END AS report_count,
-
-                    (
-                        SELECT COUNT(DISTINCT reporter_id)
-                        FROM (
-                            SELECT i2.member_id AS reporter_id
-                            FROM incidents i2
-                            WHERE i2.id = i.id
-
-                            UNION
-
-                            SELECT r2.member_id AS reporter_id
-                            FROM incident_reports r2
-                            WHERE r2.incident_id = i.id
-                        ) AS all_reporters
-                        WHERE reporter_id IS NOT NULL
-                    ) AS reporter_count
-
+                    i.last_checked_at
                 FROM incidents i
-                LEFT JOIN incident_reports r
-                    ON i.id = r.incident_id
-                GROUP BY
-                    i.id, i.member_id, i.title, i.location, i.region_name,
-                    i.latitude, i.longitude, i.image_path, i.status,
-                    i.risk_score, i.first_created_at, i.last_checked_at
                 ORDER BY i.first_created_at DESC
             """
             cursor.execute(sql)
-            incidents = cursor.fetchall()
+            raw_incidents = cursor.fetchall()
+
+            grouped_incidents = []
+            used_ids = set()
+
+            for incident in raw_incidents:
+                if incident['id'] in used_ids:
+                    continue
+
+                base_lat = incident.get('latitude')
+                base_lng = incident.get('longitude')
+                base_title = (incident.get('title') or '').strip()
+                base_time = incident.get('first_created_at')
+                reporter_ids = set()
+
+                if incident.get('member_id'):
+                    reporter_ids.add(incident.get('member_id'))
+
+                for other in raw_incidents:
+                    if other['id'] in used_ids:
+                        continue
+
+                    other_title = (other.get('title') or '').strip()
+                    other_time = other.get('first_created_at')
+
+                    if not base_lat or not base_lng or not other.get('latitude') or not other.get('longitude'):
+                        continue
+
+                    distance_m = haversine_m(base_lat, base_lng, other.get('latitude'), other.get('longitude'))
+                    time_diff_sec = abs(
+                        (base_time - other_time).total_seconds()) if base_time and other_time else 999999
+
+                    if (
+                            distance_m <= 500 and
+                            time_diff_sec <= 3600 and
+                            base_title == other_title
+                    ):
+                        used_ids.add(other['id'])
+                        if other.get('member_id'):
+                            reporter_ids.add(other.get('member_id'))
+
+                incident['group_reporter_count'] = len(reporter_ids)
+                grouped_incidents.append(incident)
+
+            incidents = grouped_incidents
 
         filtered_incidents = []
 
@@ -478,7 +549,7 @@ def alert_page():
             # 일반 사용자만 필터 적용
             if user_role not in ['admin', 'manager']:
                 risk_score = float(incident.get('risk_score') or 0)
-                reporter_count = int(incident.get('reporter_count') or 0)
+                reporter_count = int(incident.get('group_reporter_count') or 0)
 
                 # 사용자 노출 기준
                 visible_to_user = (
@@ -521,6 +592,12 @@ def alert_page():
         if search_lat is not None and search_lng is not None:
             filtered_incidents.sort(key=lambda x: x['distance_m'])
 
+        total_count = len(filtered_incidents)
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paged_incidents = filtered_incidents[start_idx:end_idx]
+        has_next = end_idx < total_count
+
         print("검색 주소:", search_address)
         print("필터 전 개수:", len(incidents))
         print("필터 후 개수:", len(filtered_incidents))
@@ -556,16 +633,41 @@ def alert_page():
         if user_role in ['admin', 'manager']:
             template_name = 'admin_alert.html'
 
+        if is_api:
+            return jsonify({
+                'success': True,
+                'items': [
+                    {
+                        'id': i.get('id'),
+                        'title': i.get('title'),
+                        'location': i.get('location'),
+                        'status': i.get('status'),
+                        'risk_score': float(i.get('risk_score') or 0),
+                        'first_created_at': i.get('first_created_at').strftime('%m-%d %H:%M') if i.get('first_created_at') else '',
+                        'latitude': i.get('latitude'),
+                        'longitude': i.get('longitude'),
+                        'distance_m': i.get('distance_m'),
+                        'image_path': i.get('image_path')
+                    }
+                    for i in paged_incidents
+                ],
+                'has_next': has_next,
+                'next_page': page + 1 if has_next else None
+            })
+
         return render_template(
             template_name,
-            incidents=filtered_incidents,
+            incidents=paged_incidents,
             selected_address=display_address,
             selected_lat=search_lat,
             selected_lng=search_lng,
             radius_m=radius_m,
             filter_type=filter_type,
             user_role=user_role,
-            selected_status=selected_status
+            selected_status=selected_status,
+            kakao_js_key = KAKAO_JS_KEY,
+            has_next=has_next,
+            next_page=page + 1 if has_next else None
         )
 
     finally:

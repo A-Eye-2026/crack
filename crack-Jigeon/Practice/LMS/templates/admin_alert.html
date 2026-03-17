@@ -916,7 +916,7 @@ function selectAddress(item) {
     return;
   }
 
-  const radius = 700;
+  const radius = 500;
   const url = `/alerts?lat=${item.latitude}&lng=${item.longitude}&radius_m=${radius}&address=${encodeURIComponent(item.address_name)}`;
   window.location.href = url;
 }
