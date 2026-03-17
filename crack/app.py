@@ -3,7 +3,11 @@ import hashlib
 import os
 import re
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+import pymysql
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from pymysql import cursors
+from pymysql.cursors import DictCursor
+
 from common.Session import Session # crack. 제거
 from domain import Member # crack. 제거
 from service import MemberService # crack. 제거
@@ -12,7 +16,11 @@ from service import MemberService # crack. 제거
 # base_dir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
-app.secret_key = 'its_guard_secret_key' # 이 줄이 없으면 세션 에러가 납니다.
+app.secret_key = 'its_guard'
+# app.secret.key 에 its_guard라고 해놓은 이유
+# session 데이터 암호화
+# 데이터 위조 방지 (쿠키 보안)
+# 사용자 메시지 출력.
 
 UPLOAD_FOLDER = 'uploads/'
 if not os.path.exists(UPLOAD_FOLDER):
@@ -21,150 +29,340 @@ if not os.path.exists(UPLOAD_FOLDER):
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-@app.route('/login', methods=['GET','POST'])
-def login(uid=None):
+@app.route('/login', methods=['GET', 'POST'])
+def login():
     if request.method == 'GET':
         return render_template('login.html')
 
-    # 1. 로그인 시도 횟수 세션 초기화 (없을 경우에 '0'으로 설정)
-    if 'login_attempts' not in session:
-        session['login_attempts'] = 0
-
-    # 2. 이미 로그인 3번 실패했는지 먼저 확인
-    if session['login_attempts'] >= 3:
-        return "<script>alert(' 3회 이상 로그인 실패로 인해서 접속이 차단되었습니다.');history.back();</script>"
-
-    # 3. 입력값 받기 (여기서부터는 if문 밖으로 나와야 합니다)
     uid = request.form.get('uid')
     upw = request.form.get('upw')
 
     conn = Session.get_conn()
-    cursor = conn.cursor()
     try:
-        with conn.cursor() as cur:
-            sql = 'select id, name, uid, role FROM members WHERE uid = %s and password = %s'
+        with conn.cursor() as cursor:
+            # 1. 회원 정보 조회
+            sql = "SELECT id, name, uid, role  FROM members WHERE uid = %s AND password = %s"
             cursor.execute(sql, (uid, upw))
             user = cursor.fetchone()
+
             if user:
-                # 2. 로그인 성공: 세션에 사용자 정보 저장 및 로그인 3회 실패시 횟수 리셋
+                # 2. 로그인 성공: 세션에 사용자 정보 저장
                 session['user_id'] = user['id']
                 session['user_name'] = user['name']
                 session['user_uid'] = user['uid']
-                session['login_attempts'] = 0
-                return redirect(url_for('index'))
+                session['user_role'] = user['role']
 
+                # 이제 DB에서 'role'을 가져왔으니 에러 없이 잘 들어갈 겁니다.
+                # session['user_role'] = user['role']
+
+                return redirect(url_for('index'))
             else:
-                # 로그인 실패 : 횟수 증가
-                session['login_attempts'] += 1
-                remaining = 3 - session['login_attempts']
-                if remaining > 0:
-                    return f"<script>alert('아이디 또는 비밀번호가 틀렸습니다. (남은 기회 : {remaining})');history.back();</script>"
-                else:
-                    return "<script>alert('3회 실패! 이제 로그인이 차단됩니다.');history.back();</script>"
-    except Exception as e:
-        print(f"로그인 에러 : {e}")
-        return "<script>alert('로그인 중 오류가 발생했습니다.');history.back();</script>"
+                return "<script>alert('아이디 또는 비밀번호가 틀렸습니다.'); history.back();</script>"
     finally:
         conn.close()
+
+
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    # 보안 : 관리자가 아니면 홈으로 튕겨내기
+    if session.get('user_id') != 'admin':
+        return "<script>alert('관리자 전용 페이지 입니다.'); history.back();</script>"
+
+    conn = Session.get_conn()
+    try:
+        with conn.cursor(pymysql, cursors, DictCursor) as cursor:
+            # 모든 사용자의 제보 내역을 가져옵니다.
+            sql = """
+                    SELECT p.*, m.name as reporter_name
+                    FROM potholes p
+                    JOIN members m ON p.reporter_id = m.id
+                    ORDER BY p.created_at DESC
+            """
+            cursor.execute(sql)
+            all_reports = cursor.fetchall()
+
+            return render_template('admin_dashboard.html', reports=all_reports)
+    finally:
+        conn.close()
+
+# 2. 제보 상태 변경 (검토중 -> 완료 및 포인트 지급)
+@app.route('/admin/update_status/<int:report_id>', methods=['POST'])
+def update_status(report_id):
+    if session.get('user_id') != 'admin':
+        return redirect(url_for('index'))
+
+    new_status = request.form.get('status') # 완료 또는 반려
+
+    conn = Session.get_conn()
+    try:
+        with conn.cursor() as cur:
+            # 상태 업데이트
+            sql = "UPDATE potholes SET status = %s WHERE id = %s"
+            cur.execute(sql, (new_status, report_id))
+            conn.commit()
+
+            return f"<script>alert('상태가 {new_status}로 변경되었습니다.');location.href='/admin/dashboard';</script>"
+    finally:
+        conn.close()
+
+@app.route('/update_report_status', methods=['POST']) # 서비스 사용자가 제보한 도로 파손(포트홀), 사건의 처리 상태를 업데이트하는
+# 뒷단 백엔드로직. 예를들어, 대기 중인 제보를 확인 완료상태로 바꿀 때 실행되는 기능.
+# 상태를 수정 하는 것이므로 보안상 POST 방식 사용
+def update_report_status():
+    data = request.get_json()
+    # 프론트엔드(자바스크립트) 에서 보낸 JSON 데이터를 파이썬 딕셔너리 형태로 변환해서 가져옴.
+    report_id = data.get('id')
+    # 보내온 데이터 중 어떤 제보물을 어떤 상태로 바꿀지 변수에 저장함.
+    new_status = data.get('status')
+
+    db = Session.get_conn()
+
+    # try: 일단이 코드를 실행해
+    # except: 만약 에러가 나면 rollback() 을 통해서 데이터를 원래대로 복구
+    # finally: 성공하든 실패하든 마지막엔 반드시 DB 연결을 닫아서 자원 낭비를 줄임
+    try:
+        # DB 연결 및 업데이트 (MySQL 예시)
+        with db.cursor() as cursor:
+            cursor = db.cursor()
+            sql = "UPDATE reports SET status = %s WHERE id = %s"
+            cursor.execute(sql, (new_status, report_id))
+            # 실제 MySQL에 보낼 명려문. reports 테이블에서 특정 id를 찾아서 상태를 업데이트하라고 시키는 핵심코드
+
+            if new_status == '처리완료':
+                # 해당 제보를 작성한 유저를 찾아서 포인트를 10점 올리는 쿼리
+                # reports 테이블에 user_id가 저장되어 있다는 가정하에 작성된 서브쿼리문
+                point_sql = """
+                                    UPDATE users
+                                    SET point = point + 10
+                                    WHERE user_id = (SELECT user_id FROM reports WHERE id = %s)
+                """
+                cursor.execute(point_sql, (report_id,))
+        db.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "message":str(e)})
+    finally:
+        db.close()
+
+@app.route('/report') # 제보를 할 수 있는 기능. 주소창 https://192.168.0.157:5001/report
+def report_page():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('report.html') # report.html 파일을 불러옴.
+
+@app.route('/report/submit', methods=['POST'])
+def report_submit():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_uid = session.get('user_uid')
+    address = request.form.get('address')
+    severity = request.form.get('severity')
+    # 지도를 안 쓰면 이 값들이 빈 문자열 ('')이나 None으로 올 수 있음.
+    lat = request.form.get('lat')
+    lng = request.form.get('lng')
+
+    # [수정] 좌표 검증 로직 삭제
+    # 이제 좌표가 없어도 아래로 내려가서 자동으로 DB에 저장됨.)
+    # 주소에서 지역명 추출
+    region_name = None
+    if address:
+        if '경기도' in address:
+            region_name = '경기도'
+        elif '강원도' in address:
+            region_name = '강원도'
+        elif '충청도' in address:
+            region_name = '충청도'
+
+    conn = Session.get_conn()
+    try:
+        with conn.cursor() as cur:
+            # lat, lng 값이 비어있을 경우 DB에 NULL로 들어가도록 None 처리를 해줌.
+            # 파이썬의 None MySQL의 null과 대응됨.
+            p_lat = lat if lat else None
+            p_lng = lng if lng else None
+
+            sql = """
+                INSERT INTO potholes (reporter_id, address, severity, status, points, lat, lng, region_name)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            cur.execute(sql, (user_uid, address, severity, '검토중', 10, p_lat, p_lng, region_name))
+            conn.commit()
+            return "<script>alert('제보가 완료되었습니다! 10포인트가 적립됩니다.'); location.href='/';</script>"
+    except Exception as e:
+        print(f"저장 에러: {e}")
+        return f"<script>alert('저장 실패: {e}'); history.back();</script>"
+    finally:
+        conn.close()
+
+@app.route('/report/quick', methods=['POST'])
+def quick_report():
+    """
+    지도(좌표) 없이 버튼 클릭만으로 즉시 제보와 포인트를 지급하는 로직
+    """
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_uid = session.get('user_uid')
+    # 사용자가 선택한 제보 유형 (예: 포트홀, 파손 등)을 받아옵니다.
+    severity = request.form.get('severity')
+
+    conn = Session.get_conn()
+    try:
+        with conn.cursor() as cur:
+            # 1. 제보 내역 저장 (지도 정보 없이 기본 데이터만 입력)
+            # 상태는 '검토중'으로 설정하고, 즉시 10포인트를 부여합니다.
+            sql = """
+                        INSERT INTO potholes (reporter_id, severity, status, points)
+                        VALUES (%s, %s, %s, %s)
+            """
+            # 2. (선택사항) members 테이블에 포인트 합계를 별도로 관리한다면 아래 쿼리 실행
+            # sql_member = "UPDATE members SET points = points + 10 WHERE uid = %s"
+            # cur.execute(sql,_member, (user_uid,))
+
+            conn.commit()
+            return "<script>alert('제보가 완료되었습니다. 10포인트가 적립됩니다.');location.href='/';</script>"
+    except Exception as e:
+        conn.rollback()
+        print(f" 제보 에러 : {e}")
+        return f"<script>alert('처리 중 오류가 발생했습니다.');history.back();</script>"
+    finally:
+        conn.close()
+
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
 
-@app.route('/join', methods=['GET','POST'])
+@app.route('/join', methods=['GET', 'POST'])
 def join():
     if request.method == 'GET':
         return render_template('join.html')
-    # 1. 입력 데이터 받기
-    uid = request.form.get('uid')  # 이메일(ID)
-    upw = request.form.get('upw')  # 비밀번호
-    upw_check = request.form.get('upw_check')  # 비밀번호 확인
-    uname = request.form.get('uname')  # 이름
-    # 값이 없으면 None 또는 빈 문자열이 들어옵니다.
-    birth = request.form.get('birth') or None
-    addr = request.form.get('addr') or ""
 
-    # 2. 비밀번호 보안 규칙 검사 (글자수 제한 없음 설정)
-    pw_pattern = r"^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])"
+    uid = request.form.get('uid')
+    password = request.form.get('password')
+    password_check = request.form.get('password_check')# 컬럼명 password에 맞춤
+    name = request.form.get('name')
 
-    if not re.search(pw_pattern, upw):
-        return "<script>alert('비밀번호에는 영문, 숫자, 특수문자(!#$@!%)가 각각 포함되어야 합니다.');history.back();</script>"
-
-    # 3. 비밀번호 이중화 확인 (입력한 두 비밀번호가 맞는지)
-    if upw != upw_check:
-        return "<script>alert('비밀번호가 일치하지 않습니다. 다시 확인해 주세요.');history.back();</script>"
+    # 1.  비밀번호 일치 여부 확인
+    if password != password_check:
+        return "<script>alert('비밀번호가 일치하지 않습니다.');history.back();</script>"
 
     conn = Session.get_conn()
     try:
-        with conn.cursor() as cur:
-            # 3. 이메일 중복 확인
-            # 더 정확한 체크 방법 (데이터의 개수를 세어봄)
-            check_sql = "SELECT COUNT(*) as cnt FROM members WHERE uid = %s"
-            cur.execute(check_sql, (uid,))
-            result = cur.fetchone()
-            # result['cnt']가 0보다 크면 이미 존재하는 것
-            if result and result['cnt'] > 0:
-                return "<script>alert('이미 가입된 이메일 입니다.');history.back();</script>"
+        with conn.cursor() as cursor:
+            # 아이디 중복 확인
+            cursor.execute("SELECT id FROM members WHERE uid = %s", (uid,))
+            if cursor.fetchone():
+                return "<script>alert('이미 존재하는 아이디입니다.'); history.back();</script>"
 
-            # 4. 회원정보 저장 (주석 해제 및 데이터 매칭), 주석처리 한 이유 : 강사님 MySQL 로 접속을 해놓아서
-            # 주석처리해놓았음. db에 email, address 쿼리가 없어서.
-            # 필수(uid, upw, uname) + 선택(birth, addr) 총 5개 데이터를 집어넣습니다.
-            #sql = """INSERT INTO members (uid, password, name, birth, address)
-                                #VALUES (%s, %s, %s, %s, %s)"""
-            #cur.execute(sql, (uid, upw, uname, birth, addr))
-            #conn.commit()
+            # 회원 정보 저장 (role, active는 기본값이 들어감)
+            sql = "INSERT INTO members (uid, password, name) VALUES (%s, %s, %s)"
+            cursor.execute(sql, (uid, password, name))
+            conn.commit()
 
-            # 5. 회원가입 완료 후 로그인 페이지로 이동
-            return "<script>alert('회원가입이 완료되었습니다.');location.href='/login';</script>"
-
+            return "<script>alert('회원가입이 완료되었습니다!'); location.href='/login';</script>"
     except Exception as e:
-        conn.rollback()
-        print(f"회원가입 에러 : {e}")
-        return "<script>alert('가입 중 오류가 발생했습니다.');history.back();</script>"
+        print(f"회원가입 에러: {e}")
+        return "가입 중 오류가 발생했습니다."
     finally:
         conn.close()
-######################################################################################################################
+
+@app.route('/check_id', methods=['POST']) # 회원가입 할 때 가입 버튼 누르기 전에, 아이디 입력후 아이디 중복확인 클릭기능추가.
+def check_id():
+    uid = request.json.get('uid') # 자바스크립트 fetch로 받을 때 사용
+    conn = Session.get_conn()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM members WHERE uid = %s", (uid,))
+            exists= cursor.fetchone()
+            if exists:
+                return jsonify({"available": False})
+            return jsonify({"available": True})
+    finally:
+        conn.close()
 
 @app.route('/mypage')
 def mypage():
     if 'user_id' not in session:
-        return "<script>alert('로그인이 필요합니다.');location.href='/login';</script>"
+        return redirect(url_for('login'))
+
+    user_uid = session['user_uid']
     conn = Session.get_conn()
     try:
-        with conn.cursor() as cur:
-            # 세션에 저장된 id로 전체 정보 조회
-            sql = "SELECT uid, name, birth, address FROM members WHERE uid = %s"
-            cur.execute(sql, (session['user_id'],))
-            user_info = cur.fetchone()
-            return render_template('mypage.html', user_info=user_info)
+        with conn.cursor(pymysql.cursors.DictCursor) as cur:
+            # 1. 사용자 정보 조회
+            user_sql = "SELECT id, name, uid, role, created_at FROM members WHERE uid = %s"
+            cur.execute(user_sql, (user_uid,))
+            user_data = cur.fetchone()
+
+            # 2. 제보 내역 조회 (potholes 테이블 사용)
+            report_sql = """
+                SELECT id, severity as type, address, status, created_at as date
+                FROM potholes
+                WHERE reporter_id = %s 
+                ORDER BY created_at DESC
+            """
+            cur.execute(report_sql, (user_uid,))
+            my_reports = cur.fetchall()
+
+            print(f"조회된 제보 건수 : {len(my_reports)}")
+
+            # 3. 총 포인트 합산 (중복 코드 제거 및 테이블명 통일)
+            sum_sql = "SELECT SUM(points) as total_points FROM potholes WHERE reporter_id = %s"
+            cur.execute(sum_sql, (user_uid,))
+            result = cur.fetchone()
+
+            total_points = result['total_points'] if result and result['total_points'] else 0
+
+            # 4. 결과 전달
+            return render_template('mypage.html',
+                                   user=user_data,
+                                   reports=my_reports,
+                                   total_points=total_points)
+
+    except Exception as e:
+        print(f"에러 발생: {e}")
+        return f"<script>alert('오류가 발생했습니다: {e}');history.back();</script>"
     finally:
         conn.close()
 
 
 @app.route('/update', methods=['POST'])
-# 개인정보수정, 사용자가 입력한 새로운 정보를 DB에 UPDATE 하는 로직.
-# 비밀번호 변경 여부에 따라서 쿼리를 나누는 것이 좋을 것 같아서 나누었음//
 def update():
-    new_name = request.form.get('new_name')
-    new_addr = request.form.get('new_addr')
-    new_pw = request.form.get('new_pw')
+    # 1. 폼 데이터 수집 (HTML의 name 속성과 일치해야 함)
+    new_name = request.form.get('name')
+    new_pw = request.form.get('password')
 
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']  # 세션에 저장된 DB 고유 번호(PK) 사용
     conn = Session.get_conn()
+
     try:
         with conn.cursor() as cur:
-            if new_pw: # 비밀번호도 변경할 경우
-                sql = "UPDATE members SET naem = %s, address=%s, password=%s WHERE id=%s"
-                cur.execute(sql, (new_name, new_addr, new_pw, session['user_id']))
-            else: # 비밀번호는 유지 할 경우
-                sql = "UPDATE members SET name=%s, address=%s WHERE id=%s"
-                cur.execute(sql, (new_name, new_addr, session['user_id']))
+            if new_pw:  # 새 비밀번호가 입력된 경우
+                # [확인됨] DB 컬럼명이 'password'이므로 아래와 같이 수정
+                sql = "UPDATE members SET name = %s, password = %s WHERE id = %s"
+                cur.execute(sql, (new_name, new_pw, user_id))
+            else:  # 비밀번호는 그대로 두고 이름만 변경할 경우
+                sql = "UPDATE members SET name = %s WHERE id = %s"
+                cur.execute(sql, (new_name, user_id))
+
             conn.commit()
-            session['user_name'] = new_name # 세션 이름 정보도 갱신
-            return "<script>alert('개인정보가 수정되었습니다.');location.href='/update';</script>"
+
+            # 2. 실시간 세션 정보 갱신 (화면 상단 이름 변경용)
+            session['user_name'] = new_name
+
+            return "<script>alert('성공적으로 수정되었습니다.'); location.href='/update';</script>"
+
     except Exception as e:
         conn.rollback()
-        return f"<script>alert('정보 수정 중 오류 발생');history.back();</script>"
+        print(f"Update Error: {e}")
+        return f"<script>alert('오류가 발생했습니다: {e}'); history.back();</script>"
     finally:
         conn.close()
 
@@ -185,6 +383,83 @@ def withdraw():
                 return "<script>alert('그동안 이용해주셔서 감사합니다.');location.href='/';</script>"
             else:
                 return "<script>alert('비밀번호가 일치하지 않습니다.');history.back();</script>"
+    finally:
+        conn.close()
+
+
+@app.route('/update_page')  # 1. 앞에 / 추가
+def update_page():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    conn = Session.get_conn()
+    try:
+        # 2. pymysql.cursors.DictCursor (마침표 확인)
+        with conn.cursor(pymysql.cursors.DictCursor) as cur:
+            # 3. password 뒤 콤마 제거
+            sql = "SELECT name, uid, password FROM members WHERE id = %s"
+            cur.execute(sql, (user_id,))
+            user_data = cur.fetchone()
+
+            # 4. 사용자의 제보 내역도 같이 가져와야 마이페이지가 깨지지 않습니다.
+            cur.execute("SELECT * FROM potholes WHERE reporter_id = %s", (user_id,))
+            my_reports = cur.fetchall()
+
+            # 5. 포인트 합계도 가져오기
+            cur.execute("SELECT SUM(points) as total_points FROM potholes WHERE reporter_id = %s", (user_id,))
+            total_points = cur.fetchone()['total_points'] or 0
+
+        # 핵심: show_edit=True 라는 신호를 보내서 HTML에서 입력창을 띄우게 합니다.
+        return render_template('mypage.html',
+                               user=user_data,
+                               reports=my_reports,
+                               total_points=total_points,
+                               show_edit=True)
+    except Exception as e:
+        print(f"Error: {e}")
+        return redirect('/mypage')
+    finally:
+        conn.close()
+
+@app.route('/check_pothole', methods=['POST'])
+def check_pothole():
+    # 1. 로그인 여부 확인 (선택 사항 : 로그인 한 사용자에게만 알림을 줄 경우)
+    if 'user_id' not in session:
+        return jsonify({"status": "error", "message": "로그인이 필요합니다."}), 401
+
+    # 2. 클라이언트 (웹 브라우저)에서 보낸 현재 위치 좌표 바딕
+    data = request.json
+    user_lat = data.get('lat')
+    user_lon = data.get('lng')
+
+    if not user_lat or not user_lon:
+        return jsonify({"status": "error","message": "좌표 정보가 없습니다."}), 400
+
+    conn = Session.get_conn()
+    try:
+        with conn.cursor() as cur:
+            # 3. ST_Distance_Sphere를 사용하여 반경 100m 내 포트홀 검색
+            # 덕영대로 같은 간선도로는 차가 빠르므로 200~300m로 조절해도 괜찮음.
+            sql = """
+                SELECT id, lat, lng, severity, address,
+                       ST_Distance_Sphere(point(lng, lat), point(%s, %s)) AS distance
+                FROM potholes
+                HAVING distance <= 100
+                ORDER BY distance ASC
+            """
+            cur.execute(sql, (user_lat, user_lon))
+            nearby_potholes = cur.fetchall()
+
+            return jsonify({
+                "status": "success",
+                "count": len(nearby_potholes),
+                "data": nearby_potholes
+            })
+    except Exception as e:
+        print(f"포트홀 조회 에러 : {e}")
+        return jsonify({"status": "error", "message": "조회 중 오류 발생"}), 500
+
     finally:
         conn.close()
 

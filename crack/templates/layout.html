@@ -74,5 +74,54 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {# 포트홀 실시간 알림 스크립트 #}
+    <script>
+        // 로그인 상태일 때만 위치 추적 및 알림 기능 작동
+        {% if session.get('user_id') %}
+
+            // 1. 브라우저 알림 권한 요청
+            if (Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+
+            // 2. 5초마다 위치 체크 및 서버 통신
+            setInterval(function() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+
+                        // Flask 서버의 /check_pothole 경로로 데이터 전송
+                        fetch('/check_pothole', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 'lat': lat, 'lng': lng })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === "success" && data.count > 0) {
+                                const nearest = data.data[0];
+
+                                // 브라우저 상단 알림창 띄우기
+                                if (Notification.permission === "granted") {
+                                    new Notification("⚠️ 전방 포트홀 주의!", {
+                                        body: `${Math.round(nearest.distance)}m 앞 포트홀이 있습니다. 서행하세요!`,
+                                        icon: "https://cdn-icons-png.flaticon.com/512/564/564619.png" // 경고 아이콘
+                                    });
+                                }
+
+                                // 브라우저 기본 경고창 (선택 사항)
+                                // alert(`경고: ${Math.round(nearest.distance)}m 근방 포트홀 감지!`);
+                            }
+                        })
+                        .catch(err => console.error("알림 시스템 오류:", err));
+                    }, function(error) {
+                        console.warn("위치 정보를 가져올 수 없습니다:", error.message);
+                    });
+                }
+            }, 5000); // 5초 간격 (운전 속도에 따라 조절 가능)
+
+        {% endif %}
+    </script>
 </body>
 </html>

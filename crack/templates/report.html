@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>제보하기</title>
+    <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+</head>
+<body>
+    <h2>🚨 도로 파손 제보</h2>
+    <form action="/report/submit" method="POST">
+        <div>
+            <label>위치:</label>
+            <input type="text" name="address" id="address" placeholder="주소를 입력하거나 검색하세요">
+            <button type="button" onclick="openSearch()">주소 검색</button>
+        </div>
+
+        <input type="hidden" name="lat" id="lat" value="">
+        <input type="hidden" name="lng" id="lng" value="">
+
+        <div>
+            <label>파손 정도:</label>
+            <select name="severity">
+                <option value="보통">보통</option>
+                <option value="심함">심함</option>
+                <option value="매우 심함">매우 심함</option>
+            </select>
+        </div>
+
+        <button type="submit" style="margin-top:20px; padding:10px 20px;">제보하기</button>
+    </form>
+
+    <script>
+        function openSearch() {
+            new daum.Postcode({
+                oncomplete: function(data) {
+                    document.getElementById('address').value = data.address;
+                }
+            }).open();
+        }
+        // [중요] 여기에 "좌표가 없으면 알림창을 띄우는" 코드가 절대 없어야 합니다.
+    </script>
+</body>
+</html>
