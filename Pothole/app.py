@@ -9,6 +9,7 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 import os
 import mysql.connector
+from ultralytics import YOLO
 
 # ================================================================
 # ⚙️ 기본 설정
@@ -28,6 +29,7 @@ DB_CONFIG = {
     'database': 'road'
 }
 
+model = YOLO('best.pt')
 # ================================================================
 # 🔧 유틸 함수 0 — DB 연결
 # ================================================================
@@ -74,14 +76,29 @@ def get_gps_from_exif(image_path):
         return None, None
 
 # ================================================================
-# 🤖 유틸 함수 3 — AI 이미지 분석 (임시 가짜 함수)
+# 🤖 유틸 함수 3 — AI 이미지 분석 (임시 가짜 함수) + 결과사진에 객체박스그려주기
 # ================================================================
 def analyze_image(file_path):
-    # ⚠️ 테스트용 가짜 결과
-    # 나중에 팀원 YOLO 코드로 이 함수만 교체하면 됨!
+    results = model(file_path)
+
+    if len(results[0].boxes) == 0:
+        return {
+            "label": "unknown",
+            "confidence": 0.0,
+            "result_path": None
+        }
+
+    confidence = float(results[0].boxes.conf[0])
+    label = results[0].names[int(results[0].boxes.cls[0])]
+
+    # 바운딩박스 그린 이미지 저장
+    result_path = file_path.replace('uploads/', 'uploads/result_')
+    results[0].save(filename=result_path)
+
     return {
-        "label"     : "pothole",
-        "confidence": 0.92
+        "label": label,
+        "confidence": round(confidence, 2),
+        "result_path": result_path
     }
 
 # ================================================================
@@ -158,13 +175,13 @@ def upload_image():
 
     cursor.execute("""
         INSERT INTO reports
-        (user_id, file_path, file_type,
+        (user_id, file_path, file_type, result_path,
          latitude, longitude, address, region,
          ai_label, ai_confidence,
          status, parent_id, upload_count)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
-        user_id, file_path, 'image',
+        user_id, file_path, 'image', ai.get('result_path'),
         latitude, longitude, address, region,
         ai['label'], confidence,
         status, parent_id,
