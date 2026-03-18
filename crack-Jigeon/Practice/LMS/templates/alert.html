@@ -183,6 +183,49 @@
       color: #888;
     }
 
+    .report-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eef6ff;
+      color: #2f6fdd;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1;
+      border: 1px solid #cfe2ff;
+    }
+
+    .alert-card.multi-report {
+      background: #fffaf5;
+      box-shadow: 0 8px 18px rgba(255, 140, 0, 0.08);
+    }
+
+    .multi-report-label {
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #fff1df;
+      color: #e67e00;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .multi-report-label.danger {
+      background: #ffe3e3;
+      color: #d64545;
+    }
+
+    .alert-card.multi-report.danger {
+      background: #fff7f7;
+      box-shadow: 0 8px 18px rgba(214, 69, 69, 0.08);
+    }
+
     .check-btn {
       background: #ff8c00;
       color: white;
@@ -720,16 +763,27 @@
           {% elif incident.status == '처리중' %}status-processing
           {% elif incident.status == '처리완료' %}status-done
           {% endif %}
+          {% if incident.group_reporter_count and incident.group_reporter_count >= 5 %}multi-report danger
+          {% elif incident.group_reporter_count and incident.group_reporter_count >= 3 %}multi-report
+          {% endif %}
         ">
           {% set score = incident.risk_score|float %}
 
           <div class="compact-main-row">
             <div class="compact-left">
+              {% if incident.group_reporter_count and incident.group_reporter_count >= 5 %}
+              <div class="multi-report-label danger">집중 위험</div>
+              {% elif incident.group_reporter_count and incident.group_reporter_count >= 3 %}
+              <div class="multi-report-label">반복 제보</div>
+              {% endif %}
               <span class="alert-status">{{ incident.status }}</span>
               <h2 class="alert-title compact-title">{{ incident.title }}</h2>
               <div class="compact-location">{{ incident.location }}</div>
               {% if incident.distance_m is not none %}
               <div class="distance-text">선택 위치에서 약 {{ incident.distance_m }}m</div>
+              {% endif %}
+              {% if incident.group_reporter_count and incident.group_reporter_count >= 3 %}
+              <div class="report-badge">동일 위치 제보 {{ incident.group_reporter_count }}건</div>
               {% endif %}
             </div>
 
@@ -1066,15 +1120,31 @@ function createAlertCard(item) {
   const distanceHtml = item.distance_m !== null && item.distance_m !== undefined
     ? `<div class="distance-text">선택 위치에서 약 ${item.distance_m}m</div>`
     : '';
+  const reportHtml = item.group_reporter_count >= 3
+  ? `<div class="report-badge">동일 위치 제보 ${item.group_reporter_count}건</div>`
+  : '';
+
+  const multiReportClass = item.group_reporter_count >= 5
+  ? 'multi-report danger'
+  : item.group_reporter_count >= 3
+    ? 'multi-report'
+    : '';
+  const multiReportLabel = item.group_reporter_count >= 5
+  ? `<div class="multi-report-label danger">집중 위험</div>`
+  : item.group_reporter_count >= 3
+    ? `<div class="multi-report-label">반복 제보</div>`
+    : '';
 
   return `
-    <article class="alert-card compact-card load-fade-up ${statusClass}">
+    <article class="alert-card compact-card load-fade-up ${statusClass} ${multiReportClass}">
       <div class="compact-main-row">
         <div class="compact-left">
+          ${multiReportLabel}
           <span class="alert-status">${item.status || ''}</span>
           <h2 class="alert-title compact-title">${item.title || ''}</h2>
           <div class="compact-location">${item.location || ''}</div>
           ${distanceHtml}
+          ${reportHtml}
         </div>
 
         <div class="compact-right">

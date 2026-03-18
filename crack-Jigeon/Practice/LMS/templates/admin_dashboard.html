@@ -550,7 +550,7 @@
 
         <div class="admin-box">
           <div class="admin-label">현재 로그인</div>
-          <div class="admin-name">관리자님, 안녕하세요</div>
+          <div class="admin-name">{{ session['user_name'] }}님, 안녕하세요</div>
         </div>
       </div>
 
@@ -558,33 +558,156 @@
         <div class="summary-card today">
           <div class="summary-label">오늘 접수</div>
           <div class="summary-value">{{ summary.today_count }}건</div>
-          <div class="summary-meta">오늘 등록된 신고 건수</div>
+          <div class="summary-meta">오늘 등록된 위험 지점 수</div>
         </div>
 
         <div class="summary-card pending">
           <div class="summary-label">미처리</div>
           <div class="summary-value">{{ summary.pending_count }}건</div>
-          <div class="summary-meta">아직 검토 전인 신고</div>
+          <div class="summary-meta">아직 검토 전인 위험 지점</div>
         </div>
 
         <div class="summary-card processing">
           <div class="summary-label">처리중</div>
           <div class="summary-value">{{ summary.processing_count }}건</div>
-          <div class="summary-meta">현재 조치 진행 중</div>
+          <div class="summary-meta">현재 조치 진행 중인 위험 지점</div>
         </div>
 
         <div class="summary-card rejected">
           <div class="summary-label">반려</div>
           <div class="summary-value">{{ summary.rejected_count }}건</div>
-          <div class="summary-meta">관리자 검토 후 반려</div>
+          <div class="summary-meta">검토 후 반려된 위험 지점</div>
         </div>
       </div>
+            <section class="section" style="margin-bottom:18px;">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <div class="section-title">권역별 현황</div>
+            <div class="section-subtitle">지역별 위험 지점 처리 상태를 확인할 수 있습니다.</div>
+          </div>
+        </div>
 
+        <div class="table-shell">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>권역</th>
+                  <th>전체</th>
+                  <th>미처리</th>
+                  <th>처리중</th>
+                  <th>반려</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in region_stats %}
+                <tr>
+                  <td class="location">{{ r.region }}</td>
+                  <td class="number">{{ r.total }}</td>
+                  <td class="number">{{ r.pending }}</td>
+                  <td class="number">{{ r.processing }}</td>
+                  <td class="number">{{ r.rejected }}</td>
+                </tr>
+                {% endfor %}
+
+                {% if region_stats|length == 0 %}
+                <tr>
+                  <td colspan="5" style="text-align:center; padding:20px; color:#94a3b8;">
+                    데이터 없음
+                  </td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <section class="section" style="margin-bottom:18px;">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <div class="section-title">반복 제보 집중 지점</div>
+            <div class="section-subtitle">동일 위치에 반복적으로 신고가 들어온 위험 지점입니다.</div>
+          </div>
+        </div>
+
+        <div class="table-shell">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>위치</th>
+                  <th>반복 제보</th>
+                  <th>위험도</th>
+                  <th>상태</th>
+                  <th>접수시간</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for incident in repeat_hotspots %}
+                {% set score = incident.risk_score|float %}
+                {% set report_count = incident.group_reporter_count|int %}
+                <tr>
+                  <td class="location">{{ incident.location }}</td>
+
+                  <td class="reporter">
+                    {% if report_count >= 5 %}
+                      집중 위험 ({{ report_count }}건)
+                    {% else %}
+                      반복 제보 {{ report_count }}건
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if score >= 80 %}
+                      <span class="badge risk-high">높음</span>
+                    {% elif score >= 50 %}
+                      <span class="badge risk-medium">중간</span>
+                    {% else %}
+                      <span class="badge risk-low">낮음</span>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if incident.status == '접수완료' %}
+                      <span class="badge status-received">접수완료</span>
+                    {% elif incident.status == '처리중' %}
+                      <span class="badge status-processing">처리중</span>
+                    {% elif incident.status == '처리완료' %}
+                      <span class="badge status-done">처리완료</span>
+                    {% elif incident.status == '반려' %}
+                      <span class="badge status-rejected">반려</span>
+                    {% else %}
+                      <span class="badge">{{ incident.status }}</span>
+                    {% endif %}
+                  </td>
+
+                  <td class="time">
+                    {% if incident.first_created_at %}
+                      {{ incident.first_created_at.strftime('%m-%d %H:%M') }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+
+                {% if repeat_hotspots|length == 0 %}
+                <tr>
+                  <td colspan="5" style="text-align:center; padding:20px; color:#94a3b8;">
+                    반복 제보 집중 지점이 없습니다.
+                  </td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
       <section class="section">
         <div class="section-header">
           <div class="section-title-wrap">
             <div class="section-title">최근 신고 목록</div>
-            <div class="section-subtitle">최근 접수된 신고를 시간순으로 확인할 수 있습니다.</div>
+            <div class="section-subtitle">최근 등록된 위험 지점을 시간순으로 확인할 수 있습니다.</div>
           </div>
 
           <div class="section-actions">
@@ -602,56 +725,73 @@
                   <th>위험도</th>
                   <th>상태</th>
                   <th>접수시간</th>
-                  <th>신고자</th>
+                  <th>반복 제보</th>
                   <th>관리</th>
                 </tr>
               </thead>
               <tbody>
+                {% for incident in incidents %}
+                {% set score = incident.risk_score|float %}
                 <tr>
-                  <td class="number">#104</td>
-                  <td class="location">광주 북구 용봉동</td>
-                  <td><span class="badge risk-high">높음</span></td>
-                  <td><span class="badge status-received">접수완료</span></td>
-                  <td class="time">10:12</td>
-                  <td class="reporter">user01</td>
-                  <td><button class="mini-btn">상세보기</button></td>
+                  <td class="number">#{{ incident.id }}</td>
+
+                  <td class="location">
+                    {{ incident.location }}
+                  </td>
+
+                  <td>
+                    {% if score >= 80 %}
+                      <span class="badge risk-high">높음</span>
+                    {% elif score >= 50 %}
+                      <span class="badge risk-medium">중간</span>
+                    {% else %}
+                      <span class="badge risk-low">낮음</span>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if incident.status == '접수완료' %}
+                      <span class="badge status-received">접수완료</span>
+                    {% elif incident.status == '처리중' %}
+                      <span class="badge status-processing">처리중</span>
+                    {% elif incident.status == '처리완료' %}
+                      <span class="badge status-done">처리완료</span>
+                    {% elif incident.status == '반려' %}
+                      <span class="badge status-rejected">반려</span>
+                    {% else %}
+                      <span class="badge">{{ incident.status }}</span>
+                    {% endif %}
+                  </td>
+
+                  <td class="time">
+                    {% if incident.first_created_at %}
+                      {{ incident.first_created_at.strftime('%m-%d %H:%M') }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+
+                  <td class="reporter">
+                    {% if incident.group_reporter_count and incident.group_reporter_count >= 2 %}
+                      {{ incident.group_reporter_count }}건
+                    {% else %}
+                      1건
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    <button class="mini-btn" type="button">상세보기</button>
+                  </td>
                 </tr>
+                {% endfor %}
+
+                {% if incidents|length == 0 %}
                 <tr>
-                  <td class="number">#103</td>
-                  <td class="location">광주 서구 화정동</td>
-                  <td><span class="badge risk-medium">중간</span></td>
-                  <td><span class="badge status-processing">처리중</span></td>
-                  <td class="time">09:48</td>
-                  <td class="reporter">user07</td>
-                  <td><button class="mini-btn">상세보기</button></td>
+                  <td colspan="7" style="text-align:center; padding: 28px; color:#94a3b8;">
+                    표시할 최근 신고가 없습니다.
+                  </td>
                 </tr>
-                <tr>
-                  <td class="number">#102</td>
-                  <td class="location">광주 남구 봉선동</td>
-                  <td><span class="badge risk-low">낮음</span></td>
-                  <td><span class="badge status-done">처리완료</span></td>
-                  <td class="time">09:15</td>
-                  <td class="reporter">user15</td>
-                  <td><button class="mini-btn">상세보기</button></td>
-                </tr>
-                <tr>
-                  <td class="number">#101</td>
-                  <td class="location">광주 동구 충장로</td>
-                  <td><span class="badge risk-high">높음</span></td>
-                  <td><span class="badge status-processing">처리중</span></td>
-                  <td class="time">08:52</td>
-                  <td class="reporter">user03</td>
-                  <td><button class="mini-btn">상세보기</button></td>
-                </tr>
-                <tr>
-                  <td class="number">#100</td>
-                  <td class="location">광주 광산구 수완동</td>
-                  <td><span class="badge risk-medium">중간</span></td>
-                  <td><span class="badge status-received">접수완료</span></td>
-                  <td class="time">08:21</td>
-                  <td class="reporter">user12</td>
-                  <td><button class="mini-btn">상세보기</button></td>
-                </tr>
+                {% endif %}
               </tbody>
             </table>
           </div>

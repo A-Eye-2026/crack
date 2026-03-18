@@ -11,6 +11,7 @@ import requests
 import math
 import os
 
+from datetime import datetime
 from flask import Flask,render_template,request,redirect,url_for,session, jsonify, send_from_directory
 from common.Session import Session
 from domain import *
@@ -48,49 +49,112 @@ def admin_dashboard():
 
     if session.get('user_role') != 'admin':
         return redirect(url_for('alert_page'))
-    summary = {
-        "today_count": 24,
-        "pending_count": 10,
-        "processing_count": 6,
-        "rejected_count": 3
-    }
 
-    incidents = [
-        {
-            "id": 101,
-            "location": "광주 동구 충장로",
-            "risk_text": "높음",
-            "status": "반려",
-            "created_at": "08:52"
-        },
-        {
-            "id": 103,
-            "location": "광주 서구 화정동",
-            "risk_text": "중간",
-            "status": "처리중",
-            "created_at": "09:48"
-        },
-        {
-            "id": 102,
-            "location": "광주 남구 봉선동",
-            "risk_text": "낮음",
-            "status": "처리완료",
-            "created_at": "09:15"
-        },
-        {
-            "id": 101,
-            "location": "광주 동구 충장로",
-            "risk_text": "높음",
-            "status": "처리중",
-            "created_at": "08:52"
+    conn = Session.get_connection()
+    try:
+        with conn.cursor() as cursor:
+            sql = """
+                SELECT
+                    i.id,
+                    i.member_id,
+                    i.title,
+                    i.location,
+                    i.region_name,
+                    i.latitude,
+                    i.longitude,
+                    i.image_path,
+                    i.status,
+                    i.risk_score,
+                    i.first_created_at,
+                    i.last_checked_at
+                FROM incidents i
+                ORDER BY i.first_created_at DESC
+            """
+            cursor.execute(sql)
+            raw_incidents = cursor.fetchall()
+
+        grouped_incidents = group_incidents(raw_incidents)
+        region_stats = {}
+
+        for incident in grouped_incidents:
+            region = (incident.get('region_name') or '기타').strip()
+
+            if region not in region_stats:
+                region_stats[region] = {
+                    'total': 0,
+                    'pending': 0,
+                    'processing': 0,
+                    'rejected': 0
+                }
+
+            region_stats[region]['total'] += 1
+
+            status = incident.get('status')
+
+            if status == '접수완료':
+                region_stats[region]['pending'] += 1
+            elif status == '처리중':
+                region_stats[region]['processing'] += 1
+            elif status == '반려':
+                region_stats[region]['rejected'] += 1
+
+        region_stats_list = sorted(
+            [
+                {'region': k, **v}
+                for k, v in region_stats.items()
+            ],
+            key=lambda x: (x['pending'], x['processing'], x['total']),
+            reverse=True
+        )
+        today = datetime.now().date()
+
+        summary = {
+            "today_count": sum(
+                1 for i in grouped_incidents
+                if i.get('first_created_at') and i.get('first_created_at').date() == today
+            ),
+            "pending_count": sum(
+                1 for i in grouped_incidents
+                if i.get('status') == '접수완료'
+            ),
+            "processing_count": sum(
+                1 for i in grouped_incidents
+                if i.get('status') == '처리중'
+            ),
+            "rejected_count": sum(
+                1 for i in grouped_incidents
+                if i.get('status') == '반려'
+            )
         }
-    ]
 
-    return render_template(
-        'admin_dashboard.html',
-        summary=summary,
-        incidents=incidents
-    )
+        repeat_hotspots = sorted(
+            [
+                incident for incident in grouped_incidents
+                if int(incident.get('group_reporter_count') or 0) >= 2
+            ],
+            key=lambda x: (
+                int(x.get('group_reporter_count') or 0),
+                float(x.get('risk_score') or 0),
+                x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
+            ),
+            reverse=True
+        )[:5]
+        grouped_incidents.sort(
+            key=lambda x: x.get('first_created_at').timestamp() if x.get('first_created_at') else 0,
+            reverse=True
+        )
+
+        incidents = grouped_incidents[:5]
+
+        return render_template(
+            'admin_dashboard.html',
+            summary=summary,
+            incidents=incidents,
+            region_stats=region_stats_list,
+            repeat_hotspots=repeat_hotspots
+        )
+    finally:
+        conn.close()
 
 
 # 두 좌표 사이 실제 거리를 계산하여 위치 기반 사건 필터링에 사용하는 함수
@@ -134,6 +198,7 @@ def serialize_incident(i):
         'latitude': i.get('latitude'),
         'longitude': i.get('longitude'),
         'distance_m': i.get('distance_m'),
+        'group_reporter_count': int(i.get('group_reporter_count') or 0),
         'image_path': i.get('image_path')
     }
 
@@ -693,6 +758,13 @@ def alert_page():
                     -(incident.get('first_created_at').timestamp()) if incident.get('first_created_at') else 0
                 )
             )
+        if user_role not in ['admin', 'manager']:
+            filtered_incidents.sort(
+                key=lambda incident: (
+                    -int(incident.get('group_reporter_count') or 0),
+                    -(incident.get('first_created_at').timestamp()) if incident.get('first_created_at') else 0
+                )
+            )
 
         total_count = len(filtered_incidents)
         start_idx = (page - 1) * per_page
@@ -756,4 +828,4 @@ def index():
     return render_template("main.html")
 
 if __name__ == '__main__':
-    app.run(host='192.168.0.164',port=5001,debug=True)
+    app.run(host='172.30.1.22',port=5001,debug=True)
