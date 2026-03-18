@@ -43,6 +43,11 @@ CITY_DISTRICT_MAP = {
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('alert_page'))
     summary = {
         "today_count": 24,
         "pending_count": 10,
@@ -107,6 +112,92 @@ def haversine_m(lat1, lon1, lat2, lon2):
     )
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return r * c
+
+def is_visible_to_user(incident):
+    risk_score = float(incident.get('risk_score') or 0)
+    reporter_count = int(incident.get('group_reporter_count') or 0)
+
+    return (
+        risk_score >= 80 or
+        reporter_count >= 3
+    )
+
+def serialize_incident(i):
+    return {
+        'id': i.get('id'),
+        'title': i.get('title'),
+        'location': i.get('location'),
+        'region_name': i.get('region_name'),
+        'status': i.get('status'),
+        'risk_score': float(i.get('risk_score') or 0),
+        'first_created_at': i.get('first_created_at').strftime('%m-%d %H:%M') if i.get('first_created_at') else '',
+        'latitude': i.get('latitude'),
+        'longitude': i.get('longitude'),
+        'distance_m': i.get('distance_m'),
+        'image_path': i.get('image_path')
+    }
+
+def group_incidents(raw_incidents):
+    grouped_incidents = []
+    used_ids = set()
+
+    for incident in raw_incidents:
+        if incident['id'] in used_ids:
+            continue
+
+        base_lat = incident.get('latitude')
+        base_lng = incident.get('longitude')
+        base_time = incident.get('first_created_at')
+        reporter_ids = set()
+
+        if incident.get('member_id'):
+            reporter_ids.add(incident.get('member_id'))
+
+        group_members = [incident]
+        used_ids.add(incident['id'])
+
+        for other in raw_incidents:
+            if other['id'] == incident['id']:
+                continue
+
+            if other['id'] in used_ids:
+                continue
+
+            other_time = other.get('first_created_at')
+
+            other_lat = other.get('latitude')
+            other_lng = other.get('longitude')
+
+            if base_lat is None or base_lng is None or other_lat is None or other_lng is None:
+                continue
+
+            distance_m = haversine_m(base_lat, base_lng, other_lat, other_lng)
+            time_diff_sec = abs(
+                (base_time - other_time).total_seconds()
+            ) if base_time and other_time else 999999
+
+            if (
+                    distance_m <= 50 and
+                    time_diff_sec <= 86400
+            ):
+                used_ids.add(other['id'])
+                group_members.append(other)
+
+                if other.get('member_id'):
+                    reporter_ids.add(other.get('member_id'))
+
+        representative = max(
+            group_members,
+            key=lambda x: (
+                float(x.get('risk_score') or 0),
+                x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
+            )
+        )
+
+        representative['group_reporter_count'] = len(reporter_ids)
+        grouped_incidents.append(representative)
+
+    return grouped_incidents
 
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
@@ -218,12 +309,13 @@ def address_search():
             'items': []
         }), 500
 
+
+# methods는 웹의 동작에 관여한다
+# GET : URL 주소로 데이터를 처리 (보안상 좋지 않음, 대신 빠름)
+# POST : BODY 영역의 데이터를 처리 (보안상 좋음, 대용량일 때 많이 사용됨)
+# 대부분 처음에 화면(HTML 랜더)을 요청할 때는 GET 방식 처리 ----- 로그인 화면 출력 할 때
+# 화면에 있는 내용을 백앤드로 전달할 때는 POST 방식 처리 ----- 로그인 정보를 데이터베이스에 확인할 때
 @app.route('/login',methods=['GET','POST'])
-    # methods는 웹의 동작에 관여한다
-    # GET : URL 주소로 데이터를 처리 (보안상 좋지 않음, 대신 빠름)
-    # POST : BODY 영역의 데이터를 처리 (보안상 좋음, 대용량일 때 많이 사용됨)
-    # 대부분 처음에 화면(HTML 랜더)을 요청할 때는 GET 방식 처리 ----- 로그인 화면 출력 할 때
-    # 화면에 있는 내용을 백앤드로 전달할 때는 POST 방식 처리 ----- 로그인 정보를 데이터베이스에 확인할 때
 def login():
     if request.method == 'GET':
         return render_template('login.html')
@@ -466,11 +558,26 @@ def alert_page():
     search_district = request.args.get('district', '', type=str).strip()
     selected_status = request.args.get('status', '', type=str).strip()
 
+    if search_district and not search_city:
+        search_district = ''
+
+    if search_lat is None or search_lng is None:
+        search_lat = None
+        search_lng = None
+
+    if radius_m is None or radius_m <= 0:
+        radius_m = DEFAULT_RADIUS_M
+
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 4, type=int)
+    if per_page <= 0 or per_page > 20:
+        per_page = 4
     is_api = request.args.get('api', '0') == '1'
 
     user_role = session.get('user_role', 'user')
+    user_id = session.get('user_id')
+    if user_role == 'admin':
+        return redirect(url_for('admin_dashboard'))
     conn = Session.get_connection()
     try:
         with conn.cursor() as cursor:
@@ -493,50 +600,41 @@ def alert_page():
             """
             cursor.execute(sql)
             raw_incidents = cursor.fetchall()
+            manager_region = None
 
-            grouped_incidents = []
-            used_ids = set()
+            # manager인 경우 담당 지역 조회
+            if user_role == 'manager':
+                sql_manager = "SELECT manager_region FROM members WHERE id = %s"
+                cursor.execute(sql_manager, (user_id,))
+                manager_info = cursor.fetchone()
 
-            for incident in raw_incidents:
-                if incident['id'] in used_ids:
-                    continue
+                if not manager_info or not manager_info.get('manager_region'):
+                    return "<script>alert('담당 지역이 지정되지 않았습니다.');history.back();</script>"
 
-                base_lat = incident.get('latitude')
-                base_lng = incident.get('longitude')
-                base_title = (incident.get('title') or '').strip()
-                base_time = incident.get('first_created_at')
-                reporter_ids = set()
+                manager_region = manager_info.get('manager_region').strip()
 
-                if incident.get('member_id'):
-                    reporter_ids.add(incident.get('member_id'))
+                manager_full_region = manager_region
+                manager_city = manager_full_region.split()[0] if manager_full_region else ''
 
-                for other in raw_incidents:
-                    if other['id'] in used_ids:
-                        continue
 
-                    other_title = (other.get('title') or '').strip()
-                    other_time = other.get('first_created_at')
-
-                    if not base_lat or not base_lng or not other.get('latitude') or not other.get('longitude'):
-                        continue
-
-                    distance_m = haversine_m(base_lat, base_lng, other.get('latitude'), other.get('longitude'))
-                    time_diff_sec = abs(
-                        (base_time - other_time).total_seconds()) if base_time and other_time else 999999
-
+                # 자기 담당 구 + 상위 시 데이터까지 포함
+                raw_incidents = [
+                    incident for incident in raw_incidents
                     if (
-                            distance_m <= 500 and
-                            time_diff_sec <= 3600 and
-                            base_title == other_title
-                    ):
-                        used_ids.add(other['id'])
-                        if other.get('member_id'):
-                            reporter_ids.add(other.get('member_id'))
+                            (incident.get('region_name') or '').strip() == manager_full_region
+                            or (incident.get('region_name') or '').strip().startswith(manager_city + ' ')
+                    )
+                ]
 
-                incident['group_reporter_count'] = len(reporter_ids)
-                grouped_incidents.append(incident)
+                # 담당 구 데이터가 먼저 오고, 그 안에서는 최신순
+                raw_incidents.sort(
+                    key=lambda incident: (
+                        0 if (incident.get('region_name') or '').strip() == manager_full_region else 1,
+                        -(incident.get('first_created_at').timestamp()) if incident.get('first_created_at') else 0
+                    )
+                )
 
-            incidents = grouped_incidents
+            incidents = group_incidents(raw_incidents)
 
         filtered_incidents = []
 
@@ -547,18 +645,12 @@ def alert_page():
 
             # 관리자와 일반 사용자에게 표시되는 사건 기준을 분리하는 권한 기반 필터
             # 일반 사용자만 필터 적용
-            if user_role not in ['admin', 'manager']:
-                risk_score = float(incident.get('risk_score') or 0)
-                reporter_count = int(incident.get('group_reporter_count') or 0)
+            if user_role not in ['admin', 'manager'] and not is_visible_to_user(incident):
+                continue
 
-                # 사용자 노출 기준
-                visible_to_user = (
-                        risk_score >= 80 or
-                        (risk_score >= 50 and reporter_count >= 3)
-                )
-
-                if not visible_to_user:
-                    continue
+            # 일반 사용자에게 반려 숨김
+            if user_role not in ['admin', 'manager'] and incident.get('status') == '반려':
+                continue
 
             # 상태 필터
             if selected_status and incident.get('status') != selected_status:
@@ -592,6 +684,16 @@ def alert_page():
         if search_lat is not None and search_lng is not None:
             filtered_incidents.sort(key=lambda x: x['distance_m'])
 
+        if user_role == 'manager' and manager_region:
+            manager_full_region = manager_region
+
+            filtered_incidents.sort(
+                key=lambda incident: (
+                    0 if (incident.get('region_name') or '').strip() == manager_full_region else 1,
+                    -(incident.get('first_created_at').timestamp()) if incident.get('first_created_at') else 0
+                )
+            )
+
         total_count = len(filtered_incidents)
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
@@ -615,42 +717,16 @@ def alert_page():
         elif search_lat is not None and search_lng is not None:
             filter_type = 'radius'
 
-        user_role = session.get('user_role', 'user')
-
-        # 관리자 요약 통계
-        total_count = len(filtered_incidents)
-        unchecked_count = len([
-            i for i in filtered_incidents
-            if i.get('status') == '접수완료'
-        ])
-        checked_count = len([
-            i for i in filtered_incidents
-            if i.get('status') in ['처리중', '처리완료']
-        ])
-
         # 권한별 화면 분리
+
         template_name = 'alert.html'
-        if user_role in ['admin', 'manager']:
+        if user_role == 'manager':
             template_name = 'admin_alert.html'
 
         if is_api:
             return jsonify({
                 'success': True,
-                'items': [
-                    {
-                        'id': i.get('id'),
-                        'title': i.get('title'),
-                        'location': i.get('location'),
-                        'status': i.get('status'),
-                        'risk_score': float(i.get('risk_score') or 0),
-                        'first_created_at': i.get('first_created_at').strftime('%m-%d %H:%M') if i.get('first_created_at') else '',
-                        'latitude': i.get('latitude'),
-                        'longitude': i.get('longitude'),
-                        'distance_m': i.get('distance_m'),
-                        'image_path': i.get('image_path')
-                    }
-                    for i in paged_incidents
-                ],
+                'items': [serialize_incident(i) for i in paged_incidents],
                 'has_next': has_next,
                 'next_page': page + 1 if has_next else None
             })

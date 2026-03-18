@@ -66,35 +66,18 @@
       flex: 1;
       padding: 16px 18px 12px;
       overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .content::-webkit-scrollbar {
+      display: none;
     }
 
     .page-title {
       font-size: 20px;
       font-weight: 800;
-      margin-bottom: 6px;
-    }
-
-    .location-bar {
-      margin-bottom: 10px;
-    }
-
-    .address-open-btn {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1px solid #ccc;
-      border-radius: 16px;
-      background: #fff;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      text-align: left;
-    }
-
-    .location-icon {
-      font-size: 18px;
-      color: #ff8c00;
+      margin-bottom: 0;
     }
 
     .alert-list {
@@ -104,74 +87,24 @@
     }
 
     .alert-card {
-      background: #fff;
-      border-radius: 20px;
-      padding: 10px 12px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 8px 10px;
       border-left: 5px solid #ff9800;
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
     }
 
-    .alert-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 6px;
-      gap: 10px;
-    }
-
-    .alert-status {
-      font-size: 13px;
-      font-weight: 700;
-      color: #444;
-    }
-
-    .alert-title {
-      font-size: 16px;
-      font-weight: 800;
-      margin-bottom: 8px;
-      line-height: 1.3;
-      letter-spacing: -0.3px;
-      color: #111;
-    }
-
-    .alert-location-wrap p {
-      margin-bottom: 2px;
-      font-size: 14px;
-      color: #222;
-      font-weight: 500;
-    }
-
-    .distance-text {
-      font-size: 11px;
-      color: #888;
-    }
-
-    .alert-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .admin-btn-group {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
     .check-btn {
-      background: linear-gradient(135deg, #ff9800, #ff7a00);
+      background: #ff8c00;
       color: white;
       border: none;
-      padding: 5px 10px;
-      border-radius: 999px;
-      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 12px;
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
-      box-shadow: 0 4px 10px rgba(255, 140, 0, 0.16);
+      box-shadow: none;
     }
 
     .check-btn:hover {
@@ -182,9 +115,9 @@
       background: #fff;
       color: #444;
       border: 1px solid #e3e3e3;
-      padding: 5px 10px;
-      border-radius: 999px;
-      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 12px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
@@ -212,116 +145,10 @@
 
     .empty-message {
       background: #fff;
-      border-radius: 20px;
+      border-radius: 16px;
       padding: 24px;
       text-align: center;
       color: #888;
-    }
-
-    .modal-backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.35);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 50;
-      padding: 20px;
-    }
-
-    .modal-backdrop.show {
-      display: flex;
-    }
-
-    .modal {
-      width: 100%;
-      max-width: 340px;
-      background: #fff;
-      border-radius: 22px;
-      padding: 18px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.15);
-    }
-
-    .modal-title {
-      font-size: 18px;
-      font-weight: 800;
-      margin-bottom: 12px;
-    }
-
-    .search-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .search-row input {
-      flex: 1;
-      height: 44px;
-      border: 1px solid #ddd;
-      border-radius: 14px;
-      padding: 0 12px;
-      outline: none;
-    }
-
-    .search-row button {
-      height: 44px;
-      padding: 0 14px;
-      border: none;
-      border-radius: 14px;
-      background: #ff8c00;
-      color: #fff;
-      cursor: pointer;
-      font-weight: 700;
-    }
-
-    .result-list {
-      max-height: 260px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .result-item {
-      border: 1px solid #eee;
-      border-radius: 14px;
-      padding: 12px;
-      cursor: pointer;
-      background: #fff;
-    }
-
-    .result-item:hover {
-      border-color: #ffb15a;
-      background: #fff8f0;
-    }
-
-    .result-main {
-      font-size: 14px;
-      font-weight: 600;
-      color: #222;
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    .modal-close-btn {
-      height: 40px;
-      padding: 0 14px;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      background: #fff;
-      cursor: pointer;
-    }
-
-    .loading-text,
-    .empty-result-text {
-      padding: 14px 4px;
-      color: #888;
-      font-size: 14px;
-      text-align: center;
     }
 
     @media (max-width: 430px) {
@@ -336,17 +163,6 @@
       }
     }
 
-    .risk-row {
-      margin-top: 4px;
-      text-align: right;
-    }
-
-    .risk-text {
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: -0.2px;
-    }
-
     .risk-high {
       color: #e74c3c;
     }
@@ -357,19 +173,6 @@
 
     .risk-low {
       color: #27ae60;
-    }
-
-    .alert-time-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      min-width: 92px;
-    }
-
-    .alert-time {
-      font-size: 13px;
-      color: #222;
-      white-space: nowrap;
     }
 
     .detail-modal-backdrop {
@@ -389,24 +192,20 @@
 
     .detail-modal-card {
       width: 100%;
-      max-width: 350px;
-      background: #fff;
-      border-radius: 24px;
+      max-width: 360px;
+      background: #ffffff;
+      border-radius: 28px;
       overflow: hidden;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.20);
+      border: 1px solid rgba(255, 255, 255, 0.65);
     }
 
     .detail-thumb-box {
       position: relative;
       width: 100%;
-      height: 300px;
+      height: 360px;
       background: #ececec;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #666;
-      font-size: 15px;
-      font-weight: 600;
+      overflow: hidden;
     }
 
     .detail-thumb-img {
@@ -417,6 +216,11 @@
     }
 
     .detail-thumb-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 16px;
       color: #666;
       font-weight: 600;
@@ -426,68 +230,91 @@
       position: absolute;
       top: 14px;
       right: 14px;
+      width: 40px;
+      height: 40px;
       border: none;
-      background: transparent;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
       cursor: pointer;
-      font-size: 24px;
-      font-weight: 700;
-      padding: 0;
+      font-size: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
     }
 
     .detail-content-box {
-      padding: 18px 16px 20px;
+      padding: 14px 16px 16px;
+      background: #fff;
     }
 
     .detail-content-title {
-      font-size: 17px;
-      font-weight: 800;
+      font-size: 22px;
+      font-weight: 900;
       color: #111;
-      margin-bottom: 10px;
-      line-height: 1.35;
+      margin-bottom: 8px;
+      line-height: 1.3;
+      letter-spacing: -0.4px;
     }
 
     .detail-content-text {
       font-size: 14px;
-      color: #333;
-      line-height: 1.55;
-      margin-bottom: 10px;
+      color: #444;
+      line-height: 1.5;
+      margin-bottom: 0;
+      white-space: pre-line;
     }
 
     .detail-meta-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
     }
 
     .detail-chip {
-      display: inline-block;
-      padding: 6px 11px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 12px;
       border-radius: 999px;
       font-size: 12px;
-      font-weight: 700;
-      background: #fff4e8;
+      font-weight: 800;
+      background: #fff3e8;
       color: #ff7a00;
+      box-shadow: inset 0 0 0 1px rgba(255, 122, 0, 0.10);
+    }
+
+    .detail-divider {
+      height: 1px;
+      background: #f1f1f1;
+      margin: 0 0 16px 0;
+    }
+
+    .detail-info-card {
+      background: #fafafa;
+      border: 1px solid #f0f0f0;
+      border-radius: 18px;
+      padding: 14px 14px 12px;
+      margin-bottom: 16px;
     }
 
     .detail-close-wrap {
-      margin-top: 14px;
+      margin-top: 0;
     }
 
     .detail-time-risk-wrap {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 6px;
+      gap: 4px;
     }
 
     .detail-time-text {
       font-size: 13px;
-      color: #666;
+      color: #777;
       white-space: nowrap;
     }
 
@@ -513,12 +340,13 @@
       width: 100%;
       height: 44px;
       border: none;
-      border-radius: 14px;
-      background: #222;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #1f1f22, #2c2c30);
       color: #fff;
-      font-size: 14px;
-      font-weight: 700;
+      font-size: 15px;
+      font-weight: 800;
       cursor: pointer;
+      box-shadow: 0 10px 24px rgba(34, 34, 34, 0.18);
     }
 
     .status-filter-bar {
@@ -565,47 +393,16 @@
       font-weight: 500;
     }
 
-    .compact-card {
-      padding: 8px 10px;
-      border-radius: 16px;
-    }
-
     .compact-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 8px;
+      justify-content: flex-end;
     }
 
-    .compact-top-row {
-      margin-bottom: 6px;
-    }
-
-    .compact-middle-row {
-      align-items: flex-start;
-      margin-bottom: 4px;
-    }
-
-    .compact-bottom-row {
-      margin-top: 4px;
-    }
-
-    .compact-title {
-      font-size: 14px;
-      font-weight: 800;
-      line-height: 1.2;
-      margin: 3px 0 2px;
-      display: -webkit-box;
-      -webkit-line-clamp: 1;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .compact-location {
+    .alert-status {
       font-size: 12px;
-      color: #222;
-      font-weight: 500;
-      line-height: 1.2;
+      font-weight: 700;
+      color: #444;
     }
 
     .compact-btn-group {
@@ -613,11 +410,7 @@
     }
 
     .compact-btn {
-      padding: 5px 10px;
-      font-size: 11px;
-    }
-
-    .alert-status {
+      padding: 6px 10px;
       font-size: 12px;
     }
 
@@ -637,20 +430,22 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 10px;
+      gap: 12px;
     }
 
     .compact-left {
       flex: 1;
       min-width: 0;
+      padding-top: 1px;
     }
 
     .compact-right {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 4px;
+      gap: 5px;
       min-width: 96px;
+      padding-top: 1px;
     }
 
     .compact-title {
@@ -658,48 +453,61 @@
       font-weight: 800;
       line-height: 1.25;
       margin: 4px 0 4px;
+      letter-spacing: -0.3px;
+      color: #111;
       display: -webkit-box;
       -webkit-line-clamp: 1;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
 
-    .compact-location {
-      font-size: 13px;
-      color: #222;
-      font-weight: 500;
-      line-height: 1.25;
-    }
-
-    .alert-status {
-      font-size: 12px;
-      font-weight: 700;
-      color: #444;
-    }
-
-    .alert-time {
-      font-size: 12px;
-      color: #222;
-      white-space: nowrap;
-    }
-
-    .risk-text {
-      font-size: 12px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
     .compact-bottom-row {
       margin-top: 6px;
     }
 
-    .compact-btn-group {
-      gap: 6px;
+    .compact-location {
+      margin-top: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+      line-height: 1.3;
     }
 
-    .compact-btn {
-      padding: 6px 10px;
-      font-size: 12px;
+    .location-region {
+      font-size: 13px;
+      color: #444;
+      font-weight: 500;
+    }
+
+    .location-detail {
+      font-size: 13px;
+      color: #222;
+      font-weight: 500;
+    }
+
+    .location-separator {
+      font-size: 13px;
+      color: #999;
+      font-weight: 600;
+    }
+
+    .list-status-text {
+      padding: 14px 0 6px;
+      text-align: center;
+      font-size: 13px;
+      color: #888;
+    }
+
+    .admin-btn-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .detail-content-text {
+      white-space: pre-line;
     }
 
   </style>
@@ -716,15 +524,8 @@
 
     <main class="content">
       <div class="page-title-row">
-        <h1 class="page-title">Admin Alerts</h1>
-        <span class="admin-label">관리자용</span>
-      </div>
-
-      <div class="location-bar">
-        <button class="address-open-btn" type="button" onclick="openAddressModal()">
-          <span class="location-icon">🟠</span>
-          <span id="selectedAddressText">{{ selected_address if selected_address else '지역 필터 검색' }}</span>
-        </button>
+        <h1 class="page-title">지역 관리 피드</h1>
+        <span class="admin-label">매니저용</span>
       </div>
       <div class="status-filter-bar">
         <button type="button" class="status-filter-btn {% if not selected_status %}active{% endif %}" onclick="applyStatusFilter('')">전체</button>
@@ -733,16 +534,26 @@
         <button type="button" class="status-filter-btn {% if selected_status == '처리완료' %}active{% endif %}" onclick="applyStatusFilter('처리완료')">처리완료</button>
       </div>
 
-      <section class="alert-list">
+      <section class="alert-list" id="alertList">
         {% for incident in incidents %}
-        <article class="alert-card compact-card">
+        <article class="alert-card">
           {% set score = incident.risk_score|float %}
 
           <div class="compact-main-row">
             <div class="compact-left">
               <span class="alert-status">{{ incident.status }}</span>
-              <h2 class="alert-title compact-title">{{ incident.title }}</h2>
-              <div class="compact-location">{{ incident.location }}</div>
+              <h2 class="compact-title">{{ incident.title }}</h2>
+              <div class="compact-location">
+                <span class="location-region">{{ incident.region_name }}</span>
+                <span class="location-separator">·</span>
+                <span class="location-detail">
+                  {% if incident.location.startswith(incident.region_name) %}
+                    {{ incident.location[incident.region_name|length:]|trim }}
+                  {% else %}
+                    {{ incident.location }}
+                  {% endif %}
+                </span>
+              </div>
             </div>
 
             <div class="compact-right">
@@ -760,7 +571,7 @@
 
           <div class="compact-row compact-bottom-row">
             <div></div>
-            <div class="admin-btn-group compact-btn-group">
+            <div class="admin-btn-group">
               <button
                 class="sub-btn compact-btn"
                 type="button"
@@ -789,6 +600,14 @@
         </div>
         {% endif %}
       </section>
+      <div id="listStatusText" class="list-status-text">
+        {% if has_next %}
+          아래로 스크롤하면 더 불러옵니다.
+        {% else %}
+          마지막 사건입니다.
+        {% endif %}
+      </div>
+      <div id="scrollSentinel" style="height: 1px;"></div>
     </main>
 
     <nav class="bottom-nav">
@@ -798,30 +617,11 @@
       <a href="/mypage" class="nav-item">My</a>
     </nav>
 
-    <div class="modal-backdrop" id="addressModal">
-      <div class="modal">
-        <div class="modal-title">지역 검색</div>
-
-        <div class="search-row">
-          <input type="text" id="addressKeyword" placeholder="예: 수원시, 수원, 수원시 장안구" />
-          <button type="button" onclick="searchAddress()">검색</button>
-        </div>
-
-        <div class="result-list" id="addressResultList">
-          <div class="empty-result-text">지역명을 입력하고 검색해주세요.</div>
-        </div>
-
-        <div class="modal-actions">
-          <button class="modal-close-btn" type="button" onclick="closeAddressModal()">닫기</button>
-        </div>
-      </div>
-    </div>
-
     <div class="detail-modal-backdrop" id="detailModal">
       <div class="detail-modal-card">
         <div class="detail-thumb-box">
           <img id="detailImage" class="detail-thumb-img" src="" alt="사건 썸네일">
-          <div id="detailPlaceholder" class="detail-thumb-placeholder">썸네일 : 사진 및 영상</div>
+          <div id="detailPlaceholder" class="detail-thumb-placeholder">사진이 없습니다.</div>
 
           <button class="detail-map-btn" type="button" onclick="openMapFromDetail()" title="지도 보기">🌍</button>
         </div>
@@ -836,8 +636,12 @@
             </div>
           </div>
 
-          <div id="detailTitle" class="detail-content-title">사건 제목</div>
-          <div id="detailLocation" class="detail-content-text">사건 위치</div>
+          <div class="detail-divider"></div>
+
+          <div class="detail-info-card">
+            <div id="detailTitle" class="detail-content-title">사건 제목</div>
+            <div id="detailLocation" class="detail-content-text">사건 위치</div>
+          </div>
 
           <div class="detail-close-wrap">
             <button class="detail-close-btn" type="button" onclick="closeDetailModal()">닫기</button>
@@ -848,9 +652,6 @@
   </div>
 
 <script>
-function openAddressModal() {
-  document.getElementById('addressModal').classList.add('show');
-}
 
 function applyStatusFilter(status) {
   const params = new URLSearchParams(window.location.search);
@@ -862,63 +663,6 @@ function applyStatusFilter(status) {
   }
 
   window.location.href = `/alerts?${params.toString()}`;
-}
-
-function closeAddressModal() {
-  document.getElementById('addressModal').classList.remove('show');
-}
-
-async function searchAddress() {
-  const keyword = document.getElementById('addressKeyword').value.trim();
-  const resultList = document.getElementById('addressResultList');
-
-  if (!keyword) {
-    window.location.href = '/alerts';
-    return;
-  }
-
-  resultList.innerHTML = '<div class="loading-text">검색 중...</div>';
-
-  try {
-    const response = await fetch(`/api/address/search?q=${encodeURIComponent(keyword)}`);
-    const data = await response.json();
-
-    if (!data.success || !data.items || data.items.length === 0) {
-      resultList.innerHTML = '<div class="empty-result-text">검색 결과가 없습니다.</div>';
-      return;
-    }
-
-    resultList.innerHTML = '';
-
-    data.items.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'result-item';
-      div.innerHTML = `<div class="result-main">${item.address_name}</div>`;
-      div.onclick = () => selectAddress(item);
-      resultList.appendChild(div);
-    });
-
-  } catch (error) {
-    console.error(error);
-    resultList.innerHTML = '<div class="empty-result-text">검색 중 오류가 발생했습니다.</div>';
-  }
-}
-
-function selectAddress(item) {
-  if (item.is_city_district) {
-    let url = `/alerts?city=${encodeURIComponent(item.city)}`;
-
-    if (item.district) {
-      url += `&district=${encodeURIComponent(item.district)}`;
-    }
-
-    window.location.href = url;
-    return;
-  }
-
-  const radius = 500;
-  const url = `/alerts?lat=${item.latitude}&lng=${item.longitude}&radius_m=${radius}&address=${encodeURIComponent(item.address_name)}`;
-  window.location.href = url;
 }
 
 let currentDetailLat = '';
@@ -963,12 +707,14 @@ function openDetailModal(title, location, status, time, riskScore, imagePath, la
     detailImage.onerror = function () {
       detailImage.src = '';
       detailImage.style.display = 'none';
-      detailPlaceholder.style.display = 'block';
+      detailPlaceholder.textContent = '사진을 불러올 수 없습니다.';
+      detailPlaceholder.style.display = 'flex';
     };
   } else {
     detailImage.src = '';
     detailImage.style.display = 'none';
-    detailPlaceholder.style.display = 'block';
+    detailPlaceholder.textContent = '사진이 없습니다.';
+    detailPlaceholder.style.display = 'flex';
   }
 
   currentDetailLat = lat || '';
@@ -997,17 +743,156 @@ document.getElementById('detailModal').addEventListener('click', function(e) {
   }
 });
 
-document.getElementById('addressKeyword').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') {
-    searchAddress();
-  }
-});
+/* ===== 여기부터 무한 스크롤 ===== */
 
-document.getElementById('addressModal').addEventListener('click', function(e) {
-  if (e.target.id === 'addressModal') {
-    closeAddressModal();
+function getRiskText(score) {
+  const num = Number(score || 0);
+  if (num >= 80) return { text: '위험도 높음', cls: 'risk-high' };
+  if (num >= 50) return { text: '위험도 중간', cls: 'risk-medium' };
+  return { text: '위험도 낮음', cls: 'risk-low' };
+}
+
+function createAlertCard(item) {
+  const risk = getRiskText(item.risk_score);
+
+  const regionName = item.region_name || '';
+  let detailLocation = item.location || '';
+
+  if (regionName && detailLocation.startsWith(regionName)) {
+    detailLocation = detailLocation.slice(regionName.length).trim();
   }
-});
+
+  const locationHtml = regionName
+  ? `<span class="location-region">${regionName}</span>
+     <span class="location-separator">·</span>
+     <span class="location-detail">${detailLocation}</span>`
+  : `<span class="location-detail">${detailLocation}</span>`;
+
+  return `
+    <article class="alert-card">
+      <div class="compact-main-row">
+        <div class="compact-left">
+          <span class="alert-status">${item.status || ''}</span>
+          <h2 class="compact-title">${item.title || ''}</h2>
+          <div class="compact-location">
+            ${locationHtml}
+          </div>
+        </div>
+
+        <div class="compact-right">
+          <span class="alert-time">${item.first_created_at || ''}</span>
+          <span class="risk-text ${risk.cls}">${risk.text}</span>
+        </div>
+      </div>
+
+      <div class="compact-row compact-bottom-row">
+        <div></div>
+        <div class="admin-btn-group">
+          <button
+            class="sub-btn compact-btn"
+            type="button"
+            onclick='openDetailModal(
+              ${JSON.stringify(item.title || "")},
+              ${JSON.stringify((item.region_name || "") + " · " + detailLocation)},
+              ${JSON.stringify(item.status || "")},
+              ${JSON.stringify(item.first_created_at || "")},
+              ${JSON.stringify(item.risk_score || 0)},
+              ${JSON.stringify(item.image_path || "")},
+              ${JSON.stringify(item.latitude || "")},
+              ${JSON.stringify(item.longitude || "")}
+            )'
+          >
+            현장 확인
+          </button>
+          <button class="check-btn compact-btn" type="button">상태 변경</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+let currentPage = 1;
+let hasNextPage = {{ 'true' if has_next else 'false' }};
+let isLoadingMore = false;
+let observer = null;
+
+async function loadMoreAlerts() {
+  if (isLoadingMore || !hasNextPage) return;
+
+  isLoadingMore = true;
+
+  if (observer && sentinel) {
+    observer.unobserve(sentinel);
+  }
+
+  const statusText = document.getElementById('listStatusText');
+  if (statusText) {
+    statusText.textContent = '로딩 중...';
+  }
+
+  try {
+    await new Promise(resolve => setTimeout(resolve, 400));
+
+    const params = new URLSearchParams(window.location.search);
+    params.set('page', currentPage + 1);
+    params.set('per_page', 4);
+    params.set('api', '1');
+
+    const response = await fetch(`/alerts?${params.toString()}`);
+    const data = await response.json();
+
+    if (!data.success) {
+      if (statusText) {
+        statusText.textContent = '불러오기에 실패했습니다.';
+      }
+      return;
+    }
+
+    const alertList = document.getElementById('alertList');
+
+    data.items.forEach(item => {
+      alertList.insertAdjacentHTML('beforeend', createAlertCard(item));
+    });
+
+    currentPage += 1;
+    hasNextPage = data.has_next;
+
+    if (statusText) {
+      statusText.textContent = hasNextPage
+        ? '아래로 스크롤하면 더 불러옵니다.'
+        : '마지막 사건입니다.';
+    }
+
+  } catch (error) {
+    console.error('무한 스크롤 로딩 오류:', error);
+    if (statusText) {
+      statusText.textContent = '불러오는 중 오류가 발생했습니다.';
+    }
+  } finally {
+    isLoadingMore = false;
+
+    if (observer && sentinel && hasNextPage) {
+      setTimeout(() => {
+        observer.observe(sentinel);
+      }, 250);
+    }
+  }
+}
+
+const sentinel = document.getElementById('scrollSentinel');
+
+if (sentinel) {
+  observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && !isLoadingMore && hasNextPage) {
+      loadMoreAlerts();
+    }
+  }, {
+    root: document.querySelector('.content'),
+    threshold: 0.2
+  });
+
+  observer.observe(sentinel);
+}
 </script>
 </body>
 </html>
