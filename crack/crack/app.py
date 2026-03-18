@@ -1,12 +1,13 @@
 # pip install flask
 import hashlib
 import os
-import re
+
 
 import pymysql
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from pymysql import cursors
 from pymysql.cursors import DictCursor
+from ultralytics import YOLO
 
 from common.Session import Session # crack. 제거
 from domain import Member # crack. 제거
@@ -21,6 +22,8 @@ app.secret_key = 'its_guard'
 # session 데이터 암호화
 # 데이터 위조 방지 (쿠키 보안)
 # 사용자 메시지 출력.
+
+model = YOLO(r'C:\Users\lsh8389\Desktop\ITS-Guard_Project\best.pt')
 
 UPLOAD_FOLDER = 'uploads/'
 if not os.path.exists(UPLOAD_FOLDER):
@@ -151,48 +154,40 @@ def report_page():
         return redirect(url_for('login'))
     return render_template('report.html') # report.html 파일을 불러옴.
 
+
 @app.route('/report/submit', methods=['POST'])
 def report_submit():
+    # 1. 로그인 확인
     if 'user_id' not in session:
-        return redirect(url_for('login'))
+        return "<script>alert('로그인이 필요합니다.'); location.href='/login';</script>"
 
+    # 2. HTML 폼에서 데이터 가져오기
     user_uid = session.get('user_uid')
     address = request.form.get('address')
     severity = request.form.get('severity')
-    # 지도를 안 쓰면 이 값들이 빈 문자열 ('')이나 None으로 올 수 있음.
-    lat = request.form.get('lat')
-    lng = request.form.get('lng')
+    lat = request.form.get('lat') or 37.283  # 좌표가 없으면 기본값
+    lng = request.form.get('lng') or 127.045
 
-    # [수정] 좌표 검증 로직 삭제
-    # 이제 좌표가 없어도 아래로 내려가서 자동으로 DB에 저장됨.)
-    # 주소에서 지역명 추출
-    region_name = None
-    if address:
-        if '경기도' in address:
-            region_name = '경기도'
-        elif '강원도' in address:
-            region_name = '강원도'
-        elif '충청도' in address:
-            region_name = '충청도'
-
+    # 3. DB 접속 및 저장
     conn = Session.get_conn()
     try:
         with conn.cursor() as cur:
-            # lat, lng 값이 비어있을 경우 DB에 NULL로 들어가도록 None 처리를 해줌.
-            # 파이썬의 None MySQL의 null과 대응됨.
-            p_lat = lat if lat else None
-            p_lng = lng if lng else None
-
-            sql = """
-                INSERT INTO potholes (reporter_id, address, severity, status, points, lat, lng, region_name)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """
-            cur.execute(sql, (user_uid, address, severity, '검토중', 10, p_lat, p_lng, region_name))
+            # potholes 테이블에 제보 정보 저장
+            sql = """INSERT INTO potholes 
+                     (address, severity, lat, lng, reporter_id, status, points) 
+                     VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+            cur.execute(sql, (address, severity, lat, lng, user_uid, '검토중', 10))
             conn.commit()
-            return "<script>alert('제보가 완료되었습니다! 10포인트가 적립됩니다.'); location.href='/';</script>"
+
+        return f"""
+            <script>
+                alert('도로 파손 제보가 성공적으로 접수되었습니다!');
+                location.href = "/mypage";
+            </script>
+        """
     except Exception as e:
-        print(f"저장 에러: {e}")
-        return f"<script>alert('저장 실패: {e}'); history.back();</script>"
+        print(f"제보 저장 에러: {e}")
+        return f"<script>alert('저장 중 오류가 발생했습니다.'); history.back();</script>"
     finally:
         conn.close()
 
@@ -242,8 +237,13 @@ def join():
         return render_template('join.html')
 
     uid = request.form.get('uid')
-    password = request.form.get('password')  # 컬럼명 password에 맞춤
+    password = request.form.get('password')
+    password_check = request.form.get('password_check')# 컬럼명 password에 맞춤
     name = request.form.get('name')
+
+    # 1.  비밀번호 일치 여부 확인
+    if password != password_check:
+        return "<script>alert('비밀번호가 일치하지 않습니다.');history.back();</script>"
 
     conn = Session.get_conn()
     try:
@@ -265,6 +265,19 @@ def join():
     finally:
         conn.close()
 
+@app.route('/check_id', methods=['POST']) # 회원가입 할 때 가입 버튼 누르기 전에, 아이디 입력후 아이디 중복확인 클릭기능추가.
+def check_id():
+    uid = request.json.get('uid') # 자바스크립트 fetch로 받을 때 사용
+    conn = Session.get_conn()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM members WHERE uid = %s", (uid,))
+            exists= cursor.fetchone()
+            if exists:
+                return jsonify({"available": False})
+            return jsonify({"available": True})
+    finally:
+        conn.close()
 
 @app.route('/mypage')
 def mypage():
@@ -272,13 +285,24 @@ def mypage():
         return redirect(url_for('login'))
 
     user_uid = session['user_uid']
+
+    # 1. 페이지 기능 추가
+    page = request.args.get('page', 1, type=int) # 현재 페이지 기본값 1
+    per_page = 5 # 한 페이지에 보여줄 제보 (신고) 건수
+    offset = (page - 1 ) * per_page
+
     conn = Session.get_conn()
     try:
-        with conn.cursor(pymysql.cursors.DictCursor) as cur:
+        with conn.cursor(pymysql.cursors.DictCursor) as cur: # 데이터를 딕셔너리 (key : value) 형태로 받음.
             # 1. 사용자 정보 조회
             user_sql = "SELECT id, name, uid, role, created_at FROM members WHERE uid = %s"
             cur.execute(user_sql, (user_uid,))
             user_data = cur.fetchone()
+
+            count_sql = "SELECT COUNT(*) as cnt FROM potholes WHERE reporter_id = %s"
+            cur.execute(count_sql, (user_uid,))
+            total_count = cur.fetchone()['cnt']
+            total_pages = (total_count + per_page - 1 ) // per_page # 반올림 계산
 
             # 2. 제보 내역 조회 (potholes 테이블 사용)
             report_sql = """
@@ -286,8 +310,9 @@ def mypage():
                 FROM potholes
                 WHERE reporter_id = %s 
                 ORDER BY created_at DESC
+                LIMIT %s OFFSET %s
             """
-            cur.execute(report_sql, (user_uid,))
+            cur.execute(report_sql, (user_uid, per_page, offset))
             my_reports = cur.fetchall()
 
             print(f"조회된 제보 건수 : {len(my_reports)}")
@@ -296,19 +321,22 @@ def mypage():
             sum_sql = "SELECT SUM(points) as total_points FROM potholes WHERE reporter_id = %s"
             cur.execute(sum_sql, (user_uid,))
             result = cur.fetchone()
-
             total_points = result['total_points'] if result and result['total_points'] else 0
 
-            # 4. 결과 전달
+            # 4. 결과 전달 (page와 total_page 추가)
             return render_template('mypage.html',
                                    user=user_data,
                                    reports=my_reports,
-                                   total_points=total_points)
+                                   total_points=total_points,
+                                   page=page,
+                                   total_pages=total_pages)
 
     except Exception as e:
         print(f"에러 발생: {e}")
         return f"<script>alert('오류가 발생했습니다: {e}');history.back();</script>"
     finally:
+        if 'cur' in locals():
+            cur.close()
         conn.close()
 
 
@@ -413,24 +441,28 @@ def check_pothole():
     # 2. 클라이언트 (웹 브라우저)에서 보낸 현재 위치 좌표 바딕
     data = request.json
     user_lat = data.get('lat')
-    user_lon = data.get('lng')
+    user_lng = data.get('lng')
 
-    if not user_lat or not user_lon:
+    if not user_lat or not user_lng:
         return jsonify({"status": "error","message": "좌표 정보가 없습니다."}), 400
 
     conn = Session.get_conn()
     try:
-        with conn.cursor() as cur:
+        with conn.cursor(pymysql.cursors.DictCursor) as cur:
             # 3. ST_Distance_Sphere를 사용하여 반경 100m 내 포트홀 검색
             # 덕영대로 같은 간선도로는 차가 빠르므로 200~300m로 조절해도 괜찮음.
             sql = """
-                SELECT id, lat, lng, severity, address,
-                       ST_Distance_Sphere(point(lng, lat), point(%s, %s)) AS distance
-                FROM potholes
-                HAVING distance <= 100
-                ORDER BY distance ASC
+                            SELECT id, lat, lng, 
+                            (6371 * acos(cos(radians(%s)) * cos(radians(lat)) * cos(radians(lng) - radians(%s)) + sin(radians(%s)) * sin(radians(lat)))) AS distance 
+                            FROM potholes 
+                            WHERE status = '검토중' AND detect_count > 0
+                            HAVING distance < 0.1
+                            ORDER BY created_at DESC LIMIT 1
             """
-            cur.execute(sql, (user_lat, user_lon))
+            # SQL 파라미터 순서에 맞춰 변수 전달 (lat, lng, lat)
+            cur.execute(sql, (user_lat, user_lng, user_lat))
+
+            # 결과를 nearby_potholes 변수에 담아서 아래 return 문과 일치
             nearby_potholes = cur.fetchall()
 
             return jsonify({
@@ -438,12 +470,73 @@ def check_pothole():
                 "count": len(nearby_potholes),
                 "data": nearby_potholes
             })
+
     except Exception as e:
         print(f"포트홀 조회 에러 : {e}")
         return jsonify({"status": "error", "message": "조회 중 오류 발생"}), 500
 
     finally:
         conn.close()
+
+@app.route('/predict', methods=['POST']) # 사용자가 올린 영상을 AI 모델(YOLO)이 직접 분석해서
+# 포트홀이 어디에 몇 개 있는지를 찾아내는 로직.
+# 영상 저장 : 사용자가 올린 파일을 uploads 폴더에 저장함.
+# AI 분석 : model.predict를 실행해 영상 속 포트홀을 찾고, 분석 결과 영상을 static/exp에 저장함.
+# 데이터 기록 : 탐지된 개수 detect_count 결과 영상 경로, 그리고 발생 위치(위경도)를 DB potholes 테이블에 차곡차곡 쌓음.
+# 결과 출력 : 분석이 끝나면 메인화면에 몇개 찾았습니다. 라고 알림창이 나옴.
+def predict():
+    file = request.files['video']
+    if file:
+        if not os.path.exists('uploads'):
+            os.makedirs('uploads')
+        filepath = os.path.join('uploads', file.filename)
+        file.save(filepath)
+        model.predict(source=filepath, save=True, conf=0.3)
+
+        # AI 분석 실행 (project와 name을 지정하면 경로 찾기가 쉬워짐)
+        results = model.predict(source=filepath, save=True, project="static", name="exp", exist_ok=True)
+
+        # 🌟 탐지된 개수 세기
+        detect_count = len(results[0].boxes)
+
+        # 분석된 영상의 파일명 (static/exp 폴더 안에 저장됨)
+        result_video = f"exp/{file.filename}"
+
+        # get_conn() 함수를 사용하여 DB에 기록
+        conn = Session.get_conn()
+        try:
+            with conn.cursor() as cur:
+                # 데이터를 넣는 SQL 쿼리문
+                # 테스트를 위해 임시 좌표(예: 아주대 근처)
+                # 실제 서비스에선 영상의 GPS 정보를 추출하거나 사용자 위치를 넣어야 함.
+                test_lat, test_lng = 37.283, 127.045
+
+                sql = """INSERT INTO potholes (filename, detect_count, result_path, lat, lng, status)
+                                     VALUES (%s, %s, %s, %s, %s, %s)"""
+                cur.execute(sql, (file.filename, detect_count, result_video, test_lat, test_lng, '검토중'))
+                conn.commit()
+        except Exception as e:
+            print(f"Error: {e}")
+        finally:
+            cur.close()
+            conn.close()
+
+        # 화면으로 결과 전달
+        return render_template("main.html",
+                               results=results,
+                               result_video=result_video,
+                               count=detect_count)
+    return "파일 없음"
+
+#@app.route('/')
+#def index():
+    return '''
+    <h2> 🚀 ITS-Guard 웹 서비스 </h2>
+    <form action="/predict" method="post" enctype="multipart/form-data">
+        <input type="file" name="video"  accept="video/mp4">
+        <button type="submit"> AI 분석 시작</button>
+    </form>
+    '''
 
 @app.route('/')
 def index():

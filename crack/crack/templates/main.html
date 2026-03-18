@@ -1,4 +1,48 @@
-{% extends 'layout.html' %} <!-- extends : 외부파일 -->
+{% extends 'layout.html' %}
+
 {% block content %}
-    <h1>환영합니다. LMS 페이지 입니다.</h1>
+    <div class="container mt-5">
+        <h1 class="mb-4">🚀 ITS-Guard: 포트홀 실시간 탐지</h1>
+
+        <div class="card p-4 shadow-sm">
+            <form action="/predict" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="videoFile" class="form-label">분석할 도로 영상을 선택하세요</label>
+                    <input type="file" name="video" id="videoFile" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-primary w-100">AI 분석 시작</button>
+            </form>
+        </div>
+
+        <hr class="my-5">
+
+        {% if result_video %}
+        <div class="results-section mt-4 text-center">
+            <div class="alert {% if count > 0 %}alert-danger{% else %}alert-success{% endif %} shadow-sm" role="alert">
+                <h4 class="alert-heading mb-0">
+                    {% if count > 0 %}
+                        ⚠️ <strong>위험:</strong> 총 <strong>{{ count }}</strong>개의 포트홀이 탐지되었습니다! 조치가 필요합니다.
+                    {% else %}
+                        ✅ <strong>안전:</strong> 탐지된 포트홀이 없습니다. 도로 상태가 양호합니다.
+                    {% endif %}
+                </h4>
+            </div>
+
+            <div class="my-3">
+                <a href="{{ url_for('static', filename=result_video) }}"
+                   download="ITS_Guard_Result_{{ count }}pcs.mp4"
+                   class="btn btn-outline-success btn-lg">
+                    📥 분석 완료 영상 다운로드 (.mp4)
+                </a>
+            </div>
+
+            <div class="video-container mt-3">
+                <video width="90%" controls style="border: 5px solid #343a40; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                    <source src="{{ url_for('static', filename=result_video) }}" type="video/mp4">
+                    브라우저가 비디오를 지원하지 않습니다.
+                </video>
+            </div>
+        </div>
+        {% endif %}
+    </div>
 {% endblock %}

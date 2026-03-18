@@ -57,6 +57,7 @@
                                 </button>
 
                                 {# 이 부분이 핵심입니다: '완료' 또는 '처리완료' 둘 다 초록색으로 표시 #}
+
                                 {% elif report.status == '완료' or report.status == '처리완료' %}
                                 <span class="text-success">● 완료</span>
 
@@ -76,6 +77,31 @@
                         {% endfor %}
                         </tbody>
                     </table>
+
+                    {% if total_pages > 1 %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+
+                            <li class="page-item {{ 'disabled' if page <= 1 }}">
+                                <a class="page-link" href="{{ url_for('mypage', page=page-1) }}">이전</a>
+                            </li>
+
+                            {% for p in range(1, total_pages + 1) %}
+                            {# 현재 보고 있는 페이지에 하이라이트(active) 처리 #}
+                            <li class="page-item {{ 'active' if p == page }}">
+                                <a class="page-link" href="{{ url_for('mypage', page=p) }}">{{ p }}</a>
+                            </li>
+                            {% endfor %}
+
+                            <li class="page-item {{ 'disabled' if page >= total_pages }}">
+                                <a class="page-link" href="{{ url_for('mypage', page=page+1) }}">다음</a>
+                            </li>
+
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+                ```
                 </div>
             </div>
         </div>
