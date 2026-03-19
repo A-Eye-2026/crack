@@ -126,6 +126,48 @@
       font-weight: 500;
     }
 
+    .quick-filter-indicator {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 12px;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid transparent;
+    }
+
+    .quick-filter-urgent {
+      background: #fff1f2;
+      color: #dc2626;
+      border-color: #fecdd3;
+    }
+
+    .quick-filter-today {
+      background: #eff6ff;
+      color: #2563eb;
+      border-color: #bfdbfe;
+    }
+
+    .quick-filter-pending {
+      background: #fff7ed;
+      color: #ea580c;
+      border-color: #fed7aa;
+    }
+
+    .quick-filter-long-pending {
+      background: #f5f3ff;
+      color: #7c3aed;
+      border-color: #ddd6fe;
+    }
+
+    .quick-filter-rejected {
+      background: #f8fafc;
+      color: #64748b;
+      border-color: #cbd5e1;
+    }
+
     .top-actions {
       display: flex;
       gap: 10px;
@@ -418,6 +460,18 @@
         <div>
           <h1 class="page-title">신고 전체 관리</h1>
           <p class="page-desc">전체 신고를 확인하고 상태를 관리할 수 있습니다.</p>
+
+          {% if quick_filter == 'urgent' %}
+            <div class="quick-filter-indicator quick-filter-urgent">빠른 필터: 긴급</div>
+          {% elif quick_filter == 'today' %}
+            <div class="quick-filter-indicator quick-filter-today">빠른 필터: 오늘 접수</div>
+          {% elif quick_filter == 'pending' %}
+            <div class="quick-filter-indicator quick-filter-pending">빠른 필터: 미처리</div>
+          {% elif quick_filter == 'long_pending' %}
+            <div class="quick-filter-indicator quick-filter-long-pending">빠른 필터: 장기 미처리</div>
+          {% elif quick_filter == 'rejected' %}
+            <div class="quick-filter-indicator quick-filter-rejected">빠른 필터: 반려</div>
+          {% endif %}
         </div>
 
         <div class="top-actions">
@@ -427,6 +481,7 @@
 
       <section class="section">
           <form method="GET" action="/admin/incidents" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;">
+            <input type="hidden" name="quick_filter" value="{{ quick_filter }}">
               <select name="status" style="height:40px; padding:0 12px; border:1px solid #d7dde5; border-radius:10px; font-size:14px;">
                   <option value="">전체 상태</option>
                   <option value="접수완료" {{ 'selected' if selected_status == '접수완료' else '' }}>접수완료</option>
@@ -466,6 +521,10 @@
               >
 
               <button type="submit" class="btn">필터 적용</button>
+
+              {% if quick_filter %}
+                <a href="/admin/incidents" class="btn">빠른 필터 해제</a>
+              {% endif %}
 
               <a href="/admin/incidents" class="btn">초기화</a>
             </form>

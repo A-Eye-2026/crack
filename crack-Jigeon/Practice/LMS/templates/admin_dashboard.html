@@ -1,5 +1,3 @@
-새로 등록된 글에 대한 이벤트를 관리자에게 알릴만한 파트도 필요하지 않을까요?
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -45,7 +43,8 @@
       min-height: 100vh;
       display: flex;
       justify-content: center;
-      padding: 36px 24px 48px;
+      align-items: center;
+      padding: 24px;
     }
 
     /* 사이드바 */
@@ -284,12 +283,26 @@
       padding: 14px 16px 12px;
       min-height: 92px;
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease;
+      text-decoration: none;
+      display: block;
+      cursor: pointer;
+    }
+
+    .summary-card.active {
+      border-color: #ff7a1a;
+      box-shadow: 0 14px 30px rgba(255, 122, 26, 0.12);
+      transform: translateY(-2px);
     }
 
     .summary-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+      transform: translateY(-3px);
+      box-shadow: 0 16px 34px rgba(15, 23, 42, 0.10);
+      border-color: #cbd5e1;
     }
 
     .summary-card::before {
@@ -507,7 +520,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 64px;
+      min-width: 84px;
       height: 28px;
       padding: 0 10px;
       border-radius: 999px;
@@ -639,20 +652,19 @@
 
     .detail-modal-card {
       width: 100%;
-      max-width: 520px;
-      background: #fff;
-      border-radius: 24px;
+      max-width: 360px;
+      background: #ffffff;
+      border-radius: 28px;
       overflow: hidden;
-      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.20);
+      border: 1px solid rgba(255, 255, 255, 0.65);
     }
 
     .detail-thumb-box {
+      position: relative;
       width: 100%;
-      height: 280px;
-      background: #f1f5f9;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      height: 430px;
+      background: #ececec;
       overflow: hidden;
     }
 
@@ -664,13 +676,239 @@
     }
 
     .detail-thumb-placeholder {
+      width: 100%;
+      height: 100%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #666;
+      font-weight: 600;
+    }
+
+    .detail-map-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .detail-thumb-actions {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      z-index: 20;
+    }
+
+    .detail-content-title {
+      font-size: 22px;
+      font-weight: 900;
+      color: #111;
+      margin-bottom: 8px;
+      line-height: 1.3;
+      letter-spacing: -0.4px;
+    }
+
+    .detail-content-text {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.5;
+      margin-bottom: 0;
+      white-space: pre-line;
+    }
+
+    .detail-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #fff3e8;
+      color: #ff7a00;
+      box-shadow: inset 0 0 0 1px rgba(255, 122, 0, 0.10);
+    }
+
+    .detail-chip.status-received {
+      background: #fff7ed;
+      color: #f97316;
+    }
+
+    .detail-chip.status-processing {
+      background: #fffbeb;
+      color: #d97706;
+    }
+
+    .detail-chip.status-done {
+      background: #f0fdf4;
+      color: #16a34a;
+    }
+
+    .detail-chip.status-rejected {
+      background: #f1f5f9;
       color: #64748b;
+    }
+
+    .detail-status-change-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .detail-inline-status-wrap {
+      position: relative;
+    }
+
+    .detail-chip-button {
+      border: none;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .detail-chip-button:hover {
+      transform: translateY(-1px);
+      opacity: 0.92;
+    }
+
+    .detail-inline-status-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      min-width: 120px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+      padding: 6px;
+      display: none;
+      z-index: 30;
+    }
+
+    .detail-inline-status-wrap.open .detail-inline-status-menu {
+      display: block;
+    }
+
+    .detail-inline-status-option {
+      width: 100%;
+      height: 38px;
+      border: none;
+      background: #fff;
+      border-radius: 10px;
+      text-align: left;
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .detail-inline-status-option:hover {
+      background: #f8fafc;
+    }
+
+    .detail-inline-status-option.danger {
+      color: #dc2626;
+    }
+
+    .detail-inline-status-option.danger:hover {
+      background: #fff1f2;
+    }
+
+    .detail-inline-apply-btn {
+      height: 34px;
+      padding: 0 14px;
+      border: 1px solid #d7dde5;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
+      transition: all 0.18s ease;
+    }
+
+    .detail-inline-apply-btn:hover {
+      transform: translateY(-1px);
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .detail-meta-row {
+      align-items: center;
+    }
+
+    .detail-time-risk-wrap {
+      min-width: 84px;
+    }
+
+    .detail-divider {
+      height: 1px;
+      background: #f1f1f1;
+      margin: 0 0 16px 0;
+    }
+
+    .detail-time-text {
+      font-size: 13px;
+      color: #777;
+      white-space: nowrap;
+    }
+
+    .detail-risk-badge {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+    }
+
+    .detail-risk-high {
+      color: #e74c3c;
+    }
+
+    .detail-risk-medium {
+      color: #f39c12;
+    }
+
+    .detail-risk-low {
+      color: #27ae60;
+    }
+
+    .detail-close-wrap {
+      margin-top: 0;
+    }
+
+    .detail-close-btn {
+      width: 100%;
+      height: 44px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #1f1f22, #2c2c30);
+      color: #fff;
       font-size: 15px;
-      font-weight: 700;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(34, 34, 34, 0.18);
     }
 
     .detail-content-box {
-      padding: 20px;
+      padding: 14px 16px 16px;
+      background: #fff;
     }
 
     .detail-meta-row {
@@ -678,20 +916,100 @@
       justify-content: space-between;
       align-items: flex-start;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .detail-time-risk-wrap {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 6px;
+      gap: 4px;
+    }
+
+    .custom-alert-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.38);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 20px;
+    }
+
+    .custom-alert-backdrop.show {
+      display: flex;
+    }
+
+    .custom-alert-box {
+      width: 100%;
+      max-width: 360px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #e5e7eb;
+      border-radius: 24px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.20);
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .custom-alert-header {
+      padding: 18px 20px 10px;
+    }
+
+    .custom-alert-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+    }
+
+    .custom-alert-body {
+      padding: 0 20px 18px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #475569;
+    }
+
+    .custom-alert-actions {
+      display: flex;
+      justify-content: flex-end;
+      padding: 0 20px 20px;
+    }
+
+    .custom-alert-btn {
+      min-width: 84px;
+      height: 40px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #ff9b51 0%, #ff7a1a 100%);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(255, 122, 26, 0.22);
+      transition: all 0.18s ease;
+    }
+
+    .custom-alert-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(255, 122, 26, 0.26);
     }
 
     .urgent-card-list {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
+      width: 100%;
+      align-content: start;
+    }
+
+    .urgent-card-list.is-empty {
+      display: block;
+    }
+
+    .urgent-card-list.is-empty .urgent-empty {
+      min-height: 300px;
     }
 
     .urgent-item {
@@ -744,6 +1062,31 @@
       flex-wrap: wrap;
     }
 
+    .urgent-reason-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 999px;
+      max-width: 100%;
+    }
+
+    .urgent-reason-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #c2410c;
+      white-space: nowrap;
+    }
+
+    .urgent-reason-text {
+      font-size: 13px;
+      font-weight: 900;   /* 기존보다 더 강하게 */
+      color: #dc2626;     /* 지금보다 살짝 더 진하게 */
+      letter-spacing: -0.2px;
+    }
+
     .urgent-item-bottom {
       display: flex;
       justify-content: space-between;
@@ -753,6 +1096,22 @@
       padding-top: 10px;
     }
 
+    .urgent-count-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 11px;
+      font-weight: 800;
+      color: #475569;
+      white-space: nowrap;
+      margin-left: 6px;
+    }
+
     .urgent-info {
       font-size: 11px;
       color: #475569;
@@ -760,14 +1119,16 @@
     }
 
     .urgent-time {
-      font-size: 11px;
-      color: #94a3b8;
-      font-weight: 700;
-      white-space: nowrap;
+      font-size: 12px;
+      color: #334155;   /* 더 진하게 */
+      font-weight: 800;
     }
 
     .urgent-empty {
-      grid-column: 1 / -1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       text-align: center;
       padding: 26px;
       border: 1px dashed #d6dee8;
@@ -775,6 +1136,8 @@
       color: #94a3b8;
       background: #fbfdff;
       font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.2px;
     }
 
     .urgent-actions {
@@ -799,10 +1162,10 @@
     }
 
     .detail-info-card {
-      background: #f8fafc;
-      border: 1px solid #e9eef5;
-      border-radius: 16px;
-      padding: 16px;
+      background: #fafafa;
+      border: 1px solid #f0f0f0;
+      border-radius: 18px;
+      padding: 14px 14px 12px;
       margin-bottom: 16px;
     }
 
@@ -836,6 +1199,12 @@
       font-weight: 700;
       color: #475569;
       line-height: 1.35;
+    }
+
+    .dashboard-list-area {
+      min-height: 340px;
+      display: flex;
+      align-items: stretch;
     }
 
     .summary-card.pending-strong.danger {
@@ -939,56 +1308,57 @@
         </div>
       </div>
 
-            <div class="summary-grid">
-        <div class="summary-card urgent">
-          <div class="summary-label">긴급</div>
-          <div class="summary-value"><strong>{{ summary.urgent_count }}</strong>건</div>
-          <div class="summary-meta">우선 조치가 필요한 신고</div>
-        </div>
+       <div class="summary-grid">
+          <a href="/admin/dashboard?tab=urgent" class="summary-card urgent {{ 'active' if selected_tab == 'urgent' else '' }}">
+            <div class="summary-label">긴급</div>
+            <div class="summary-value"><strong>{{ summary.urgent_count }}</strong>건</div>
+            <div class="summary-meta">우선 조치가 필요한 신고</div>
+          </a>
 
-        <div class="summary-card today">
-          <div class="summary-label">오늘 접수</div>
-          <div class="summary-value"><strong>{{ summary.today_count }}</strong>건</div>
-          <div class="summary-meta">오늘 등록된 위험 지점 수</div>
-        </div>
+          <a href="/admin/dashboard?tab=today" class="summary-card today {{ 'active' if selected_tab == 'today' else '' }}">
+            <div class="summary-label">오늘 접수</div>
+            <div class="summary-value"><strong>{{ summary.today_count }}</strong>건</div>
+            <div class="summary-meta">오늘 등록된 위험 지점 수</div>
+          </a>
 
-        <div class="summary-card pending-strong">
-          <div class="summary-label">미처리</div>
-          <div class="summary-value"><strong>{{ summary.pending_count }}</strong>건</div>
-          <div class="summary-meta">아직 검토 전인 위험 지점</div>
-        </div>
+          <a href="/admin/dashboard?tab=pending" class="summary-card pending-strong {{ 'active' if selected_tab == 'pending' else '' }}">
+            <div class="summary-label">미처리</div>
+            <div class="summary-value"><strong>{{ summary.pending_count }}</strong>건</div>
+            <div class="summary-meta">아직 검토 전인 위험 지점</div>
+          </a>
 
-        <div class="summary-card long-pending">
-          <div class="summary-label">장기 미처리</div>
-          <div class="summary-value"><strong>{{ summary.long_pending_count }}</strong>건</div>
-          <div class="summary-meta">24시간 이상 조치되지 않은 위험 지점</div>
-          <div class="summary-action-hint">운영 병목 여부를 우선 확인하세요.</div>
-        </div>
+          <a href="/admin/dashboard?tab=long_pending" class="summary-card long-pending {{ 'active' if selected_tab == 'long_pending' else '' }}">
+            <div class="summary-label">장기 미처리</div>
+            <div class="summary-value"><strong>{{ summary.long_pending_count }}</strong>건</div>
+            <div class="summary-meta">24시간 이상 조치되지 않은 위험 지점</div>
+            <div class="summary-action-hint">운영 병목 여부를 우선 확인하세요.</div>
+          </a>
 
-        <div class="summary-card rejected">
-          <div class="summary-label">반려</div>
-          <div class="summary-value"><strong>{{ summary.rejected_count }}</strong>건</div>
-          <div class="summary-meta">관리 기준에 따라 반려된 신고</div>
-          <div class="summary-action-hint">반려 사유 품질도 함께 봐야 합니다.</div>
+          <a href="/admin/dashboard?tab=rejected" class="summary-card rejected {{ 'active' if selected_tab == 'rejected' else '' }}">
+            <div class="summary-label">반려</div>
+            <div class="summary-value"><strong>{{ summary.rejected_count }}</strong>건</div>
+            <div class="summary-meta">관리 기준에 따라 반려된 신고</div>
+            <div class="summary-action-hint">반려 사유 품질도 함께 봐야 합니다.</div>
+          </a>
         </div>
-            </div>
 
       <section class="section" style="margin-bottom:18px;">
         <div class="section-header">
           <div class="section-title-wrap">
-            <div class="section-title">긴급 조치 필요</div>
-            <div class="section-subtitle">고위험 또는 반복 제보로 우선 확인이 필요한 신고입니다.</div>
+            <div class="section-title">{{ dashboard_section_title }}</div>
+            <div class="section-subtitle">{{ dashboard_section_subtitle }}</div>
           </div>
 
           <div class="section-actions">
-            <a href="/admin/incidents" class="mini-btn" style="display:inline-flex; align-items:center; text-decoration:none;">
-              전체 신고 관리
+            <a href="{{ dashboard_more_url }}" class="mini-btn" style="display:inline-flex; align-items:center; text-decoration:none;">
+              전체보기
             </a>
           </div>
         </div>
 
-        <div class="urgent-card-list">
-          {% for incident in urgent_incidents %}
+        <div class="dashboard-list-area">
+          <div class="urgent-card-list {{ 'is-empty' if dashboard_items|length == 0 else '' }}">
+            {% for incident in dashboard_items %}
           {% set score = incident.risk_score|float %}
           {% set report_count = incident.group_reporter_count|int %}
 
@@ -1010,24 +1380,24 @@
                 {% endif %}
 
                 {% if score >= 80 %}
-                  <span class="badge risk-high">높음</span>
+                  <span class="badge risk-high">위험도 높음</span>
                 {% elif score >= 50 %}
-                  <span class="badge risk-medium">중간</span>
+                  <span class="badge risk-medium">위험도 중간</span>
                 {% else %}
-                  <span class="badge risk-low">낮음</span>
+                  <span class="badge risk-low">위험도 낮음</span>
                 {% endif %}
               </div>
             </div>
 
             <div class="urgent-item-bottom">
               <div class="urgent-subinfo">
-                <div class="urgent-reason">
-                  {{ incident.urgent_reason if incident.urgent_reason else '확인 필요' }}
+                <div class="urgent-reason-text">
+                  {{ incident.urgent_reason.replace(',', ' ·') if incident.urgent_reason else '확인 필요' }}
                 </div>
 
-                <div class="urgent-info">
+                <div class="urgent-count-badge">
                   {% if report_count >= 5 %}
-                    반복 {{ report_count }}건 · 집중 위험
+                    반복 {{ report_count }}건
                   {% elif report_count >= 2 %}
                     반복 {{ report_count }}건
                   {% else %}
@@ -1068,12 +1438,13 @@
           </div>
           {% endfor %}
 
-          {% if urgent_incidents|length == 0 %}
-          <div class="urgent-empty">
-            긴급 조치가 필요한 신고가 없습니다.
+              {% if dashboard_items|length == 0 %}
+              <div class="urgent-empty">
+                표시할 신고가 없습니다.
+              </div>
+              {% endif %}
+            </div>
           </div>
-          {% endif %}
-        </div>
       </section>
       </div>
     </main>
@@ -1083,30 +1454,53 @@
                 <div class="detail-thumb-box">
                   <img id="dashboardDetailImage" class="detail-thumb-img" src="" alt="신고 이미지">
                   <div id="dashboardDetailPlaceholder" class="detail-thumb-placeholder">사진이 없습니다.</div>
+
+                  <div class="detail-thumb-actions">
+                    <button class="detail-map-btn" type="button" onclick="openDashboardMap()" title="지도 보기">🌍</button>
+
+                  </div>
                 </div>
 
                 <div class="detail-content-box">
                   <div class="detail-meta-row">
-                    <span id="dashboardDetailStatus" class="badge status-received">접수완료</span>
+                    <div class="detail-status-change-wrap">
+                      <div class="detail-inline-status-wrap" id="dashboardInlineStatusWrap">
+                        <button
+                          type="button"
+                          id="dashboardDetailStatus"
+                          class="detail-chip detail-chip-button"
+                          onclick="toggleInlineStatusMenu()"
+                        >
+                          접수완료
+                        </button>
+
+                        <div class="detail-inline-status-menu" id="dashboardInlineStatusMenu">
+                          <button type="button" class="detail-inline-status-option" onclick="selectInlineDashboardStatus('처리중')">처리중</button>
+                          <button type="button" class="detail-inline-status-option" onclick="selectInlineDashboardStatus('처리완료')">처리완료</button>
+                          <button type="button" class="detail-inline-status-option danger" onclick="selectInlineDashboardStatus('반려')">반려</button>
+                        </div>
+                      </div>
+
+                      <button class="detail-inline-apply-btn" type="button" onclick="applyInlineDashboardStatus()">
+                        변경
+                      </button>
+                    </div>
 
                     <div class="detail-time-risk-wrap">
-                      <span id="dashboardDetailTime" class="time">00-00 00:00</span>
-                      <span id="dashboardDetailRisk"></span>
+                      <span id="dashboardDetailTime" class="detail-time-text">00-00 00:00</span>
+                      <span id="dashboardDetailRisk" class="detail-risk-badge">위험도 높음</span>
                     </div>
                   </div>
 
-                  <div class="detail-info-card">
-                    <div id="dashboardDetailTitle" class="section-title" style="font-size:22px; margin-bottom:8px;">신고 제목</div>
-                    <div id="dashboardDetailLocation" class="section-subtitle" style="font-size:14px;">위치 정보</div>
-                    <div id="dashboardDetailReporter" class="section-subtitle" style="font-size:14px; margin-top:8px;">반복 제보 1건</div>
-                  </div>
+                  <div class="detail-divider"></div>
 
-                  <div style="display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
-                    <button class="mini-btn" type="button" onclick="submitDashboardStatus('처리중')">처리중</button>
-                    <button class="mini-btn" type="button" onclick="submitDashboardStatus('처리완료')">처리완료</button>
-                    <button class="mini-btn" type="button" onclick="openRejectReasonModal()">반려</button>
-                    <button class="mini-btn" type="button" onclick="openDashboardMap()">지도 보기</button>
-                    <button class="mini-btn" type="button" onclick="closeDashboardDetailModal()">닫기</button>
+                  <div class="detail-info-card">
+                    <div id="dashboardDetailTitle" class="detail-content-title">신고 제목</div>
+                    <div id="dashboardDetailLocation" class="detail-content-text">위치 정보</div>
+                    <div id="dashboardDetailReporter" class="detail-content-text" style="margin-top:8px;">반복 제보 1건</div>
+                  </div>
+                  <div class="detail-close-wrap">
+                    <button class="detail-close-btn" type="button" onclick="closeDashboardDetailModal()">닫기</button>
                   </div>
                 </div>
               </div>
@@ -1140,12 +1534,75 @@
       <input type="hidden" name="reject_reason" id="dashboardRejectReasonInput" value="">
     </form>
   </div>
+  <div class="custom-alert-backdrop" id="customAlertModal">
+  <div class="custom-alert-box">
+    <div class="custom-alert-header">
+      <div class="custom-alert-title" id="customAlertTitle">알림</div>
+    </div>
+    <div class="custom-alert-body" id="customAlertMessage">
+      메시지 내용
+    </div>
+    <div class="custom-alert-actions">
+      <button type="button" class="custom-alert-btn" onclick="closeCustomAlert()">
+        확인
+      </button>
+    </div>
+  </div>
+</div>
 <script>
 
-  let dashboardDetailLat = '';
+let dashboardDetailLat = '';
 let dashboardDetailLng = '';
 let dashboardDetailIncidentId = '';
+let dashboardSelectedStatus = '';
+let dashboardCurrentStatus = '';
 
+function getDashboardStatusClass(status) {
+  if (status === '접수완료') return 'status-received';
+  if (status === '처리중') return 'status-processing';
+  if (status === '처리완료') return 'status-done';
+  if (status === '반려') return 'status-rejected';
+  return '';
+}
+
+function toggleInlineStatusMenu() {
+  const wrap = document.getElementById('dashboardInlineStatusWrap');
+  wrap.classList.toggle('open');
+}
+
+function selectInlineDashboardStatus(value) {
+  dashboardSelectedStatus = value;
+
+  const statusEl = document.getElementById('dashboardDetailStatus');
+  statusEl.textContent = value;
+  statusEl.className = 'detail-chip detail-chip-button ' + getDashboardStatusClass(value);
+
+  document.getElementById('dashboardInlineStatusWrap').classList.remove('open');
+}
+
+function applyInlineDashboardStatus() {
+  if (!dashboardDetailIncidentId) {
+    openCustomAlert('사건 정보가 없습니다.');
+    return;
+  }
+
+  if (!dashboardSelectedStatus) {
+    openCustomAlert('변경할 상태를 선택해주세요.');
+    return;
+  }
+
+  if (dashboardSelectedStatus === dashboardCurrentStatus) {
+    openCustomAlert('현재 상태와 동일합니다.');
+    return;
+  }
+
+  if (dashboardSelectedStatus === '반려') {
+    openRejectReasonModal();
+    return;
+  }
+
+  submitDashboardStatus(dashboardSelectedStatus);
+}
 
 function openDashboardDetailModal(incidentId, title, location, status, time, riskScore, reporterCount, imagePath, lat, lng) {
   document.getElementById('dashboardDetailTitle').textContent = title || '신고 상세';
@@ -1157,33 +1614,26 @@ function openDashboardDetailModal(incidentId, title, location, status, time, ris
   dashboardDetailLat = lat || '';
   dashboardDetailLng = lng || '';
 
-  const statusEl = document.getElementById('dashboardDetailStatus');
-  statusEl.textContent = status || '-';
-  statusEl.className = 'badge';
+dashboardCurrentStatus = status || '';
+dashboardSelectedStatus = status || '';
+document.getElementById('dashboardInlineStatusWrap').classList.remove('open');
 
-  if (status === '접수완료') {
-    statusEl.classList.add('status-received');
-  } else if (status === '처리중') {
-    statusEl.classList.add('status-processing');
-  } else if (status === '처리완료') {
-    statusEl.classList.add('status-done');
-  } else if (status === '반려') {
-    statusEl.classList.add('status-rejected');
-  }
+const statusEl = document.getElementById('dashboardDetailStatus');
+statusEl.textContent = status || '-';
+statusEl.className = 'detail-chip detail-chip-button ' + getDashboardStatusClass(status);
 
   const score = Number(riskScore || 0);
   const riskEl = document.getElementById('dashboardDetailRisk');
-  riskEl.className = 'badge';
 
   if (score >= 80) {
     riskEl.textContent = '위험도 높음';
-    riskEl.classList.add('risk-high');
+    riskEl.className = 'detail-risk-badge detail-risk-high';
   } else if (score >= 50) {
     riskEl.textContent = '위험도 중간';
-    riskEl.classList.add('risk-medium');
+    riskEl.className = 'detail-risk-badge detail-risk-medium';
   } else {
     riskEl.textContent = '위험도 낮음';
-    riskEl.classList.add('risk-low');
+    riskEl.className = 'detail-risk-badge detail-risk-low';
   }
 
   const imgEl = document.getElementById('dashboardDetailImage');
@@ -1204,13 +1654,13 @@ function openDashboardDetailModal(incidentId, title, location, status, time, ris
       imgEl.src = '';
       imgEl.style.display = 'none';
       placeholderEl.textContent = '사진을 불러올 수 없습니다.';
-      placeholderEl.style.display = 'block';
+      placeholderEl.style.display = 'flex';
     };
-  } else {
+      } else {
     imgEl.src = '';
     imgEl.style.display = 'none';
     placeholderEl.textContent = '사진이 없습니다.';
-    placeholderEl.style.display = 'block';
+    placeholderEl.style.display = 'flex';
   }
 
   document.getElementById('dashboardDetailModal').classList.add('show');
@@ -1220,9 +1670,19 @@ function closeDashboardDetailModal() {
   document.getElementById('dashboardDetailModal').classList.remove('show');
 }
 
+function openCustomAlert(message, title = '알림') {
+  document.getElementById('customAlertTitle').textContent = title;
+  document.getElementById('customAlertMessage').textContent = message;
+  document.getElementById('customAlertModal').classList.add('show');
+}
+
+function closeCustomAlert() {
+  document.getElementById('customAlertModal').classList.remove('show');
+}
+
 function openDashboardMap() {
   if (!dashboardDetailLat || !dashboardDetailLng) {
-    alert('지도에 표시할 좌표 정보가 없습니다.');
+    openCustomAlert('지도에 표시할 좌표 정보가 없습니다.');
     return;
   }
 
@@ -1232,7 +1692,7 @@ function openDashboardMap() {
 
 function submitDashboardStatus(newStatus) {
   if (!dashboardDetailIncidentId) {
-    alert('사건 정보가 없습니다.');
+    openCustomAlert('사건 정보가 없습니다.');
     return;
   }
 
@@ -1253,14 +1713,14 @@ function closeRejectReasonModal() {
 
 function submitRejectStatus() {
   if (!dashboardDetailIncidentId) {
-    alert('사건 정보가 없습니다.');
+    openCustomAlert('사건 정보가 없습니다.');
     return;
   }
 
   const reason = document.getElementById('dashboardRejectReasonText').value.trim();
 
   if (!reason) {
-    alert('반려 사유를 입력해주세요.');
+    openCustomAlert('반려 사유를 입력해주세요.');
     document.getElementById('dashboardRejectReasonText').focus();
     return;
   }
@@ -1277,9 +1737,24 @@ document.getElementById('dashboardDetailModal').addEventListener('click', functi
   }
 });
 
+document.getElementById('customAlertModal').addEventListener('click', function(e) {
+  if (e.target.id === 'customAlertModal') {
+    closeCustomAlert();
+  }
+});
+
 document.getElementById('dashboardRejectModal').addEventListener('click', function(e) {
   if (e.target.id === 'dashboardRejectModal') {
     closeRejectReasonModal();
+  }
+});
+
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('dashboardInlineStatusWrap');
+  if (!wrap) return;
+
+  if (!wrap.contains(e.target)) {
+    wrap.classList.remove('open');
   }
 });
 </script>

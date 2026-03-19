@@ -284,6 +284,12 @@ def admin_dashboard():
     if session.get('user_role') != 'admin':
         return redirect(url_for('alert_page'))
 
+    selected_tab = request.args.get('tab', 'urgent').strip()
+
+    allowed_tabs = ['urgent', 'today', 'pending', 'long_pending', 'rejected']
+    if selected_tab not in allowed_tabs:
+        selected_tab = 'urgent'
+
     conn = Session.get_connection()
 
     try:
@@ -378,7 +384,7 @@ def admin_dashboard():
                 incident['priority_score'] = priority_score
                 incident['priority_label'] = get_priority_label(priority_score)
 
-            urgent_incidents = sorted(
+            urgent_all = sorted(
                 [
                     incident for incident in grouped_incidents
                     if incident.get('status') in ['접수완료', '처리중']
@@ -389,34 +395,97 @@ def admin_dashboard():
                     x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
                 ),
                 reverse=True
-            )[:5]
+            )
 
-            repeat_hotspots = sorted(
+            today_all = sorted(
                 [
                     incident for incident in grouped_incidents
-                    if int(incident.get('group_reporter_count') or 0) >= 2
+                    if incident.get('first_created_at')
+                    and incident.get('first_created_at').date() == today
                 ],
-                key=lambda x: (
-                    int(x.get('group_reporter_count') or 0),
-                    float(x.get('risk_score') or 0),
-                    x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
-                ),
-                reverse=True
-            )[:5]
-
-            grouped_incidents.sort(
                 key=lambda x: x.get('first_created_at').timestamp() if x.get('first_created_at') else 0,
                 reverse=True
             )
-            incidents = grouped_incidents[:5]
+
+            pending_all = sorted(
+                [
+                    incident for incident in grouped_incidents
+                    if incident.get('status') == '접수완료'
+                ],
+                key=lambda x: x.get('first_created_at').timestamp() if x.get('first_created_at') else 0,
+                reverse=True
+            )
+
+            long_pending_all = sorted(
+                [
+                    incident for incident in grouped_incidents
+                    if incident.get('status') == '접수완료'
+                    and incident.get('first_created_at')
+                    and (now - incident.get('first_created_at')).total_seconds() >= 86400
+                ],
+                key=lambda x: x.get('first_created_at').timestamp() if x.get('first_created_at') else 0,
+                reverse=True
+            )
+
+            rejected_all = sorted(
+                [
+                    incident for incident in grouped_incidents
+                    if incident.get('status') == '반려'
+                ],
+                key=lambda x: x.get('first_created_at').timestamp() if x.get('first_created_at') else 0,
+                reverse=True
+            )
+
+            dashboard_tab_map = {
+                'urgent': {
+                    'title': '긴급 조치 필요',
+                    'subtitle': '고위험 또는 반복 제보로 우선 확인이 필요한 신고입니다.',
+                    'items': urgent_all,
+                    'more_url': '/admin/incidents?quick_filter=urgent'
+                },
+                'today': {
+                    'title': '오늘 접수 신고',
+                    'subtitle': '오늘 새로 등록된 신고 목록입니다.',
+                    'items': today_all,
+                    'more_url': '/admin/incidents?quick_filter=today'
+                },
+                'pending': {
+                    'title': '미처리 신고',
+                    'subtitle': '아직 검토 전인 신고 목록입니다.',
+                    'items': pending_all,
+                    'more_url': '/admin/incidents?quick_filter=pending'
+                },
+                'long_pending': {
+                    'title': '장기 미처리 신고',
+                    'subtitle': '24시간 이상 조치되지 않은 신고 목록입니다.',
+                    'items': long_pending_all,
+                    'more_url': '/admin/incidents?quick_filter=long_pending'
+                },
+                'rejected': {
+                    'title': '반려 신고',
+                    'subtitle': '관리 기준에 따라 반려된 신고 목록입니다.',
+                    'items': rejected_all,
+                    'more_url': '/admin/incidents?quick_filter=rejected'
+                }
+            }
+
+            selected_tab_info = dashboard_tab_map[selected_tab]
+            dashboard_items_all = selected_tab_info['items']
+            dashboard_items = dashboard_items_all[:6]
+            dashboard_has_more = len(dashboard_items_all) > 6
+            dashboard_more_url = selected_tab_info['more_url']
+            dashboard_section_title = selected_tab_info['title']
+            dashboard_section_subtitle = selected_tab_info['subtitle']
 
             return render_template(
                 'admin_dashboard.html',
                 summary=summary,
-                incidents=incidents,
-                region_stats=region_stats_list,
-                repeat_hotspots=repeat_hotspots,
-                urgent_incidents=urgent_incidents
+                selected_tab=selected_tab,
+                dashboard_items=dashboard_items,
+                dashboard_has_more=dashboard_has_more,
+                dashboard_more_url=dashboard_more_url,
+                dashboard_section_title=dashboard_section_title,
+                dashboard_section_subtitle=dashboard_section_subtitle
             )
     finally:
         conn.close()
@@ -1016,11 +1085,22 @@ def admin_incidents():
     if session.get('user_role') != 'admin':
         return redirect(url_for('alert_page'))
 
+    quick_filter = request.args.get('quick_filter', '').strip()
     selected_status = request.args.get('status', '').strip()
     selected_risk = request.args.get('risk', '').strip()
     keyword = request.args.get('keyword', '').strip()
-    sort_by = request.args.get('sort', 'latest').strip()
+    sort_by = request.args.get('sort', '').strip()
+    if not sort_by:
+        if quick_filter == 'urgent':
+            sort_by = 'priority'
+        elif quick_filter == 'pending':
+            sort_by = 'pending'
+        elif quick_filter == 'long_pending':
+            sort_by = 'pending'
+        else:
+            sort_by = 'latest'
     selected_region = request.args.get('region', '').strip()
+
     page = int(request.args.get('page', 1))
     per_page = 10
 
@@ -1070,6 +1150,36 @@ def admin_incidents():
                 priority_score = get_priority_score(incident, now)
                 incident['priority_score'] = priority_score
                 incident['priority_label'] = get_priority_label(priority_score)
+
+                if quick_filter == 'urgent':
+                    if not (
+                        incident.get('status') in ['접수완료', '처리중']
+                        and incident.get('urgent_reason')
+                    ):
+                        continue
+
+                elif quick_filter == 'today':
+                    if not (
+                        incident.get('first_created_at')
+                        and incident.get('first_created_at').date() == now.date()
+                    ):
+                        continue
+
+                elif quick_filter == 'pending':
+                    if incident.get('status') != '접수완료':
+                        continue
+
+                elif quick_filter == 'long_pending':
+                    if not (
+                        incident.get('status') == '접수완료'
+                        and incident.get('first_created_at')
+                        and (now - incident.get('first_created_at')).total_seconds() >= 86400
+                    ):
+                        continue
+
+                elif quick_filter == 'rejected':
+                    if incident.get('status') != '반려':
+                        continue
 
                 if selected_region and region_name != selected_region:
                     continue
@@ -1152,6 +1262,7 @@ def admin_incidents():
                 region_options=region_options,
                 page=page,
                 total_pages=total_pages,
+                quick_filter=quick_filter,
                 current_query_string=request.query_string.decode('utf-8')
             )
     finally:
@@ -1315,4 +1426,4 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(host='192.168.0.164', port=5001, debug=True)
+    app.run(host='172.30.1.22', port=5001, debug=True)
