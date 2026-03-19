@@ -1,4 +1,5 @@
 # pip install flask
+
 # 플라스크란?
 # 파이썬으로 만든 db연동 콘솔 프로그램을 웹으로 연결하는 프레임워크
 # 프레임워크 : 미리 만들어 놓은 틀 안에서 작업하는 것
@@ -7,39 +8,272 @@
 # static : 정적 파일을 모아놓는 곳 (html, css, js)
 # templates : 동적 파일을 모아놓는 곳 (crud 화면, 레이아웃, index 등..)
 
-import requests
 import math
 import os
-
 from datetime import datetime
-from flask import Flask,render_template,request,redirect,url_for,session, jsonify, send_from_directory
-from common.Session import Session
-from domain import *
-#                플라스크    프론트 연결      요청,응답  주소전달   주소생성  상태저장
-
-app = Flask(__name__)
-app.secret_key = '1234'
-
-
 from decimal import Decimal
 
-# 주소 검색 시 도시 입력만으로도 해당 행정구 목록을 제공하기 위한 지역 데이터 사전
-KAKAO_REST_API_KEY = "035c39ca6433bc71c470c3174e362005"
-KAKAO_JS_KEY = "c5746d6486744a8c50f393b8c15d47e9"
+import requests
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+    jsonify,
+    send_from_directory
+)
+
+from common.Session import Session
+from domain import *
+
+
+app = Flask(__name__)
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key-change-me')
+
+KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")
+KAKAO_JS_KEY = os.getenv("KAKAO_JS_KEY")
 DEFAULT_RADIUS_M = 500
+
+# 주소 검색 시 도시 입력만으로도 해당 행정구 목록을 제공하기 위한 지역 데이터 사전
 CITY_DISTRICT_MAP = {
-        "수원시": ["장안구", "권선구", "팔달구", "영통구"],
-        "성남시": ["수정구", "중원구", "분당구"],
-        "안양시": ["만안구", "동안구"],
-        "용인시": ["처인구", "기흥구", "수지구"],
-        "고양시": ["덕양구", "일산동구", "일산서구"],
-        "서울시": [
-            "종로구", "중구", "용산구", "성동구", "광진구", "동대문구", "중랑구",
-            "성북구", "강북구", "도봉구", "노원구", "은평구", "서대문구", "마포구",
-            "양천구", "강서구", "구로구", "금천구", "영등포구", "동작구", "관악구",
-            "서초구", "강남구", "송파구", "강동구"
-        ]
+    "수원시": ["장안구", "권선구", "팔달구", "영통구"],
+    "성남시": ["수정구", "중원구", "분당구"],
+    "안양시": ["만안구", "동안구"],
+    "용인시": ["처인구", "기흥구", "수지구"],
+    "고양시": ["덕양구", "일산동구", "일산서구"],
+    "서울시": [
+        "종로구", "중구", "용산구", "성동구", "광진구", "동대문구", "중랑구",
+        "성북구", "강북구", "도봉구", "노원구", "은평구", "서대문구", "마포구",
+        "양천구", "강서구", "구로구", "금천구", "영등포구", "동작구", "관악구",
+        "서초구", "강남구", "송파구", "강동구"
+    ]
+}
+
+
+def normalize_region_name(region_text):
+    if not region_text:
+        return ''
+
+    text = region_text.strip()
+    parts = text.split()
+
+    if len(parts) >= 2:
+        first = parts[0]
+        second = parts[1]
+
+        if first.endswith('시') and (
+            second.endswith('구') or second.endswith('군') or second.endswith('시')
+        ):
+            return f"{first} {second}"
+
+    if len(parts) >= 1:
+        return parts[0]
+
+    return ''
+
+
+def extract_region_name_from_location(location):
+    return normalize_region_name(location)
+
+
+# 두 좌표 사이 실제 거리를 계산하여 위치 기반 사건 필터링에 사용하는 함수
+def haversine_m(lat1, lon1, lat2, lon2):
+    lat1 = float(lat1)
+    lon1 = float(lon1)
+    lat2 = float(lat2)
+    lon2 = float(lon2)
+
+    r = 6371000  # meters
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(math.radians(lat1))
+        * math.cos(math.radians(lat2))
+        * math.sin(dlon / 2) ** 2
+    )
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    return r * c
+
+
+def is_visible_to_user(incident):
+    risk_score = float(incident.get('risk_score') or 0)
+    reporter_count = int(incident.get('group_reporter_count') or 0)
+
+    return (
+        risk_score >= 80 or
+        reporter_count >= 3
+    )
+
+
+def serialize_incident(i):
+    return {
+        'id': i.get('id'),
+        'title': i.get('title'),
+        'location': i.get('location'),
+        'region_name': normalize_region_name(i.get('region_name')),
+        'status': i.get('status'),
+        'reject_reason': i.get('reject_reason'),
+        'risk_score': float(i.get('risk_score') or 0),
+        'first_created_at': i.get('first_created_at').strftime('%m-%d %H:%M') if i.get('first_created_at') else '',
+        'latitude': i.get('latitude'),
+        'longitude': i.get('longitude'),
+        'distance_m': i.get('distance_m'),
+        'group_reporter_count': int(i.get('group_reporter_count') or 0),
+        'image_path': i.get('image_path')
     }
+
+
+def group_incidents(raw_incidents):
+    grouped_incidents = []
+    used_ids = set()
+
+    for incident in raw_incidents:
+        if incident['id'] in used_ids:
+            continue
+
+        base_lat = incident.get('latitude')
+        base_lng = incident.get('longitude')
+        base_time = incident.get('first_created_at')
+
+        reporter_ids = set()
+        if incident.get('member_id'):
+            reporter_ids.add(incident.get('member_id'))
+
+        group_members = [incident]
+        used_ids.add(incident['id'])
+
+        for other in raw_incidents:
+            if other['id'] == incident['id']:
+                continue
+            if other['id'] in used_ids:
+                continue
+
+            other_time = other.get('first_created_at')
+            other_lat = other.get('latitude')
+            other_lng = other.get('longitude')
+
+            if base_lat is None or base_lng is None or other_lat is None or other_lng is None:
+                continue
+
+            distance_m = haversine_m(base_lat, base_lng, other_lat, other_lng)
+            time_diff_sec = abs((base_time - other_time).total_seconds()) if base_time and other_time else 999999
+
+            if distance_m <= 50 and time_diff_sec <= 86400:
+                used_ids.add(other['id'])
+                group_members.append(other)
+
+                if other.get('member_id'):
+                    reporter_ids.add(other.get('member_id'))
+
+        representative = max(
+            group_members,
+            key=lambda x: (
+                float(x.get('risk_score') or 0),
+                x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
+            )
+        )
+
+        representative['group_reporter_count'] = len(reporter_ids)
+        grouped_incidents.append(representative)
+
+    return grouped_incidents
+
+
+def build_urgent_reasons(incident, now=None):
+    if now is None:
+        now = datetime.now()
+
+    reasons = []
+    risk_score = float(incident.get('risk_score') or 0)
+    reporter_count = int(incident.get('group_reporter_count') or 0)
+    status = incident.get('status')
+    created_at = incident.get('first_created_at')
+
+    if risk_score >= 80:
+        reasons.append('고위험')
+
+    if reporter_count >= 3:
+        reasons.append('반복 제보')
+
+    if status == '접수완료' and created_at and (now - created_at).total_seconds() >= 86400:
+        reasons.append('장기 미처리')
+
+    return reasons
+
+
+def get_priority_score(incident, now=None):
+    if now is None:
+        now = datetime.now()
+
+    score = 0
+    risk_score = float(incident.get('risk_score') or 0)
+    reporter_count = int(incident.get('group_reporter_count') or 0)
+    status = incident.get('status')
+    created_at = incident.get('first_created_at')
+
+    if status == '접수완료':
+        score += 100
+
+    if risk_score >= 80:
+        score += 50
+    elif risk_score >= 50:
+        score += 20
+
+    if reporter_count >= 5:
+        score += 40
+    elif reporter_count >= 3:
+        score += 30
+    elif reporter_count >= 2:
+        score += 10
+
+    if status == '접수완료' and created_at and (now - created_at).total_seconds() >= 86400:
+        score += 40
+
+    return score
+
+
+def get_priority_label(priority_score):
+    if priority_score >= 150:
+        return '긴급'
+    elif priority_score >= 80:
+        return '주의'
+    return '일반'
+
+
+def find_group_incident_ids(target_incident, raw_incidents):
+    group_ids = []
+
+    base_lat = target_incident.get('latitude')
+    base_lng = target_incident.get('longitude')
+    base_time = target_incident.get('first_created_at')
+
+    if base_lat is None or base_lng is None or base_time is None:
+        return [target_incident.get('id')]
+
+    for incident in raw_incidents:
+        other_id = incident.get('id')
+        other_lat = incident.get('latitude')
+        other_lng = incident.get('longitude')
+        other_time = incident.get('first_created_at')
+
+        if other_lat is None or other_lng is None or other_time is None:
+            continue
+
+        distance_m = haversine_m(base_lat, base_lng, other_lat, other_lng)
+        time_diff_sec = abs((base_time - other_time).total_seconds())
+
+        if distance_m <= 50 and time_diff_sec <= 86400:
+            group_ids.append(other_id)
+
+    if not group_ids:
+        return [target_incident.get('id')]
+
+    return group_ids
 
 
 @app.route('/admin/dashboard')
@@ -51,6 +285,7 @@ def admin_dashboard():
         return redirect(url_for('alert_page'))
 
     conn = Session.get_connection()
+
     try:
         with conn.cursor() as cursor:
             sql = """
@@ -73,196 +308,119 @@ def admin_dashboard():
             cursor.execute(sql)
             raw_incidents = cursor.fetchall()
 
-        grouped_incidents = group_incidents(raw_incidents)
-        region_stats = {}
+            grouped_incidents = group_incidents(raw_incidents)
 
-        for incident in grouped_incidents:
-            region = (incident.get('region_name') or '기타').strip()
+            region_stats = {}
+            for incident in grouped_incidents:
+                region = normalize_region_name(incident.get('region_name')) or '기타'
 
-            if region not in region_stats:
-                region_stats[region] = {
-                    'total': 0,
-                    'pending': 0,
-                    'processing': 0,
-                    'rejected': 0
-                }
+                if region not in region_stats:
+                    region_stats[region] = {
+                        'total': 0,
+                        'pending': 0,
+                        'processing': 0,
+                        'rejected': 0
+                    }
 
-            region_stats[region]['total'] += 1
+                region_stats[region]['total'] += 1
 
-            status = incident.get('status')
+                status = incident.get('status')
+                if status == '접수완료':
+                    region_stats[region]['pending'] += 1
+                elif status == '처리중':
+                    region_stats[region]['processing'] += 1
+                elif status == '반려':
+                    region_stats[region]['rejected'] += 1
 
-            if status == '접수완료':
-                region_stats[region]['pending'] += 1
-            elif status == '처리중':
-                region_stats[region]['processing'] += 1
-            elif status == '반려':
-                region_stats[region]['rejected'] += 1
+            region_stats_list = sorted(
+                [{'region': k, **v} for k, v in region_stats.items()],
+                key=lambda x: (x['pending'], x['processing'], x['total']),
+                reverse=True
+            )
 
-        region_stats_list = sorted(
-            [
-                {'region': k, **v}
-                for k, v in region_stats.items()
-            ],
-            key=lambda x: (x['pending'], x['processing'], x['total']),
-            reverse=True
-        )
-        today = datetime.now().date()
+            today = datetime.now().date()
+            now = datetime.now()
 
-        summary = {
-            "today_count": sum(
-                1 for i in grouped_incidents
-                if i.get('first_created_at') and i.get('first_created_at').date() == today
-            ),
-            "pending_count": sum(
+            long_pending_count = sum(
                 1 for i in grouped_incidents
                 if i.get('status') == '접수완료'
-            ),
-            "processing_count": sum(
-                1 for i in grouped_incidents
-                if i.get('status') == '처리중'
-            ),
-            "rejected_count": sum(
-                1 for i in grouped_incidents
-                if i.get('status') == '반려'
+                and i.get('first_created_at')
+                and (now - i.get('first_created_at')).total_seconds() >= 86400
             )
-        }
 
-        repeat_hotspots = sorted(
-            [
-                incident for incident in grouped_incidents
-                if int(incident.get('group_reporter_count') or 0) >= 2
-            ],
-            key=lambda x: (
-                int(x.get('group_reporter_count') or 0),
-                float(x.get('risk_score') or 0),
-                x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
-            ),
-            reverse=True
-        )[:5]
-        grouped_incidents.sort(
-            key=lambda x: x.get('first_created_at').timestamp() if x.get('first_created_at') else 0,
-            reverse=True
-        )
+            summary = {
+                "urgent_count": sum(
+                    1 for i in grouped_incidents
+                    if i.get('status') in ['접수완료', '처리중']
+                    and get_priority_label(get_priority_score(i, now)) == '긴급'
+                ),
+                "today_count": sum(
+                    1 for i in grouped_incidents
+                    if i.get('first_created_at')
+                    and i.get('first_created_at').date() == today
+                ),
+                "pending_count": sum(
+                    1 for i in grouped_incidents
+                    if i.get('status') == '접수완료'
+                ),
+                "long_pending_count": long_pending_count,
+                "rejected_count": sum(
+                    1 for i in grouped_incidents
+                    if i.get('status') == '반려'
+                )
+            }
 
-        incidents = grouped_incidents[:5]
+            for incident in grouped_incidents:
+                reasons = build_urgent_reasons(incident, now)
+                incident['urgent_reason'] = ', '.join(reasons)
 
-        return render_template(
-            'admin_dashboard.html',
-            summary=summary,
-            incidents=incidents,
-            region_stats=region_stats_list,
-            repeat_hotspots=repeat_hotspots
-        )
+                priority_score = get_priority_score(incident, now)
+                incident['priority_score'] = priority_score
+                incident['priority_label'] = get_priority_label(priority_score)
+
+            urgent_incidents = sorted(
+                [
+                    incident for incident in grouped_incidents
+                    if incident.get('status') in ['접수완료', '처리중']
+                    and incident.get('urgent_reason')
+                ],
+                key=lambda x: (
+                    x.get('priority_score') or 0,
+                    x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
+                ),
+                reverse=True
+            )[:5]
+
+            repeat_hotspots = sorted(
+                [
+                    incident for incident in grouped_incidents
+                    if int(incident.get('group_reporter_count') or 0) >= 2
+                ],
+                key=lambda x: (
+                    int(x.get('group_reporter_count') or 0),
+                    float(x.get('risk_score') or 0),
+                    x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
+                ),
+                reverse=True
+            )[:5]
+
+            grouped_incidents.sort(
+                key=lambda x: x.get('first_created_at').timestamp() if x.get('first_created_at') else 0,
+                reverse=True
+            )
+            incidents = grouped_incidents[:5]
+
+            return render_template(
+                'admin_dashboard.html',
+                summary=summary,
+                incidents=incidents,
+                region_stats=region_stats_list,
+                repeat_hotspots=repeat_hotspots,
+                urgent_incidents=urgent_incidents
+            )
     finally:
         conn.close()
 
-
-# 두 좌표 사이 실제 거리를 계산하여 위치 기반 사건 필터링에 사용하는 함수
-def haversine_m(lat1, lon1, lat2, lon2):
-    lat1 = float(lat1)
-    lon1 = float(lon1)
-    lat2 = float(lat2)
-    lon2 = float(lon2)
-
-    r = 6371000  # meters
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-
-    a = (
-        math.sin(dlat / 2) ** 2
-        + math.cos(math.radians(lat1))
-        * math.cos(math.radians(lat2))
-        * math.sin(dlon / 2) ** 2
-    )
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    return r * c
-
-def is_visible_to_user(incident):
-    risk_score = float(incident.get('risk_score') or 0)
-    reporter_count = int(incident.get('group_reporter_count') or 0)
-
-    return (
-        risk_score >= 80 or
-        reporter_count >= 3
-    )
-
-def serialize_incident(i):
-    return {
-        'id': i.get('id'),
-        'title': i.get('title'),
-        'location': i.get('location'),
-        'region_name': i.get('region_name'),
-        'status': i.get('status'),
-        'risk_score': float(i.get('risk_score') or 0),
-        'first_created_at': i.get('first_created_at').strftime('%m-%d %H:%M') if i.get('first_created_at') else '',
-        'latitude': i.get('latitude'),
-        'longitude': i.get('longitude'),
-        'distance_m': i.get('distance_m'),
-        'group_reporter_count': int(i.get('group_reporter_count') or 0),
-        'image_path': i.get('image_path')
-    }
-
-def group_incidents(raw_incidents):
-    grouped_incidents = []
-    used_ids = set()
-
-    for incident in raw_incidents:
-        if incident['id'] in used_ids:
-            continue
-
-        base_lat = incident.get('latitude')
-        base_lng = incident.get('longitude')
-        base_time = incident.get('first_created_at')
-        reporter_ids = set()
-
-        if incident.get('member_id'):
-            reporter_ids.add(incident.get('member_id'))
-
-        group_members = [incident]
-        used_ids.add(incident['id'])
-
-        for other in raw_incidents:
-            if other['id'] == incident['id']:
-                continue
-
-            if other['id'] in used_ids:
-                continue
-
-            other_time = other.get('first_created_at')
-
-            other_lat = other.get('latitude')
-            other_lng = other.get('longitude')
-
-            if base_lat is None or base_lng is None or other_lat is None or other_lng is None:
-                continue
-
-            distance_m = haversine_m(base_lat, base_lng, other_lat, other_lng)
-            time_diff_sec = abs(
-                (base_time - other_time).total_seconds()
-            ) if base_time and other_time else 999999
-
-            if (
-                    distance_m <= 50 and
-                    time_diff_sec <= 86400
-            ):
-                used_ids.add(other['id'])
-                group_members.append(other)
-
-                if other.get('member_id'):
-                    reporter_ids.add(other.get('member_id'))
-
-        representative = max(
-            group_members,
-            key=lambda x: (
-                float(x.get('risk_score') or 0),
-                x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
-            )
-        )
-
-        representative['group_reporter_count'] = len(reporter_ids)
-        grouped_incidents.append(representative)
-
-    return grouped_incidents
 
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
@@ -274,6 +432,7 @@ def uploaded_file(filename):
         return f"파일 없음: {file_path}", 404
 
     return send_from_directory(upload_folder, filename)
+
 
 # 주소 검색 API
 @app.route('/api/address/search')
@@ -288,7 +447,6 @@ def address_search():
         }), 400
 
     # 도시 이름만 입력해도 전체 지역과 하위 행정구를 즉시 확장해 보여주는 검색 보완 로직
-    # 시 단위 검색이면 "시 전체" + 구 목록 반환
     matched_city = None
     for city_name in CITY_DISTRICT_MAP.keys():
         if keyword == city_name or keyword == city_name.replace('시', ''):
@@ -341,9 +499,10 @@ def address_search():
             timeout=5
         )
         resp.raise_for_status()
-        data = resp.json()
 
+        data = resp.json()
         items = []
+
         for doc in data.get('documents', []):
             road_addr = doc.get('road_address') or {}
             addr = doc.get('address') or {}
@@ -378,43 +537,48 @@ def address_search():
 # methods는 웹의 동작에 관여한다
 # GET : URL 주소로 데이터를 처리 (보안상 좋지 않음, 대신 빠름)
 # POST : BODY 영역의 데이터를 처리 (보안상 좋음, 대용량일 때 많이 사용됨)
-# 대부분 처음에 화면(HTML 랜더)을 요청할 때는 GET 방식 처리 ----- 로그인 화면 출력 할 때
-# 화면에 있는 내용을 백앤드로 전달할 때는 POST 방식 처리 ----- 로그인 정보를 데이터베이스에 확인할 때
-@app.route('/login',methods=['GET','POST'])
+# 대부분 처음에 화면(HTML 랜더)을 요청할 때는 GET 방식 처리
+# 화면에 있는 내용을 백엔드로 전달할 때는 POST 방식 처리
+
+
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
         return render_template('login.html')
-        # GET 방식으로 요청하면 login,html 화면이 나옴
+
     uid = request.form.get('uid')
     upw = request.form.get('upw')
 
     conn = Session.get_connection()
     try:
         with conn.cursor() as cursor:
-            sql = 'SELECT id,name,uid,role FROM members WHERE uid = %s and password = %s'
-            #                                                 uid와 password가 동일한지
-            #             id,name,uid,role을 가져옴
-            cursor.execute(sql,(uid,upw))
+            sql = 'SELECT id, name, uid, role FROM members WHERE uid = %s and password = %s'
+            cursor.execute(sql, (uid, upw))
             user = cursor.fetchone()
+
             if user:
                 session['user_id'] = user['id']
                 session['user_name'] = user['name']
                 session['user_uid'] = user['uid']
                 session['user_role'] = user['role']
-
                 return redirect(url_for('index'))
             else:
                 return "<script>alert('아이디 또는 비밀번호가 틀렸습니다.');history.back();</script>"
     finally:
         conn.close()
+
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
-@app.route('/join',methods=['GET','POST'])
+
+
+@app.route('/join', methods=['GET', 'POST'])
 def join():
     if request.method == 'GET':
         return render_template('join.html')
+
     uid = request.form.get('uid')
     password = request.form.get('password')
     name = request.form.get('name')
@@ -425,17 +589,21 @@ def join():
             cursor.execute("SELECT id FROM members WHERE uid = %s", (uid,))
             if cursor.fetchone():
                 return "<script>alert('이미 존재하는 아이디입니다.');history.back();</script>"
-            sql = "INSERT INTO members (uid,password,name) VALUES (%s,%s,%s)"
-            cursor.execute(sql,(uid,password,name))
+
+            sql = "INSERT INTO members (uid, password, name) VALUES (%s, %s, %s)"
+            cursor.execute(sql, (uid, password, name))
             conn.commit()
 
             return "<script>alert('회원가입이 완료되었습니다.');location.href='/login';</script>"
+
     except Exception as e:
         print(f"회원가입 오류 : {e}")
         return "가입 중 오류가 발생했습니다. \n join()메서드를 확인하세요."
     finally:
         conn.close()
-@app.route('/member/edit',methods=['GET','POST'])
+
+
+@app.route('/member/edit', methods=['GET', 'POST'])
 def member_edit():
     if 'user_id' not in session:
         return redirect(url_for('login'))
@@ -446,146 +614,162 @@ def member_edit():
             if request.method == 'GET':
                 cursor.execute("SELECT * FROM members WHERE id = %s", (session['user_id'],))
                 user_info = cursor.fetchone()
-                return render_template('member_edit.html',user=user_info)
+                return render_template('member_edit.html', user=user_info)
+
             new_name = request.form.get('name')
             new_pw = request.form.get('password')
 
             if new_pw:
                 sql = 'UPDATE members SET name = %s, password = %s WHERE id = %s'
-                cursor.execute(sql,(new_name,new_pw,session['user_id']))
+                cursor.execute(sql, (new_name, new_pw, session['user_id']))
             else:
                 sql = 'UPDATE members SET name = %s WHERE id = %s'
-                cursor.execute(sql,(new_name,session['user_id']))
+                cursor.execute(sql, (new_name, session['user_id']))
 
             conn.commit()
             session['user_name'] = new_name
+
             return "<script>alert('정보가 수정되었습니다.');location.href='/mypage';</script>"
+
     except Exception as e:
         print(f"회원수정 오류 : {e}")
         return "수정 중 오류가 발생했습니다. \n member_edit()메서드를 확인하세요."
     finally:
         conn.close()
+
+
 @app.route('/mypage')
 def mypage():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
     conn = Session.get_connection()
     try:
         with conn.cursor() as cursor:
             cursor.execute("SELECT * FROM members WHERE id = %s", (session['user_id'],))
             user_info = cursor.fetchone()
-            cursor.execute('SELECT COUNT(*) AS board_count FROM boards where member_id = %s', (session['user_id'],))
+
+            cursor.execute(
+                'SELECT COUNT(*) AS board_count FROM boards where member_id = %s',
+                (session['user_id'],)
+            )
             board_count = cursor.fetchone()['board_count']
 
-            return render_template('mypage.html',user=user_info,board_count=board_count)
+            return render_template('mypage.html', user=user_info, board_count=board_count)
     finally:
         conn.close()
-######################################## 회원 CRUD ####################################################################
 
-####################################### 게시판 CRUD ####################################################################
-@app.route('/board/write',methods=['GET','POST']) # http://localhost:5000/board/write
+
+######################################## 회원 CRUD ########################################
+####################################### 게시판 CRUD #######################################
+
+
+@app.route('/board/write', methods=['GET', 'POST'])
 def board_write():
-    # 1. 사용자가 '글쓰기' 버튼을 눌러서 들어왔을 때 (화면 보여주기)
     if request.method == 'GET':
-        # 로그인 체크 (로그인 안 했으면 글 못 쓰게)
         if 'user_id' not in session:
             return '<script>alert("로그인 후 이용 가능합니다.");location.href="/login";</script>'
+
         return render_template('board_write.html')
-    elif request.method == 'POST': # <form action="/board/write" method="POST">
+
+    elif request.method == 'POST':
         title = request.form.get('title')
         content = request.form.get('content')
-        # 세션에 저장된 로그인 유저의 id (member_id)
         member_id = session.get('user_id')
 
         conn = Session.get_connection()
         try:
             with conn.cursor() as cursor:
-                sql = 'INSERT INTO boards (member_id,title,content) VALUES (%s,%s,%s)'
-                cursor.execute(sql,(member_id,title,content))
+                sql = 'INSERT INTO boards (member_id, title, content) VALUES (%s, %s, %s)'
+                cursor.execute(sql, (member_id, title, content))
                 conn.commit()
-            return redirect(url_for('board_list')) # 저장 후 목록으로 이동
+
+                return redirect(url_for('board_list'))
+
         except Exception as e:
             print(f"글쓰기 에러 : {e}")
             return "저장 중 에러가 발생했습니다."
         finally:
             conn.close()
 
-@app.route('/board') # http:/localhost:5000/board
+
+@app.route('/board')
 def board_list():
     conn = Session.get_connection()
     try:
         with conn.cursor() as cursor:
-            # 작성자 이름을 함께 가져오기 위해 JOIN 사용
             sql = """
-            SELECT b.*, m.name as writer_name
-            FROM boards b
-            JOIN members m ON b.member_id = m.id
-            ORDER BY b.id DESC
+                SELECT b.*, m.name as writer_name
+                FROM boards b
+                JOIN members m ON b.member_id = m.id
+                ORDER BY b.id DESC
             """
             cursor.execute(sql)
             rows = cursor.fetchall()
+
             boards = [Board.from_db(row) for row in rows]
-            return render_template('board_list.html',boards=boards)
+            return render_template('board_list.html', boards=boards)
     finally:
         conn.close()
 
-# 2. 게시글 자세히 보기
-@app.route('/board/view/<int:board_id>') # http://localhost:5000/board/view/(게시물번호)
+
+@app.route('/board/view/<int:board_id>')
 def board_view(board_id):
     conn = Session.get_connection()
     try:
         with conn.cursor() as cursor:
-            # JOIN을 통해 작성자 정보(name, uid)를 함께 조회
             sql = """
-            SELECT b.*, m.name as writer_name, m.uid as writer_uid
-            FROM boards b
-            JOIN members m ON b.member_id = m.id
-            WHERE b.id = %s
+                SELECT b.*, m.name as writer_name, m.uid as writer_uid
+                FROM boards b
+                JOIN members m ON b.member_id = m.id
+                WHERE b.id = %s
             """
             cursor.execute(sql, (board_id,))
             row = cursor.fetchone()
-            print(row) # db에서 나온 dict타입 콘솔에 출력 테스트용
+
+            print(row)
+
             if not row:
                 return "<script>alert('존재하지 않는 게시글입니다.');history.back()</script>"
-            # Boards 객체로 변환 (앞서 작성한 Boards.py의 from_db 활용)
-            board = Board.from_db(row)
 
-            return render_template('board_view.html',board=board)
+            board = Board.from_db(row)
+            return render_template('board_view.html', board=board)
     finally:
         conn.close()
-@app.route('/board/edit/<int:board_id>',methods=['GET','POST'])
+
+
+@app.route('/board/edit/<int:board_id>', methods=['GET', 'POST'])
 def board_edit(board_id):
     conn = Session.get_connection()
     try:
         with conn.cursor() as cursor:
-            # 1. 화면 보여주기 (기존 데이터 로드)
             if request.method == 'GET':
                 sql = "SELECT * FROM boards WHERE id = %s"
-                cursor.execute(sql,(board_id,))
+                cursor.execute(sql, (board_id,))
                 row = cursor.fetchone()
 
                 if not row:
                     return "<script>alert('존재하지 않는 게시글입니다.');history.back()</script>"
 
-                # 본인 확인 로직 (필요시 추가)
                 if row['member_id'] != session.get('user_id'):
                     return "<script>alert('수정 권한이 없습니다.');history.back()</script>"
-                print(row) # 콘솔에 출력 테스트용
-                board = Board.from_db(row)
-                return render_template('board_edit.html',board=board)
 
-            # 2. 실제 DB 업데이트 처리
+                print(row)
+                board = Board.from_db(row)
+                return render_template('board_edit.html', board=board)
+
             elif request.method == 'POST':
                 title = request.form.get('title')
                 content = request.form.get('content')
 
                 sql = "UPDATE boards SET title = %s, content = %s WHERE id = %s"
-                cursor.execute(sql,(title,content,board_id))
+                cursor.execute(sql, (title, content, board_id))
                 conn.commit()
 
-                return redirect(url_for('board_view',board_id=board_id))
+                return redirect(url_for('board_view', board_id=board_id))
     finally:
         conn.close()
+
 
 @app.route('/board/delete/<int:board_id>')
 def board_delete(board_id):
@@ -596,7 +780,7 @@ def board_delete(board_id):
     try:
         with conn.cursor() as cursor:
             sql = 'DELETE FROM boards WHERE id = %s AND member_id = %s'
-            cursor.execute(sql,(board_id,session['user_id']))
+            cursor.execute(sql, (board_id, session['user_id']))
             conn.commit()
 
             if cursor.rowcount > 0:
@@ -604,6 +788,7 @@ def board_delete(board_id):
                 return redirect(url_for('board_list'))
             else:
                 return "<script>alert('삭제할 수 없습니다.');history.back()</script>"
+
     except Exception as e:
         print(f"삭제 에러 : {e}")
         return "삭제 중 오류가 발생했습니다."
@@ -618,7 +803,6 @@ def alert_page():
     search_lng = request.args.get('lng', type=float)
     search_address = request.args.get('address', '', type=str).strip()
     radius_m = request.args.get('radius_m', DEFAULT_RADIUS_M, type=int)
-
     search_city = request.args.get('city', '', type=str).strip()
     search_district = request.args.get('district', '', type=str).strip()
     selected_status = request.args.get('status', '', type=str).strip()
@@ -635,14 +819,14 @@ def alert_page():
 
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 4, type=int)
+
     if per_page <= 0 or per_page > 20:
         per_page = 4
-    is_api = request.args.get('api', '0') == '1'
 
+    is_api = request.args.get('api', '0') == '1'
     user_role = session.get('user_role', 'user')
     user_id = session.get('user_id')
-    if user_role == 'admin':
-        return redirect(url_for('admin_dashboard'))
+
     conn = Session.get_connection()
     try:
         with conn.cursor() as cursor:
@@ -657,6 +841,7 @@ def alert_page():
                     i.longitude,
                     i.image_path,
                     i.status,
+                    i.reject_reason,
                     i.risk_score,
                     i.first_created_at,
                     i.last_checked_at
@@ -665,6 +850,7 @@ def alert_page():
             """
             cursor.execute(sql)
             raw_incidents = cursor.fetchall()
+
             manager_region = None
 
             # manager인 경우 담당 지역 조회
@@ -676,156 +862,457 @@ def alert_page():
                 if not manager_info or not manager_info.get('manager_region'):
                     return "<script>alert('담당 지역이 지정되지 않았습니다.');history.back();</script>"
 
-                manager_region = manager_info.get('manager_region').strip()
-
+                manager_region = normalize_region_name(manager_info.get('manager_region'))
                 manager_full_region = manager_region
                 manager_city = manager_full_region.split()[0] if manager_full_region else ''
 
-
-                # 자기 담당 구 + 상위 시 데이터까지 포함
                 raw_incidents = [
                     incident for incident in raw_incidents
                     if (
-                            (incident.get('region_name') or '').strip() == manager_full_region
-                            or (incident.get('region_name') or '').strip().startswith(manager_city + ' ')
+                        normalize_region_name(incident.get('region_name')) == manager_full_region
+                        or normalize_region_name(incident.get('region_name')).startswith(manager_city + ' ')
                     )
                 ]
 
-                # 담당 구 데이터가 먼저 오고, 그 안에서는 최신순
                 raw_incidents.sort(
                     key=lambda incident: (
-                        0 if (incident.get('region_name') or '').strip() == manager_full_region else 1,
+                        0 if normalize_region_name(incident.get('region_name')) == manager_full_region else 1,
                         -(incident.get('first_created_at').timestamp()) if incident.get('first_created_at') else 0
                     )
                 )
 
             incidents = group_incidents(raw_incidents)
 
-        filtered_incidents = []
-
-        for incident in incidents:
-            incident_lat = incident.get('latitude')
-            incident_lng = incident.get('longitude')
-            incident_location = incident.get('location', '')
-
-            # 관리자와 일반 사용자에게 표시되는 사건 기준을 분리하는 권한 기반 필터
-            # 일반 사용자만 필터 적용
-            if user_role not in ['admin', 'manager'] and not is_visible_to_user(incident):
-                continue
-
-            # 일반 사용자에게 반려 숨김
-            if user_role not in ['admin', 'manager'] and incident.get('status') == '반려':
-                continue
-
-            # 상태 필터
-            if selected_status and incident.get('status') != selected_status:
-                continue
-
-            if search_city:
-                if search_district:
-                    if search_city in incident_location and search_district in incident_location:
-                        incident['distance_m'] = None
-                        filtered_incidents.append(incident)
-                else:
-                    if search_city in incident_location:
-                        incident['distance_m'] = None
-                        filtered_incidents.append(incident)
-
-            elif search_lat is not None and search_lng is not None:
-                if incident_lat is None or incident_lng is None:
-                    continue
-
-                # 거리 계산 함수
-                distance_m = haversine_m(search_lat, search_lng, incident_lat, incident_lng)
-
-                if distance_m <= radius_m:
-                    incident['distance_m'] = round(distance_m)
-                    filtered_incidents.append(incident)
-
-            else:
-                incident['distance_m'] = None
-                filtered_incidents.append(incident)
-
-        if search_lat is not None and search_lng is not None:
-            filtered_incidents.sort(key=lambda x: x['distance_m'])
-
-        if user_role == 'manager' and manager_region:
-            manager_full_region = manager_region
-
-            filtered_incidents.sort(
-                key=lambda incident: (
-                    0 if (incident.get('region_name') or '').strip() == manager_full_region else 1,
-                    -(incident.get('first_created_at').timestamp()) if incident.get('first_created_at') else 0
-                )
-            )
-        if user_role not in ['admin', 'manager']:
-            filtered_incidents.sort(
-                key=lambda incident: (
-                    -int(incident.get('group_reporter_count') or 0),
-                    -(incident.get('first_created_at').timestamp()) if incident.get('first_created_at') else 0
-                )
-            )
-
-        total_count = len(filtered_incidents)
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        paged_incidents = filtered_incidents[start_idx:end_idx]
-        has_next = end_idx < total_count
-
-        print("검색 주소:", search_address)
-        print("필터 전 개수:", len(incidents))
-        print("필터 후 개수:", len(filtered_incidents))
-
-        display_address = search_address
-        filter_type = 'all'
-
-        if search_city:
-            filter_type = 'region'
-            if search_district:
-                display_address = f"{search_city} {search_district}"
-            else:
-                display_address = f"{search_city} 전체"
-
-        elif search_lat is not None and search_lng is not None:
-            filter_type = 'radius'
-
-        # 권한별 화면 분리
-
-        template_name = 'alert.html'
-        if user_role == 'manager':
-            template_name = 'admin_alert.html'
-
-        if is_api:
-            return jsonify({
-                'success': True,
-                'items': [serialize_incident(i) for i in paged_incidents],
-                'has_next': has_next,
-                'next_page': page + 1 if has_next else None
+            region_options = sorted({
+                (incident.get('region_name') or '').strip()
+                for incident in incidents
+                if (incident.get('region_name') or '').strip()
             })
 
-        return render_template(
-            template_name,
-            incidents=paged_incidents,
-            selected_address=display_address,
-            selected_lat=search_lat,
-            selected_lng=search_lng,
-            radius_m=radius_m,
-            filter_type=filter_type,
-            user_role=user_role,
-            selected_status=selected_status,
-            kakao_js_key = KAKAO_JS_KEY,
-            has_next=has_next,
-            next_page=page + 1 if has_next else None
-        )
+            filtered_incidents = []
 
+            for incident in incidents:
+                incident_lat = incident.get('latitude')
+                incident_lng = incident.get('longitude')
+
+                # 일반 사용자만 필터 적용
+                if user_role not in ['admin', 'manager'] and not is_visible_to_user(incident):
+                    continue
+
+                # 일반 사용자에게 반려 숨김
+                if user_role not in ['admin', 'manager'] and incident.get('status') == '반려':
+                    continue
+
+                # 상태 필터
+                if selected_status and incident.get('status') != selected_status:
+                    continue
+
+                if search_city:
+                    normalized_region = normalize_region_name(incident.get('region_name'))
+
+                    if search_district:
+                        target_region = f"{search_city} {search_district}"
+                        if normalized_region == target_region:
+                            incident['distance_m'] = None
+                            filtered_incidents.append(incident)
+                    else:
+                        if normalized_region.startswith(search_city):
+                            incident['distance_m'] = None
+                            filtered_incidents.append(incident)
+
+                elif search_lat is not None and search_lng is not None:
+                    if incident_lat is None or incident_lng is None:
+                        continue
+
+                    distance_m = haversine_m(search_lat, search_lng, incident_lat, incident_lng)
+
+                    if distance_m <= radius_m:
+                        incident['distance_m'] = round(distance_m)
+                        filtered_incidents.append(incident)
+
+                else:
+                    incident['distance_m'] = None
+                    filtered_incidents.append(incident)
+
+            if search_lat is not None and search_lng is not None:
+                filtered_incidents.sort(key=lambda x: x['distance_m'])
+
+            if user_role == 'manager' and manager_region:
+                manager_full_region = manager_region
+                filtered_incidents.sort(
+                    key=lambda incident: (
+                        0 if normalize_region_name(incident.get('region_name')) == manager_full_region else 1,
+                        -(incident.get('first_created_at').timestamp()) if incident.get('first_created_at') else 0
+                    )
+                )
+
+            if user_role not in ['admin', 'manager']:
+                filtered_incidents.sort(
+                    key=lambda incident: (
+                        -int(incident.get('group_reporter_count') or 0),
+                        -(incident.get('first_created_at').timestamp()) if incident.get('first_created_at') else 0
+                    )
+                )
+
+            total_count = len(filtered_incidents)
+            start_idx = (page - 1) * per_page
+            end_idx = start_idx + per_page
+            paged_incidents = filtered_incidents[start_idx:end_idx]
+            has_next = end_idx < total_count
+
+            print("검색 주소:", search_address)
+            print("필터 전 개수:", len(incidents))
+            print("필터 후 개수:", len(filtered_incidents))
+
+            display_address = search_address
+            filter_type = 'all'
+
+            if search_city:
+                filter_type = 'region'
+                if search_district:
+                    display_address = f"{search_city} {search_district}"
+                else:
+                    display_address = f"{search_city} 전체"
+            elif search_lat is not None and search_lng is not None:
+                filter_type = 'radius'
+
+            # 권한별 화면 분리
+            template_name = 'alert.html'
+            if user_role in ['admin', 'manager']:
+                template_name = 'admin_alert.html'
+
+            if is_api:
+                return jsonify({
+                    'success': True,
+                    'items': [serialize_incident(i) for i in paged_incidents],
+                    'has_next': has_next,
+                    'next_page': page + 1 if has_next else None
+                })
+
+            return render_template(
+                template_name,
+                incidents=paged_incidents,
+                region_options=region_options,
+                selected_status=selected_status,
+                search_city=search_city,
+                search_district=search_district,
+                search_address=display_address,
+                filter_type=filter_type,
+                radius_m=radius_m,
+                page=page,
+                per_page=per_page,
+                has_next=has_next,
+                user_role=user_role
+            )
     finally:
         conn.close()
 
-####################################### 게시판 CRUD END ################################################################
+
+@app.route('/admin/incidents')
+def admin_incidents():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('alert_page'))
+
+    selected_status = request.args.get('status', '').strip()
+    selected_risk = request.args.get('risk', '').strip()
+    keyword = request.args.get('keyword', '').strip()
+    sort_by = request.args.get('sort', 'latest').strip()
+    selected_region = request.args.get('region', '').strip()
+    page = int(request.args.get('page', 1))
+    per_page = 10
+
+    conn = Session.get_connection()
+    try:
+        with conn.cursor() as cursor:
+            sql = """
+                SELECT
+                    i.id,
+                    i.title,
+                    i.location,
+                    i.status,
+                    i.reject_reason,
+                    i.risk_score,
+                    i.first_created_at,
+                    i.image_path,
+                    i.latitude,
+                    i.longitude,
+                    i.member_id,
+                    i.region_name
+                FROM incidents i
+                ORDER BY i.first_created_at DESC
+            """
+            cursor.execute(sql)
+            raw_incidents = cursor.fetchall()
+
+            incidents = group_incidents(raw_incidents)
+
+            region_options = sorted({
+                (incident.get('region_name') or '').strip()
+                for incident in incidents
+                if (incident.get('region_name') or '').strip()
+            })
+
+            filtered_incidents = []
+            now = datetime.now()
+
+            for incident in incidents:
+                score = float(incident.get('risk_score') or 0)
+                title = (incident.get('title') or '').lower()
+                location = (incident.get('location') or '').lower()
+                region_name = (incident.get('region_name') or '').strip()
+
+                reasons = build_urgent_reasons(incident, now)
+                incident['urgent_reason'] = ', '.join(reasons)
+
+                priority_score = get_priority_score(incident, now)
+                incident['priority_score'] = priority_score
+                incident['priority_label'] = get_priority_label(priority_score)
+
+                if selected_region and region_name != selected_region:
+                    continue
+
+                if selected_status and incident.get('status') != selected_status:
+                    continue
+
+                if selected_risk == 'high' and score < 80:
+                    continue
+                elif selected_risk == 'medium' and (score < 50 or score >= 80):
+                    continue
+                elif selected_risk == 'low' and score >= 50:
+                    continue
+
+                if keyword:
+                    keyword_lower = keyword.lower()
+                    if keyword_lower not in title and keyword_lower not in location:
+                        continue
+
+                filtered_incidents.append(incident)
+
+            if sort_by == 'priority':
+                filtered_incidents.sort(
+                    key=lambda x: (
+                        get_priority_score(x),
+                        x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
+                    ),
+                    reverse=True
+                )
+            elif sort_by == 'risk':
+                filtered_incidents.sort(
+                    key=lambda x: (
+                        float(x.get('risk_score') or 0),
+                        x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
+                    ),
+                    reverse=True
+                )
+            elif sort_by == 'reports':
+                filtered_incidents.sort(
+                    key=lambda x: (
+                        int(x.get('group_reporter_count') or 0),
+                        x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
+                    ),
+                    reverse=True
+                )
+            elif sort_by == 'pending':
+                filtered_incidents.sort(
+                    key=lambda x: (
+                        0 if x.get('status') == '접수완료' else 1,
+                        -(x.get('first_created_at').timestamp()) if x.get('first_created_at') else 0
+                    )
+                )
+            else:
+                filtered_incidents.sort(
+                    key=lambda x: x.get('first_created_at').timestamp() if x.get('first_created_at') else 0,
+                    reverse=True
+                )
+
+            total_count = len(filtered_incidents)
+            total_pages = (total_count + per_page - 1) // per_page
+
+            if page < 1:
+                page = 1
+
+            if total_pages > 0 and page > total_pages:
+                page = total_pages
+
+            start_idx = (page - 1) * per_page
+            end_idx = start_idx + per_page
+            paged_incidents = filtered_incidents[start_idx:end_idx]
+
+            return render_template(
+                'admin_incidents.html',
+                incidents=paged_incidents,
+                selected_status=selected_status,
+                selected_risk=selected_risk,
+                keyword=keyword,
+                sort_by=sort_by,
+                selected_region=selected_region,
+                region_options=region_options,
+                page=page,
+                total_pages=total_pages,
+                current_query_string=request.query_string.decode('utf-8')
+            )
+    finally:
+        conn.close()
+
+
+@app.route('/admin/incidents/bulk-update', methods=['POST'])
+def admin_incidents_bulk_update():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('alert_page'))
+
+    incident_ids = request.form.getlist('incident_ids')
+    new_status = request.form.get('new_status', '').strip()
+    reject_reason = request.form.get('reject_reason', '').strip()
+    return_query = request.form.get('return_query', '').strip()
+
+    if not incident_ids:
+        return "<script>alert('선택된 신고가 없습니다.'); history.back();</script>"
+
+    allowed_status = ['처리중', '처리완료', '반려']
+    if new_status not in allowed_status:
+        return "<script>alert('변경할 상태가 올바르지 않습니다.'); history.back();</script>"
+
+    if new_status == '반려' and not reject_reason:
+        return "<script>alert('반려 사유를 입력해주세요.'); history.back();</script>"
+
+    conn = Session.get_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, latitude, longitude, first_created_at
+                FROM incidents
+            """)
+            raw_incidents = cursor.fetchall()
+
+            raw_incident_map = {str(item['id']): item for item in raw_incidents}
+
+            expanded_ids = set()
+            for incident_id in incident_ids:
+                target_incident = raw_incident_map.get(str(incident_id))
+                if not target_incident:
+                    continue
+
+                group_ids = find_group_incident_ids(target_incident, raw_incidents)
+                for group_id in group_ids:
+                    expanded_ids.add(group_id)
+
+            if not expanded_ids:
+                return "<script>alert('처리할 수 있는 신고가 없습니다.'); history.back();</script>"
+
+            expanded_ids = list(expanded_ids)
+            placeholders = ', '.join(['%s'] * len(expanded_ids))
+
+            if new_status == '반려':
+                sql = f"""
+                    UPDATE incidents
+                    SET status = %s, reject_reason = %s
+                    WHERE id IN ({placeholders})
+                """
+                params = [new_status, reject_reason] + expanded_ids
+            else:
+                sql = f"""
+                    UPDATE incidents
+                    SET status = %s, reject_reason = NULL
+                    WHERE id IN ({placeholders})
+                """
+                params = [new_status] + expanded_ids
+
+            cursor.execute(sql, params)
+            conn.commit()
+
+            redirect_url = url_for('admin_incidents')
+            if return_query:
+                return redirect(f'{redirect_url}?{return_query}')
+
+            return redirect(redirect_url)
+    finally:
+        conn.close()
+
+
+@app.route('/incident/update-status', methods=['POST'])
+def incident_update_status():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('alert_page'))
+
+    incident_id = request.form.get('incident_id', '').strip()
+    new_status = request.form.get('new_status', '').strip()
+    reject_reason = request.form.get('reject_reason', '').strip()
+    return_query = request.form.get('return_query', '').strip()
+
+    if not incident_id:
+        return "<script>alert('사건 정보가 없습니다.'); history.back();</script>"
+
+    allowed_status = ['처리중', '처리완료', '반려']
+    if new_status not in allowed_status:
+        return "<script>alert('변경할 상태가 올바르지 않습니다.'); history.back();</script>"
+
+    if new_status == '반려' and not reject_reason:
+        return "<script>alert('반려 사유를 입력해주세요.'); history.back();</script>"
+
+    conn = Session.get_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, latitude, longitude, first_created_at
+                FROM incidents
+                WHERE id = %s
+            """, (incident_id,))
+            target_incident = cursor.fetchone()
+
+            if not target_incident:
+                return "<script>alert('존재하지 않는 사건입니다.'); history.back();</script>"
+
+            cursor.execute("""
+                SELECT id, latitude, longitude, first_created_at
+                FROM incidents
+            """)
+            raw_incidents = cursor.fetchall()
+
+            group_ids = find_group_incident_ids(target_incident, raw_incidents)
+            placeholders = ', '.join(['%s'] * len(group_ids))
+
+            if new_status == '반려':
+                sql = f"""
+                    UPDATE incidents
+                    SET status = %s, reject_reason = %s
+                    WHERE id IN ({placeholders})
+                """
+                cursor.execute(sql, [new_status, reject_reason] + group_ids)
+            else:
+                sql = f"""
+                    UPDATE incidents
+                    SET status = %s, reject_reason = NULL
+                    WHERE id IN ({placeholders})
+                """
+                cursor.execute(sql, [new_status] + group_ids)
+
+            conn.commit()
+
+            redirect_url = url_for('admin_incidents')
+            if return_query:
+                return redirect(f'{redirect_url}?{return_query}')
+
+            return redirect(redirect_url)
+    finally:
+        conn.close()
+
+
+####################################### 게시판 CRUD END #######################################
+
 
 @app.route('/')
 def index():
     return render_template("main.html")
 
+
 if __name__ == '__main__':
-    app.run(host='172.30.1.22',port=5001,debug=True)
+    app.run(host='192.168.0.164', port=5001, debug=True)

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CRACK Mobile Layout</title>
+
   <style>
     * {
       box-sizing: border-box;
@@ -85,14 +86,12 @@
       flex: 1;
       padding: 16px 18px 12px;
       overflow-y: auto;
-
-      /* 👇 스크롤바 숨기기 */
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none; /* IE */
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
 
     .content::-webkit-scrollbar {
-      display: none; /* Chrome, Safari */
+      display: none;
     }
 
     .page-title {
@@ -146,15 +145,15 @@
     }
 
     .alert-card.status-received {
-      border-left-color: #ff8c00; /* 접수완료 (주황 유지) */
+      border-left-color: #ff8c00;
     }
 
     .alert-card.status-processing {
-      border-left-color: #3498db; /* 처리중 (파랑으로 변경) */
+      border-left-color: #3498db;
     }
 
     .alert-card.status-done {
-      border-left-color: #27ae60; /* 처리완료 (초록) */
+      border-left-color: #27ae60;
     }
 
     .alert-status {
@@ -288,7 +287,7 @@
       background: #fff;
       border-radius: 22px;
       padding: 18px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
     }
 
     .modal-title {
@@ -429,6 +428,10 @@
       font-size: 16px;
       color: #666;
       font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
     }
 
     .detail-map-btn {
@@ -578,25 +581,14 @@
     .detail-thumb-box .wrap_btn_zoom {
       margin-top: 12px;
       margin-left: 12px;
+      transform: scale(0.78);
+      transform-origin: top left;
     }
 
     .detail-thumb-box .wrap_btn_zoom button,
     .detail-thumb-box .wrap_btn_zoom a {
       width: 36px !important;
       height: 36px !important;
-    }
-
-    .detail-thumb-box .wrap_btn_zoom .btn_zoom_in,
-    .detail-thumb-box .wrap_btn_zoom .btn_zoom_out {
-      transform: scale(0.9);
-      transform-origin: top left;
-    }
-
-    .detail-thumb-box .wrap_btn_zoom {
-      transform: scale(0.78);
-      transform-origin: top left;
-      margin-top: 10px;
-      margin-left: 10px;
     }
 
     .detail-divider {
@@ -717,14 +709,14 @@
         transform: translateY(0);
       }
     }
-
   </style>
+
   <script
     defer
     src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_js_key }}&autoload=false"
     onload="window.kakaoSdkLoaded = true"
-    onerror="window.kakaoSdkLoaded = false">
-  </script>
+    onerror="window.kakaoSdkLoaded = false"
+  ></script>
 </head>
 <body>
   <div class="phone">
@@ -743,47 +735,70 @@
       <div class="location-bar">
         <button class="address-open-btn" type="button" onclick="openAddressModal()">
           <span class="location-icon">🟠</span>
-          <span id="selectedAddressText">{{ selected_address if selected_address else '주소 검색' }}</span>
+          <span id="selectedAddressText">
+            {{ selected_address if selected_address else '주소 검색' }}
+          </span>
         </button>
       </div>
+
       <div class="status-filter-bar">
-        <button type="button" class="status-filter-btn {% if not selected_status %}active{% endif %}" onclick="applyStatusFilter('')">전체</button>
-        <button type="button" class="status-filter-btn {% if selected_status == '접수완료' %}active{% endif %}" onclick="applyStatusFilter('접수완료')">접수완료</button>
-        <button type="button" class="status-filter-btn {% if selected_status == '처리중' %}active{% endif %}" onclick="applyStatusFilter('처리중')">처리중</button>
-        <button type="button" class="status-filter-btn {% if selected_status == '처리완료' %}active{% endif %}" onclick="applyStatusFilter('처리완료')">처리완료</button>
+        <button
+          type="button"
+          class="status-filter-btn {% if not selected_status %}active{% endif %}"
+          onclick="applyStatusFilter('')"
+        >
+          전체
+        </button>
+        <button
+          type="button"
+          class="status-filter-btn {% if selected_status == '접수완료' %}active{% endif %}"
+          onclick="applyStatusFilter('접수완료')"
+        >
+          접수완료
+        </button>
+        <button
+          type="button"
+          class="status-filter-btn {% if selected_status == '처리중' %}active{% endif %}"
+          onclick="applyStatusFilter('처리중')"
+        >
+          처리중
+        </button>
+        <button
+          type="button"
+          class="status-filter-btn {% if selected_status == '처리완료' %}active{% endif %}"
+          onclick="applyStatusFilter('처리완료')"
+        >
+          처리완료
+        </button>
       </div>
 
       <section class="alert-list" id="alertList">
-
-
-        <!-- 서버에서 전달된 사건 데이터를 기반으로 위험도 정보를 화면에 동적으로 출력 -->
         {% for incident in incidents %}
-        <article class="alert-card compact-card
-          {% if incident.status == '접수완료' %}status-received
-          {% elif incident.status == '처리중' %}status-processing
-          {% elif incident.status == '처리완료' %}status-done
-          {% endif %}
-          {% if incident.group_reporter_count and incident.group_reporter_count >= 5 %}multi-report danger
-          {% elif incident.group_reporter_count and incident.group_reporter_count >= 3 %}multi-report
-          {% endif %}
-        ">
+        <article
+          class="alert-card compact-card
+            {% if incident.status == '접수완료' %}status-received{% elif incident.status == '처리중' %}status-processing{% elif incident.status == '처리완료' %}status-done{% endif %}
+            {% if incident.group_reporter_count and incident.group_reporter_count >= 5 %}multi-report danger{% elif incident.group_reporter_count and incident.group_reporter_count >= 3 %}multi-report{% endif %}"
+        >
           {% set score = incident.risk_score|float %}
 
           <div class="compact-main-row">
             <div class="compact-left">
               {% if incident.group_reporter_count and incident.group_reporter_count >= 5 %}
-              <div class="multi-report-label danger">집중 위험</div>
+                <div class="multi-report-label danger">집중 위험</div>
               {% elif incident.group_reporter_count and incident.group_reporter_count >= 3 %}
-              <div class="multi-report-label">반복 제보</div>
+                <div class="multi-report-label">반복 제보</div>
               {% endif %}
+
               <span class="alert-status">{{ incident.status }}</span>
               <h2 class="alert-title compact-title">{{ incident.title }}</h2>
               <div class="compact-location">{{ incident.location }}</div>
+
               {% if incident.distance_m is not none %}
-              <div class="distance-text">선택 위치에서 약 {{ incident.distance_m }}m</div>
+                <div class="distance-text">선택 위치에서 약 {{ incident.distance_m }}m</div>
               {% endif %}
+
               {% if incident.group_reporter_count and incident.group_reporter_count >= 3 %}
-              <div class="report-badge">동일 위치 제보 {{ incident.group_reporter_count }}건</div>
+                <div class="report-badge">동일 위치 제보 {{ incident.group_reporter_count }}건</div>
               {% endif %}
             </div>
 
@@ -827,6 +842,7 @@
         </div>
         {% endif %}
       </section>
+
       <div id="listStatusText" class="list-status-text">
         {% if has_next %}
           아래로 스크롤하면 더 불러옵니다.
@@ -834,6 +850,7 @@
           마지막 알림입니다.
         {% endif %}
       </div>
+
       <div id="scrollSentinel" style="height: 1px;"></div>
     </main>
 
@@ -867,14 +884,18 @@
       <div class="detail-modal-card">
         <div class="detail-thumb-box">
           <div id="detailStaticMap" style="width:100%; height:100%;"></div>
-          <div id="detailPlaceholder" class="detail-thumb-placeholder" style="display:none;">좌표 정보가 없습니다.</div>
+          <div id="detailPlaceholder" class="detail-thumb-placeholder" style="display:none;">
+            좌표 정보가 없습니다.
+          </div>
 
           <div class="custom-zoom-controls">
             <button type="button" class="zoom-btn" onclick="zoomInDetailMap()">＋</button>
             <button type="button" class="zoom-btn" onclick="zoomOutDetailMap()">－</button>
           </div>
 
-          <button class="detail-map-btn" type="button" onclick="openMapFromDetail()" title="지도 보기">🌍</button>
+          <button class="detail-map-btn" type="button" onclick="openMapFromDetail()" title="지도 보기">
+            🌍
+          </button>
         </div>
 
         <div class="detail-content-box">
@@ -901,368 +922,373 @@
       </div>
     </div>
   </div>
-<script>
-function openAddressModal() {
-  document.getElementById('addressModal').classList.add('show');
-}
 
-function closeAddressModal() {
-  document.getElementById('addressModal').classList.remove('show');
-}
-
-async function searchAddress() {
-  const keyword = document.getElementById('addressKeyword').value.trim();
-  const resultList = document.getElementById('addressResultList');
-
-  if (!keyword) {
-    window.location.href = '/alerts';
-    return;
-  }
-
-  resultList.innerHTML = '<div class="loading-text">검색 중...</div>';
-
-  try {
-    const response = await fetch(`/api/address/search?q=${encodeURIComponent(keyword)}`);
-    const data = await response.json();
-
-    if (!data.success || !data.items || data.items.length === 0) {
-      resultList.innerHTML = '<div class="empty-result-text">검색 결과가 없습니다.</div>';
-      return;
+  <script>
+    function openAddressModal() {
+      document.getElementById('addressModal').classList.add('show');
     }
 
-    resultList.innerHTML = '';
-
-    data.items.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'result-item';
-      div.innerHTML = `<div class="result-main">${item.address_name}</div>`;
-      div.onclick = () => selectAddress(item);
-      resultList.appendChild(div);
-    });
-
-  } catch (error) {
-    console.error(error);
-    resultList.innerHTML = '<div class="empty-result-text">검색 중 오류가 발생했습니다.</div>';
-  }
-}
-
-let currentDetailLat = '';
-let currentDetailLng = '';
-let currentDetailMap = null;
-
-function openDetailModal(title, location, status, time, riskScore, lat, lng) {
-  document.getElementById('detailTitle').textContent = title || '제목 없음';
-  document.getElementById('detailLocation').textContent = location || '위치 정보 없음';
-  document.getElementById('detailStatus').textContent = status || '상태 없음';
-  document.getElementById('detailTime').textContent = time || '';
-
-  const score = Number(riskScore || 0);
-  let riskText = '위험도 낮음';
-  let riskClass = 'detail-risk-low';
-
-  if (score >= 80) {
-    riskText = '위험도 높음';
-    riskClass = 'detail-risk-high';
-  } else if (score >= 50) {
-    riskText = '위험도 중간';
-    riskClass = 'detail-risk-medium';
-  }
-
-  const riskBadge = document.getElementById('detailRiskBadge');
-  riskBadge.textContent = riskText;
-  riskBadge.className = `detail-risk-badge ${riskClass}`;
-
-  currentDetailLat = lat || '';
-  currentDetailLng = lng || '';
-
-  document.getElementById('detailModal').classList.add('show');
-
-  const detailMap = document.getElementById('detailStaticMap');
-  const detailPlaceholder = document.getElementById('detailPlaceholder');
-
-  detailMap.innerHTML = '';
-
-  if (!lat || !lng) {
-    detailMap.style.display = 'none';
-    detailPlaceholder.style.display = 'block';
-    return;
-  }
-
-  try {
-
-    if (window.kakaoSdkLoaded === false) {
-      detailMap.style.display = 'none';
-      detailPlaceholder.style.display = 'block';
-      detailPlaceholder.textContent = '카카오 SDK 파일 로드 실패';
-      return;
+    function closeAddressModal() {
+      document.getElementById('addressModal').classList.remove('show');
     }
 
-    if (typeof kakao === 'undefined') {
-      detailMap.style.display = 'none';
-      detailPlaceholder.style.display = 'block';
-      detailPlaceholder.textContent = 'SDK는 아직 준비되지 않았습니다.';
-      return;
-    }
+    async function searchAddress() {
+      const keyword = document.getElementById('addressKeyword').value.trim();
+      const resultList = document.getElementById('addressResultList');
 
-    detailMap.style.display = 'block';
-    detailPlaceholder.style.display = 'none';
-
-    kakao.maps.load(function () {
-      const markerPosition = new kakao.maps.LatLng(Number(lat), Number(lng));
-
-      const mapOption = {
-        center: markerPosition,
-        level: 3
-      };
-
-      currentDetailMap = new kakao.maps.Map(detailMap, mapOption);
-
-      const marker = new kakao.maps.Marker({
-        position: markerPosition
-      });
-
-      marker.setMap(currentDetailMap);
-
-    });
-  } catch (error) {
-      console.error('지도 생성 오류:', error);
-      detailMap.style.display = 'none';
-      detailPlaceholder.style.display = 'block';
-      detailPlaceholder.textContent = '지도 오류: ' + (error.message || error);
-    }
-}
-
-function applyStatusFilter(status) {
-  const params = new URLSearchParams(window.location.search);
-
-  if (status) {
-    params.set('status', status);
-  } else {
-    params.delete('status');
-  }
-
-  window.location.href = `/alerts?${params.toString()}`;
-}
-
-function closeDetailModal() {
-  document.getElementById('detailModal').classList.remove('show');
-}
-
-function openMapFromDetail() {
-  if (!currentDetailLat || !currentDetailLng) {
-    alert('지도에 표시할 좌표 정보가 없습니다.');
-    return;
-  }
-
-  const mapUrl = `https://map.kakao.com/link/map/사건위치,${currentDetailLat},${currentDetailLng}`;
-  window.open(mapUrl, '_blank');
-}
-
-document.getElementById('detailModal').addEventListener('click', function(e) {
-  if (e.target.id === 'detailModal') {
-    closeDetailModal();
-  }
-});
-
-function selectAddress(item) {
-  if (item.is_city_district) {
-    let url = `/alerts?city=${encodeURIComponent(item.city)}`;
-
-    if (item.district) {
-      url += `&district=${encodeURIComponent(item.district)}`;
-    }
-
-    window.location.href = url;
-    return;
-  }
-
-  const radius = 500;
-  const url = `/alerts?lat=${item.latitude}&lng=${item.longitude}&radius_m=${radius}&address=${encodeURIComponent(item.address_name)}`;
-  window.location.href = url;
-}
-
-document.getElementById('addressKeyword').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') {
-    searchAddress();
-  }
-});
-
-function zoomInDetailMap() {
-  if (!currentDetailMap) return;
-  const level = currentDetailMap.getLevel();
-  currentDetailMap.setLevel(level - 1);
-}
-
-function zoomOutDetailMap() {
-  if (!currentDetailMap) return;
-  const level = currentDetailMap.getLevel();
-  currentDetailMap.setLevel(level + 1);
-}
-
-function getRiskText(score) {
-  const num = Number(score || 0);
-  if (num >= 80) return { text: '위험도 높음', cls: 'risk-high' };
-  if (num >= 50) return { text: '위험도 중간', cls: 'risk-medium' };
-  return { text: '위험도 낮음', cls: 'risk-low' };
-}
-
-function getStatusClass(status) {
-  if (status === '접수완료') return 'status-received';
-  if (status === '처리중') return 'status-processing';
-  if (status === '처리완료') return 'status-done';
-  return '';
-}
-
-function createAlertCard(item) {
-  const risk = getRiskText(item.risk_score);
-  const statusClass = getStatusClass(item.status);
-
-  const distanceHtml = item.distance_m !== null && item.distance_m !== undefined
-    ? `<div class="distance-text">선택 위치에서 약 ${item.distance_m}m</div>`
-    : '';
-  const reportHtml = item.group_reporter_count >= 3
-  ? `<div class="report-badge">동일 위치 제보 ${item.group_reporter_count}건</div>`
-  : '';
-
-  const multiReportClass = item.group_reporter_count >= 5
-  ? 'multi-report danger'
-  : item.group_reporter_count >= 3
-    ? 'multi-report'
-    : '';
-  const multiReportLabel = item.group_reporter_count >= 5
-  ? `<div class="multi-report-label danger">집중 위험</div>`
-  : item.group_reporter_count >= 3
-    ? `<div class="multi-report-label">반복 제보</div>`
-    : '';
-
-  return `
-    <article class="alert-card compact-card load-fade-up ${statusClass} ${multiReportClass}">
-      <div class="compact-main-row">
-        <div class="compact-left">
-          ${multiReportLabel}
-          <span class="alert-status">${item.status || ''}</span>
-          <h2 class="alert-title compact-title">${item.title || ''}</h2>
-          <div class="compact-location">${item.location || ''}</div>
-          ${distanceHtml}
-          ${reportHtml}
-        </div>
-
-        <div class="compact-right">
-          <span class="alert-time">${item.first_created_at || ''}</span>
-          <span class="risk-text ${risk.cls}">${risk.text}</span>
-        </div>
-      </div>
-
-      <div class="compact-row compact-bottom-row">
-        <div></div>
-        <button
-          class="check-btn compact-btn"
-          type="button"
-          onclick='openDetailModal(
-            ${JSON.stringify(item.title || "")},
-            ${JSON.stringify(item.location || "")},
-            ${JSON.stringify(item.status || "")},
-            ${JSON.stringify(item.first_created_at || "")},
-            ${JSON.stringify(item.risk_score || 0)},
-            ${JSON.stringify(item.latitude || "")},
-            ${JSON.stringify(item.longitude || "")}
-          )'
-        >
-          현장 확인
-        </button>
-      </div>
-    </article>
-  `;
-}
-
-let currentPage = 1;
-let hasNextPage = {{ 'true' if has_next else 'false' }};
-let isLoadingMore = false;
-let observer = null;
-
-async function loadMoreAlerts() {
-  if (isLoadingMore || !hasNextPage) return;
-
-  isLoadingMore = true;
-
-  if (observer && sentinel) {
-    observer.unobserve(sentinel);
-  }
-
-  const statusText = document.getElementById('listStatusText');
-  if (statusText) {
-    statusText.textContent = '로딩 중...';
-  }
-
-  try {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    const params = new URLSearchParams(window.location.search);
-    params.set('page', currentPage + 1);
-    params.set('per_page', 4);
-    params.set('api', '1');
-
-    const response = await fetch(`/alerts?${params.toString()}`);
-    const data = await response.json();
-
-    if (!data.success) {
-      if (statusText) {
-        statusText.textContent = '불러오기에 실패했습니다.';
+      if (!keyword) {
+        window.location.href = '/alerts';
+        return;
       }
-      return;
+
+      resultList.innerHTML = '<div class="loading-text">검색 중...</div>';
+
+      try {
+        const response = await fetch(`/api/address/search?q=${encodeURIComponent(keyword)}`);
+        const data = await response.json();
+
+        if (!data.success || !data.items || data.items.length === 0) {
+          resultList.innerHTML = '<div class="empty-result-text">검색 결과가 없습니다.</div>';
+          return;
+        }
+
+        resultList.innerHTML = '';
+
+        data.items.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'result-item';
+          div.innerHTML = `<div class="result-main">${item.address_name}</div>`;
+          div.onclick = () => selectAddress(item);
+          resultList.appendChild(div);
+        });
+      } catch (error) {
+        console.error(error);
+        resultList.innerHTML = '<div class="empty-result-text">검색 중 오류가 발생했습니다.</div>';
+      }
     }
 
-    const alertList = document.getElementById('alertList');
+    let currentDetailLat = '';
+    let currentDetailLng = '';
+    let currentDetailMap = null;
 
-    data.items.forEach(item => {
-      alertList.insertAdjacentHTML('beforeend', createAlertCard(item));
+    function openDetailModal(title, location, status, time, riskScore, lat, lng) {
+      document.getElementById('detailTitle').textContent = title || '제목 없음';
+      document.getElementById('detailLocation').textContent = location || '위치 정보 없음';
+      document.getElementById('detailStatus').textContent = status || '상태 없음';
+      document.getElementById('detailTime').textContent = time || '';
+
+      const score = Number(riskScore || 0);
+      let riskText = '위험도 낮음';
+      let riskClass = 'detail-risk-low';
+
+      if (score >= 80) {
+        riskText = '위험도 높음';
+        riskClass = 'detail-risk-high';
+      } else if (score >= 50) {
+        riskText = '위험도 중간';
+        riskClass = 'detail-risk-medium';
+      }
+
+      const riskBadge = document.getElementById('detailRiskBadge');
+      riskBadge.textContent = riskText;
+      riskBadge.className = `detail-risk-badge ${riskClass}`;
+
+      currentDetailLat = lat || '';
+      currentDetailLng = lng || '';
+
+      document.getElementById('detailModal').classList.add('show');
+
+      const detailMap = document.getElementById('detailStaticMap');
+      const detailPlaceholder = document.getElementById('detailPlaceholder');
+
+      detailMap.innerHTML = '';
+
+      if (!lat || !lng) {
+        detailMap.style.display = 'none';
+        detailPlaceholder.style.display = 'flex';
+        detailPlaceholder.textContent = '좌표 정보가 없습니다.';
+        return;
+      }
+
+      try {
+        if (window.kakaoSdkLoaded === false) {
+          detailMap.style.display = 'none';
+          detailPlaceholder.style.display = 'flex';
+          detailPlaceholder.textContent = '카카오 SDK 파일 로드 실패';
+          return;
+        }
+
+        if (typeof kakao === 'undefined') {
+          detailMap.style.display = 'none';
+          detailPlaceholder.style.display = 'flex';
+          detailPlaceholder.textContent = 'SDK는 아직 준비되지 않았습니다.';
+          return;
+        }
+
+        detailMap.style.display = 'block';
+        detailPlaceholder.style.display = 'none';
+
+        kakao.maps.load(function () {
+          const markerPosition = new kakao.maps.LatLng(Number(lat), Number(lng));
+          const mapOption = {
+            center: markerPosition,
+            level: 3
+          };
+
+          currentDetailMap = new kakao.maps.Map(detailMap, mapOption);
+
+          const marker = new kakao.maps.Marker({
+            position: markerPosition
+          });
+          marker.setMap(currentDetailMap);
+        });
+      } catch (error) {
+        console.error('지도 생성 오류:', error);
+        detailMap.style.display = 'none';
+        detailPlaceholder.style.display = 'flex';
+        detailPlaceholder.textContent = '지도 오류: ' + (error.message || error);
+      }
+    }
+
+    function applyStatusFilter(status) {
+      const params = new URLSearchParams(window.location.search);
+
+      if (status) {
+        params.set('status', status);
+      } else {
+        params.delete('status');
+      }
+
+      window.location.href = `/alerts?${params.toString()}`;
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detailModal').classList.remove('show');
+      currentDetailMap = null;
+    }
+
+    function openMapFromDetail() {
+      if (!currentDetailLat || !currentDetailLng) {
+        alert('지도에 표시할 좌표 정보가 없습니다.');
+        return;
+      }
+
+      const mapUrl = `https://map.kakao.com/link/map/사건위치,${currentDetailLat},${currentDetailLng}`;
+      window.open(mapUrl, '_blank');
+    }
+
+    document.getElementById('detailModal').addEventListener('click', function (e) {
+      if (e.target.id === 'detailModal') {
+        closeDetailModal();
+      }
     });
 
-    currentPage += 1;
-    hasNextPage = data.has_next;
+    function selectAddress(item) {
+      if (item.is_city_district) {
+        let url = `/alerts?city=${encodeURIComponent(item.city)}`;
+        if (item.district) {
+          url += `&district=${encodeURIComponent(item.district)}`;
+        }
+        window.location.href = url;
+        return;
+      }
 
-    if (statusText) {
-      statusText.textContent = hasNextPage
-        ? '아래로 스크롤하면 더 불러옵니다.'
-        : '마지막 알림입니다.';
+      const radius = 500;
+      const url = `/alerts?lat=${item.latitude}&lng=${item.longitude}&radius_m=${radius}&address=${encodeURIComponent(item.address_name)}`;
+      window.location.href = url;
     }
 
-  } catch (error) {
-    console.error('무한 스크롤 로딩 오류:', error);
-    if (statusText) {
-      statusText.textContent = '불러오는 중 오류가 발생했습니다.';
+    document.getElementById('addressKeyword').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        searchAddress();
+      }
+    });
+
+    function zoomInDetailMap() {
+      if (!currentDetailMap) return;
+      const level = currentDetailMap.getLevel();
+      currentDetailMap.setLevel(level - 1);
     }
-  } finally {
-    isLoadingMore = false;
 
-    if (observer && sentinel && hasNextPage) {
-      setTimeout(() => {
-        observer.observe(sentinel);
-      }, 250);
+    function zoomOutDetailMap() {
+      if (!currentDetailMap) return;
+      const level = currentDetailMap.getLevel();
+      currentDetailMap.setLevel(level + 1);
     }
-  }
-}
 
-const sentinel = document.getElementById('scrollSentinel');
+    function getRiskText(score) {
+      const num = Number(score || 0);
 
-if (sentinel) {
-  observer = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting && !isLoadingMore && hasNextPage) {
-      loadMoreAlerts();
+      if (num >= 80) return { text: '위험도 높음', cls: 'risk-high' };
+      if (num >= 50) return { text: '위험도 중간', cls: 'risk-medium' };
+
+      return { text: '위험도 낮음', cls: 'risk-low' };
     }
-  }, {
-    root: document.querySelector('.content'),
-    threshold: 0.2
-  });
 
-  observer.observe(sentinel);
-}
+    function getStatusClass(status) {
+      if (status === '접수완료') return 'status-received';
+      if (status === '처리중') return 'status-processing';
+      if (status === '처리완료') return 'status-done';
+      return '';
+    }
 
-document.getElementById('addressModal').addEventListener('click', function(e) {
-  if (e.target.id === 'addressModal') {
-    closeAddressModal();
-  }
-});
-</script>
+    function createAlertCard(item) {
+      const risk = getRiskText(item.risk_score);
+      const statusClass = getStatusClass(item.status);
 
+      const distanceHtml =
+        item.distance_m !== null && item.distance_m !== undefined
+          ? `<div class="distance-text">선택 위치에서 약 ${item.distance_m}m</div>`
+          : '';
+
+      const reportHtml =
+        item.group_reporter_count >= 3
+          ? `<div class="report-badge">동일 위치 제보 ${item.group_reporter_count}건</div>`
+          : '';
+
+      const multiReportClass =
+        item.group_reporter_count >= 5
+          ? 'multi-report danger'
+          : item.group_reporter_count >= 3
+            ? 'multi-report'
+            : '';
+
+      const multiReportLabel =
+        item.group_reporter_count >= 5
+          ? `<div class="multi-report-label danger">집중 위험</div>`
+          : item.group_reporter_count >= 3
+            ? `<div class="multi-report-label">반복 제보</div>`
+            : '';
+
+      return `
+        <article class="alert-card compact-card load-fade-up ${statusClass} ${multiReportClass}">
+          <div class="compact-main-row">
+            <div class="compact-left">
+              ${multiReportLabel}
+              <span class="alert-status">${item.status || ''}</span>
+              <h2 class="alert-title compact-title">${item.title || ''}</h2>
+              <div class="compact-location">${item.location || ''}</div>
+              ${distanceHtml}
+              ${reportHtml}
+            </div>
+
+            <div class="compact-right">
+              <span class="alert-time">${item.first_created_at || ''}</span>
+              <span class="risk-text ${risk.cls}">${risk.text}</span>
+            </div>
+          </div>
+
+          <div class="compact-row compact-bottom-row">
+            <div></div>
+            <button
+              class="check-btn compact-btn"
+              type="button"
+              onclick='openDetailModal(
+                ${JSON.stringify(item.title || "")},
+                ${JSON.stringify(item.location || "")},
+                ${JSON.stringify(item.status || "")},
+                ${JSON.stringify(item.first_created_at || "")},
+                ${JSON.stringify(item.risk_score || 0)},
+                ${JSON.stringify(item.latitude || "")},
+                ${JSON.stringify(item.longitude || "")}
+              )'
+            >
+              현장 확인
+            </button>
+          </div>
+        </article>
+      `;
+    }
+
+    let currentPage = 1;
+    let hasNextPage = {{ 'true' if has_next else 'false' }};
+    let isLoadingMore = false;
+    let observer = null;
+
+    async function loadMoreAlerts() {
+      if (isLoadingMore || !hasNextPage) return;
+
+      isLoadingMore = true;
+
+      if (observer && sentinel) {
+        observer.unobserve(sentinel);
+      }
+
+      const statusText = document.getElementById('listStatusText');
+      if (statusText) {
+        statusText.textContent = '로딩 중...';
+      }
+
+      try {
+        await new Promise(resolve => setTimeout(resolve, 400));
+
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', currentPage + 1);
+        params.set('per_page', 4);
+        params.set('api', '1');
+
+        const response = await fetch(`/alerts?${params.toString()}`);
+        const data = await response.json();
+
+        if (!data.success) {
+          if (statusText) {
+            statusText.textContent = '불러오기에 실패했습니다.';
+          }
+          return;
+        }
+
+        const alertList = document.getElementById('alertList');
+        data.items.forEach(item => {
+          alertList.insertAdjacentHTML('beforeend', createAlertCard(item));
+        });
+
+        currentPage += 1;
+        hasNextPage = data.has_next;
+
+        if (statusText) {
+          statusText.textContent = hasNextPage
+            ? '아래로 스크롤하면 더 불러옵니다.'
+            : '마지막 알림입니다.';
+        }
+      } catch (error) {
+        console.error('무한 스크롤 로딩 오류:', error);
+        if (statusText) {
+          statusText.textContent = '불러오는 중 오류가 발생했습니다.';
+        }
+      } finally {
+        isLoadingMore = false;
+
+        if (observer && sentinel && hasNextPage) {
+          setTimeout(() => {
+            observer.observe(sentinel);
+          }, 250);
+        }
+      }
+    }
+
+    const sentinel = document.getElementById('scrollSentinel');
+
+    if (sentinel) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && !isLoadingMore && hasNextPage) {
+            loadMoreAlerts();
+          }
+        },
+        {
+          root: document.querySelector('.content'),
+          threshold: 0.2
+        }
+      );
+
+      observer.observe(sentinel);
+    }
+
+    document.getElementById('addressModal').addEventListener('click', function (e) {
+      if (e.target.id === 'addressModal') {
+        closeAddressModal();
+      }
+    });
+  </script>
 </body>
 </html>

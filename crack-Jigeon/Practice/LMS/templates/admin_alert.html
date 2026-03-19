@@ -106,6 +106,11 @@
       border-left-color: #27ae60;
     }
 
+    .alert-card.status-rejected {
+      border-left-color: #94a3b8;
+      background: #fbfcfd;
+    }
+
     .check-btn {
       background: #ff8c00;
       color: white;
@@ -413,8 +418,8 @@
 
     .alert-status {
       font-size: 12px;
-      font-weight: 700;
-      color: #444;
+      font-weight: 800;
+      color: #222;
     }
 
     .compact-btn-group {
@@ -455,9 +460,9 @@
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 5px;
-      min-width: 96px;
-      padding-top: 1px;
+      gap: 4px;
+      min-width: 92px;
+      padding-top: 2px;
     }
 
     .compact-title {
@@ -474,7 +479,7 @@
     }
 
     .compact-bottom-row {
-      margin-top: 6px;
+      margin-top: 10px;
     }
 
     .compact-location {
@@ -561,10 +566,10 @@
       justify-content: flex-end;
     }
 
-    .detail-content-text {
-      white-space: pre-line;
+    .ghost-btn {
+      color: #888;
+      border-color: #e5e5e5;
     }
-
   </style>
 </head>
 <body>
@@ -572,7 +577,7 @@
     <header class="topbar">
       <div class="brand">CRACK</div>
       <div class="top-actions">
-        <button type="button">관리메뉴</button>
+        <button type="button" class="ghost-btn">관리메뉴</button>
         <button type="button" onclick="location.href='/logout'">로그아웃</button>
       </div>
     </header>
@@ -582,6 +587,7 @@
         <h1 class="page-title">지역 관리 피드</h1>
         <span class="admin-label">매니저용</span>
       </div>
+
       <div class="status-filter-bar">
         <button type="button" class="status-filter-btn {% if not selected_status %}active{% endif %}" onclick="applyStatusFilter('')">전체</button>
         <button type="button" class="status-filter-btn {% if selected_status == '접수완료' %}active{% endif %}" onclick="applyStatusFilter('접수완료')">접수완료</button>
@@ -595,6 +601,7 @@
           {% if incident.status == '접수완료' %}status-received
           {% elif incident.status == '처리중' %}status-processing
           {% elif incident.status == '처리완료' %}status-done
+          {% elif incident.status == '반려' %}status-rejected
           {% endif %}
           {% if incident.group_reporter_count and incident.group_reporter_count >= 5 %} multi-report danger
           {% elif incident.group_reporter_count and incident.group_reporter_count >= 3 %} multi-report
@@ -609,8 +616,10 @@
               {% elif incident.group_reporter_count and incident.group_reporter_count >= 3 %}
               <div class="multi-report-label">반복 제보</div>
               {% endif %}
+
               <span class="alert-status">{{ incident.status }}</span>
               <h2 class="compact-title">{{ incident.title }}</h2>
+
               <div class="compact-location">
                 <span class="location-region">{{ incident.region_name }}</span>
                 <span class="location-separator">·</span>
@@ -622,6 +631,7 @@
                   {% endif %}
                 </span>
               </div>
+
               {% if incident.group_reporter_count and incident.group_reporter_count >= 2 %}
               <div class="report-badge">동일 위치 제보 {{ incident.group_reporter_count }}건</div>
               {% endif %}
@@ -659,7 +669,20 @@
               >
                 현장 확인
               </button>
-              <button class="check-btn compact-btn" type="button">상태 변경</button>
+
+              <form action="/incident/update-status" method="POST" class="status-update-form" style="display:flex; gap:6px; align-items:center; justify-content:flex-end;">
+                <input type="hidden" name="incident_id" value="{{ incident.id }}">
+                <input type="hidden" name="reject_reason" value="{{ incident.reject_reason if incident.reject_reason else '' }}">
+
+                <select name="new_status" class="sub-btn compact-btn" style="padding-right:28px;">
+                  <option value="접수완료" {% if incident.status == '접수완료' %}selected{% endif %}>접수완료</option>
+                  <option value="처리중" {% if incident.status == '처리중' %}selected{% endif %}>처리중</option>
+                  <option value="처리완료" {% if incident.status == '처리완료' %}selected{% endif %}>처리완료</option>
+                  <option value="반려" {% if incident.status == '반려' %}selected{% endif %}>반려</option>
+                </select>
+
+                <button class="check-btn compact-btn" type="submit">변경</button>
+              </form>
             </div>
           </div>
         </article>
@@ -671,6 +694,7 @@
         </div>
         {% endif %}
       </section>
+
       <div id="listStatusText" class="list-status-text">
         {% if has_next %}
           아래로 스크롤하면 더 불러옵니다.
@@ -678,6 +702,7 @@
           마지막 사건입니다.
         {% endif %}
       </div>
+
       <div id="scrollSentinel" style="height: 1px;"></div>
     </main>
 
@@ -693,7 +718,6 @@
         <div class="detail-thumb-box">
           <img id="detailImage" class="detail-thumb-img" src="" alt="사건 썸네일">
           <div id="detailPlaceholder" class="detail-thumb-placeholder">사진이 없습니다.</div>
-
           <button class="detail-map-btn" type="button" onclick="openMapFromDetail()" title="지도 보기">🌍</button>
         </div>
 
@@ -722,274 +746,403 @@
     </div>
   </div>
 
-<script>
+  <div class="detail-modal-backdrop" id="rejectReasonModal">
+    <div class="detail-modal-card" style="max-width:320px;">
+      <div class="detail-content-box" style="padding-top:20px;">
+        <div class="detail-content-title" style="font-size:20px; margin-bottom:10px;">반려 사유 입력</div>
+        <div class="detail-content-text" style="margin-bottom:12px;">반려 처리 시 사유를 입력해주세요.</div>
 
-function applyStatusFilter(status) {
-  const params = new URLSearchParams(window.location.search);
-
-  if (status) {
-    params.set('status', status);
-  } else {
-    params.delete('status');
-  }
-
-  window.location.href = `/alerts?${params.toString()}`;
-}
-
-let currentDetailLat = '';
-let currentDetailLng = '';
-
-function openDetailModal(title, location, status, time, riskScore, imagePath, lat, lng) {
-  document.getElementById('detailTitle').textContent = title || '제목 없음';
-  document.getElementById('detailLocation').textContent = location || '위치 정보 없음';
-  document.getElementById('detailStatus').textContent = status || '상태 없음';
-  document.getElementById('detailTime').textContent = time || '';
-
-  const score = Number(riskScore || 0);
-  let riskText = '위험도 낮음';
-  let riskClass = 'detail-risk-low';
-
-  if (score >= 80) {
-    riskText = '위험도 높음';
-    riskClass = 'detail-risk-high';
-  } else if (score >= 50) {
-    riskText = '위험도 중간';
-    riskClass = 'detail-risk-medium';
-  }
-
-  const riskBadge = document.getElementById('detailRiskBadge');
-  riskBadge.textContent = riskText;
-  riskBadge.className = `detail-risk-badge ${riskClass}`;
-
-  const detailImage = document.getElementById('detailImage');
-  const detailPlaceholder = document.getElementById('detailPlaceholder');
-
-  if (imagePath && imagePath.trim() !== '') {
-    let finalImagePath = imagePath.trim();
-
-    if (!finalImagePath.startsWith('/')) {
-      finalImagePath = '/uploads/' + finalImagePath;
-    }
-
-    detailImage.src = finalImagePath;
-    detailImage.style.display = 'block';
-    detailPlaceholder.style.display = 'none';
-
-    detailImage.onerror = function () {
-      detailImage.src = '';
-      detailImage.style.display = 'none';
-      detailPlaceholder.textContent = '사진을 불러올 수 없습니다.';
-      detailPlaceholder.style.display = 'flex';
-    };
-  } else {
-    detailImage.src = '';
-    detailImage.style.display = 'none';
-    detailPlaceholder.textContent = '사진이 없습니다.';
-    detailPlaceholder.style.display = 'flex';
-  }
-
-  currentDetailLat = lat || '';
-  currentDetailLng = lng || '';
-
-  document.getElementById('detailModal').classList.add('show');
-}
-
-function closeDetailModal() {
-  document.getElementById('detailModal').classList.remove('show');
-}
-
-function openMapFromDetail() {
-  if (!currentDetailLat || !currentDetailLng) {
-    alert('지도에 표시할 좌표 정보가 없습니다.');
-    return;
-  }
-
-  const mapUrl = `https://map.kakao.com/link/map/사건위치,${currentDetailLat},${currentDetailLng}`;
-  window.open(mapUrl, '_blank');
-}
-
-document.getElementById('detailModal').addEventListener('click', function(e) {
-  if (e.target.id === 'detailModal') {
-    closeDetailModal();
-  }
-});
-
-/* ===== 여기부터 무한 스크롤 ===== */
-
-function getRiskText(score) {
-  const num = Number(score || 0);
-  if (num >= 80) return { text: '위험도 높음', cls: 'risk-high' };
-  if (num >= 50) return { text: '위험도 중간', cls: 'risk-medium' };
-  return { text: '위험도 낮음', cls: 'risk-low' };
-}
-
-function getStatusClass(status) {
-  if (status === '접수완료') return 'status-received';
-  if (status === '처리중') return 'status-processing';
-  if (status === '처리완료') return 'status-done';
-  return '';
-}
-
-function createAlertCard(item) {
-  const risk = getRiskText(item.risk_score);
-  const statusClass = getStatusClass(item.status);
-
-  const regionName = item.region_name || '';
-  let detailLocation = item.location || '';
-
-  if (regionName && detailLocation.startsWith(regionName)) {
-    detailLocation = detailLocation.slice(regionName.length).trim();
-  }
-
-  const locationHtml = regionName
-  ? `<span class="location-region">${regionName}</span>
-     <span class="location-separator">·</span>
-     <span class="location-detail">${detailLocation}</span>`
-  : `<span class="location-detail">${detailLocation}</span>`;
-
-  const reportHtml = item.group_reporter_count >= 2
-    ? `<div class="report-badge">동일 위치 제보 ${item.group_reporter_count}건</div>`
-    : '';
-
-  const multiReportClass = item.group_reporter_count >= 5
-    ? 'multi-report danger'
-    : item.group_reporter_count >= 3
-      ? 'multi-report'
-      : '';
-
-  const multiReportLabel = item.group_reporter_count >= 5
-    ? `<div class="multi-report-label danger">집중 위험</div>`
-    : item.group_reporter_count >= 3
-      ? `<div class="multi-report-label">반복 제보</div>`
-      : '';
-
-  return `
-    <article class="alert-card ${statusClass} ${multiReportClass}">
-      <div class="compact-main-row">
-        <div class="compact-left">
-          ${multiReportLabel}
-          <span class="alert-status">${item.status || ''}</span>
-          <h2 class="compact-title">${item.title || ''}</h2>
-          <div class="compact-location">
-            ${locationHtml}
-          </div>
-          ${reportHtml}
+        <div class="detail-info-card" style="margin-bottom:14px;">
+          <textarea
+            id="rejectReasonInput"
+            placeholder="예: 중복 신고, 위험도 기준 미달"
+            style="width:100%; min-height:88px; border:1px solid #ddd; border-radius:12px; padding:10px 12px; outline:none; font-size:14px; resize:none;"
+          ></textarea>
         </div>
 
-        <div class="compact-right">
-          <span class="alert-time">${item.first_created_at || ''}</span>
-          <span class="risk-text ${risk.cls}">${risk.text}</span>
-        </div>
-      </div>
-
-      <div class="compact-row compact-bottom-row">
-        <div></div>
-        <div class="admin-btn-group">
+        <div style="display:flex; gap:8px;">
           <button
-            class="sub-btn compact-btn"
             type="button"
-            onclick='openDetailModal(
-              ${JSON.stringify(item.title || "")},
-              ${JSON.stringify((item.region_name || "") + " · " + detailLocation)},
-              ${JSON.stringify(item.status || "")},
-              ${JSON.stringify(item.first_created_at || "")},
-              ${JSON.stringify(item.risk_score || 0)},
-              ${JSON.stringify(item.image_path || "")},
-              ${JSON.stringify(item.latitude || "")},
-              ${JSON.stringify(item.longitude || "")}
-            )'
+            class="sub-btn"
+            style="flex:1; height:44px;"
+            onclick="closeRejectReasonModal()"
           >
-            현장 확인
+            취소
           </button>
-          <button class="check-btn compact-btn" type="button">상태 변경</button>
+          <button
+            type="button"
+            class="check-btn"
+            style="flex:1; height:44px;"
+            onclick="submitRejectReason()"
+          >
+            확인
+          </button>
         </div>
       </div>
-    </article>
-  `;
-}
+    </div>
+  </div>
 
-let currentPage = 1;
-let hasNextPage = {{ 'true' if has_next else 'false' }};
-let isLoadingMore = false;
-let observer = null;
+  <script>
+    function applyStatusFilter(status) {
+      const params = new URLSearchParams(window.location.search);
 
-async function loadMoreAlerts() {
-  if (isLoadingMore || !hasNextPage) return;
-
-  isLoadingMore = true;
-
-  if (observer && sentinel) {
-    observer.unobserve(sentinel);
-  }
-
-  const statusText = document.getElementById('listStatusText');
-  if (statusText) {
-    statusText.textContent = '로딩 중...';
-  }
-
-  try {
-    await new Promise(resolve => setTimeout(resolve, 400));
-
-    const params = new URLSearchParams(window.location.search);
-    params.set('page', currentPage + 1);
-    params.set('per_page', 4);
-    params.set('api', '1');
-
-    const response = await fetch(`/alerts?${params.toString()}`);
-    const data = await response.json();
-
-    if (!data.success) {
-      if (statusText) {
-        statusText.textContent = '불러오기에 실패했습니다.';
+      if (status) {
+        params.set('status', status);
+      } else {
+        params.delete('status');
       }
-      return;
+
+      window.location.href = `/alerts?${params.toString()}`;
     }
 
-    const alertList = document.getElementById('alertList');
+    let currentDetailLat = '';
+    let currentDetailLng = '';
 
-    data.items.forEach(item => {
-      alertList.insertAdjacentHTML('beforeend', createAlertCard(item));
+    function openDetailModal(title, location, status, time, riskScore, imagePath, lat, lng) {
+      document.getElementById('detailTitle').textContent = title || '제목 없음';
+      document.getElementById('detailLocation').textContent = location || '위치 정보 없음';
+      document.getElementById('detailStatus').textContent = status || '상태 없음';
+      document.getElementById('detailTime').textContent = time || '';
+
+      const score = Number(riskScore || 0);
+      let riskText = '위험도 낮음';
+      let riskClass = 'detail-risk-low';
+
+      if (score >= 80) {
+        riskText = '위험도 높음';
+        riskClass = 'detail-risk-high';
+      } else if (score >= 50) {
+        riskText = '위험도 중간';
+        riskClass = 'detail-risk-medium';
+      }
+
+      const riskBadge = document.getElementById('detailRiskBadge');
+      riskBadge.textContent = riskText;
+      riskBadge.className = `detail-risk-badge ${riskClass}`;
+
+      const detailImage = document.getElementById('detailImage');
+      const detailPlaceholder = document.getElementById('detailPlaceholder');
+
+      if (imagePath && imagePath.trim() !== '') {
+        let finalImagePath = imagePath.trim();
+
+        if (!finalImagePath.startsWith('/')) {
+          finalImagePath = '/uploads/' + finalImagePath;
+        }
+
+        detailImage.src = finalImagePath;
+        detailImage.style.display = 'block';
+        detailPlaceholder.style.display = 'none';
+
+        detailImage.onerror = function () {
+          detailImage.src = '';
+          detailImage.style.display = 'none';
+          detailPlaceholder.textContent = '사진을 불러올 수 없습니다.';
+          detailPlaceholder.style.display = 'flex';
+        };
+      } else {
+        detailImage.src = '';
+        detailImage.style.display = 'none';
+        detailPlaceholder.textContent = '사진이 없습니다.';
+        detailPlaceholder.style.display = 'flex';
+      }
+
+      currentDetailLat = lat || '';
+      currentDetailLng = lng || '';
+
+      document.getElementById('detailModal').classList.add('show');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detailModal').classList.remove('show');
+    }
+
+    function openMapFromDetail() {
+      if (!currentDetailLat || !currentDetailLng) {
+        alert('지도에 표시할 좌표 정보가 없습니다.');
+        return;
+      }
+
+      const mapUrl = `https://map.kakao.com/link/map/사건위치,${currentDetailLat},${currentDetailLng}`;
+      window.open(mapUrl, '_blank');
+    }
+
+    document.getElementById('detailModal').addEventListener('click', function (e) {
+      if (e.target.id === 'detailModal') {
+        closeDetailModal();
+      }
     });
 
-    currentPage += 1;
-    hasNextPage = data.has_next;
-
-    if (statusText) {
-      statusText.textContent = hasNextPage
-        ? '아래로 스크롤하면 더 불러옵니다.'
-        : '마지막 사건입니다.';
+    function getRiskText(score) {
+      const num = Number(score || 0);
+      if (num >= 80) return { text: '위험도 높음', cls: 'risk-high' };
+      if (num >= 50) return { text: '위험도 중간', cls: 'risk-medium' };
+      return { text: '위험도 낮음', cls: 'risk-low' };
     }
 
-  } catch (error) {
-    console.error('무한 스크롤 로딩 오류:', error);
-    if (statusText) {
-      statusText.textContent = '불러오는 중 오류가 발생했습니다.';
+    function getStatusClass(status) {
+      if (status === '접수완료') return 'status-received';
+      if (status === '처리중') return 'status-processing';
+      if (status === '처리완료') return 'status-done';
+      if (status === '반려') return 'status-rejected';
+      return '';
     }
-  } finally {
-    isLoadingMore = false;
 
-    if (observer && sentinel && hasNextPage) {
-      setTimeout(() => {
-        observer.observe(sentinel);
-      }, 250);
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
-  }
-}
 
-const sentinel = document.getElementById('scrollSentinel');
+    function createAlertCard(item) {
+      const risk = getRiskText(item.risk_score);
+      const statusClass = getStatusClass(item.status);
 
-if (sentinel) {
-  observer = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting && !isLoadingMore && hasNextPage) {
-      loadMoreAlerts();
+      const regionName = item.region_name || '';
+      let detailLocation = item.location || '';
+
+      if (regionName && detailLocation.startsWith(regionName)) {
+        detailLocation = detailLocation.slice(regionName.length).trim();
+      }
+
+      const locationHtml = regionName
+        ? `
+          <span class="location-region">${escapeHtml(regionName)}</span>
+          <span class="location-separator">·</span>
+          <span class="location-detail">${escapeHtml(detailLocation)}</span>
+        `
+        : `<span class="location-detail">${escapeHtml(detailLocation)}</span>`;
+
+      const reportHtml = (item.group_reporter_count || 0) >= 2
+        ? `<div class="report-badge">동일 위치 제보 ${item.group_reporter_count}건</div>`
+        : '';
+
+      const multiReportClass = (item.group_reporter_count || 0) >= 5
+        ? 'multi-report danger'
+        : (item.group_reporter_count || 0) >= 3
+          ? 'multi-report'
+          : '';
+
+      const multiReportLabel = (item.group_reporter_count || 0) >= 5
+        ? `<div class="multi-report-label danger">집중 위험</div>`
+        : (item.group_reporter_count || 0) >= 3
+          ? `<div class="multi-report-label">반복 제보</div>`
+          : '';
+
+      const fullLocation = regionName
+        ? `${regionName} · ${detailLocation}`
+        : detailLocation;
+
+      return `
+        <article class="alert-card ${statusClass} ${multiReportClass}">
+          <div class="compact-main-row">
+            <div class="compact-left">
+              ${multiReportLabel}
+              <span class="alert-status">${escapeHtml(item.status || '')}</span>
+              <h2 class="compact-title">${escapeHtml(item.title || '')}</h2>
+              <div class="compact-location">
+                ${locationHtml}
+              </div>
+              ${reportHtml}
+            </div>
+
+            <div class="compact-right">
+              <span class="alert-time">${escapeHtml(item.first_created_at || '')}</span>
+              <span class="risk-text ${risk.cls}">${risk.text}</span>
+            </div>
+          </div>
+
+          <div class="compact-row compact-bottom-row">
+            <div></div>
+            <div class="admin-btn-group">
+              <button
+                class="sub-btn compact-btn"
+                type="button"
+                onclick='openDetailModal(
+                  ${JSON.stringify(item.title || "")},
+                  ${JSON.stringify(fullLocation || "")},
+                  ${JSON.stringify(item.status || "")},
+                  ${JSON.stringify(item.first_created_at || "")},
+                  ${JSON.stringify(item.risk_score || 0)},
+                  ${JSON.stringify(item.image_path || "")},
+                  ${JSON.stringify(item.latitude || "")},
+                  ${JSON.stringify(item.longitude || "")}
+                )'
+              >
+                현장 확인
+              </button>
+
+              <form action="/incident/update-status" method="POST" class="status-update-form" style="display:flex; gap:6px; align-items:center; justify-content:flex-end;">
+                <input type="hidden" name="incident_id" value="${escapeHtml(item.id || '')}">
+                <input type="hidden" name="reject_reason" value="${escapeHtml(item.reject_reason || '')}">
+
+                <select name="new_status" class="sub-btn compact-btn" style="padding-right:28px;">
+                  <option value="접수완료" ${item.status === '접수완료' ? 'selected' : ''}>접수완료</option>
+                  <option value="처리중" ${item.status === '처리중' ? 'selected' : ''}>처리중</option>
+                  <option value="처리완료" ${item.status === '처리완료' ? 'selected' : ''}>처리완료</option>
+                  <option value="반려" ${item.status === '반려' ? 'selected' : ''}>반려</option>
+                </select>
+
+                <button class="check-btn compact-btn" type="submit">변경</button>
+              </form>
+            </div>
+          </div>
+        </article>
+      `;
     }
-  }, {
-    root: document.querySelector('.content'),
-    threshold: 0.2
-  });
 
-  observer.observe(sentinel);
-}
-</script>
+    let pendingRejectForm = null;
+
+    function openRejectReasonModal(form) {
+      pendingRejectForm = form;
+
+      const hiddenReasonInput = form.querySelector('input[name="reject_reason"]');
+      const modalInput = document.getElementById('rejectReasonInput');
+
+      modalInput.value = hiddenReasonInput ? hiddenReasonInput.value : '';
+      document.getElementById('rejectReasonModal').classList.add('show');
+      modalInput.focus();
+    }
+
+    function closeRejectReasonModal() {
+      pendingRejectForm = null;
+      document.getElementById('rejectReasonModal').classList.remove('show');
+      document.getElementById('rejectReasonInput').value = '';
+    }
+
+    function submitRejectReason() {
+      if (!pendingRejectForm) return;
+
+      const modalInput = document.getElementById('rejectReasonInput');
+      const reason = modalInput.value.trim();
+
+      if (!reason) {
+        alert('반려 사유를 입력해주세요.');
+        modalInput.focus();
+        return;
+      }
+
+      const hiddenReasonInput = pendingRejectForm.querySelector('input[name="reject_reason"]');
+      if (hiddenReasonInput) {
+        hiddenReasonInput.value = reason;
+      }
+
+      document.getElementById('rejectReasonModal').classList.remove('show');
+      pendingRejectForm.submit();
+    }
+
+    document.addEventListener('submit', function (e) {
+      const form = e.target;
+
+      if (!form.classList.contains('status-update-form')) return;
+
+      const statusSelect = form.querySelector('select[name="new_status"]');
+      const hiddenReasonInput = form.querySelector('input[name="reject_reason"]');
+
+      if (!statusSelect) return;
+
+      if (statusSelect.value === '반려') {
+        e.preventDefault();
+        openRejectReasonModal(form);
+        return;
+      }
+
+      if (hiddenReasonInput) {
+        hiddenReasonInput.value = '';
+      }
+    });
+
+    document.getElementById('rejectReasonModal').addEventListener('click', function (e) {
+      if (e.target.id === 'rejectReasonModal') {
+        closeRejectReasonModal();
+      }
+    });
+
+    let currentPage = 1;
+    let hasNextPage = {{ 'true' if has_next else 'false' }};
+    let isLoadingMore = false;
+    let observer = null;
+
+    async function loadMoreAlerts() {
+      if (isLoadingMore || !hasNextPage) return;
+
+      isLoadingMore = true;
+
+      if (observer && sentinel) {
+        observer.unobserve(sentinel);
+      }
+
+      const statusText = document.getElementById('listStatusText');
+      if (statusText) {
+        statusText.textContent = '로딩 중...';
+      }
+
+      try {
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', currentPage + 1);
+        params.set('per_page', 4);
+        params.set('api', '1');
+
+        const response = await fetch(`/alerts?${params.toString()}`);
+        const data = await response.json();
+
+        if (!data.success) {
+          if (statusText) {
+            statusText.textContent = '불러오기에 실패했습니다.';
+          }
+          return;
+        }
+
+        const alertList = document.getElementById('alertList');
+
+        data.items.forEach(item => {
+          alertList.insertAdjacentHTML('beforeend', createAlertCard(item));
+        });
+
+        currentPage += 1;
+        hasNextPage = data.has_next;
+
+        if (statusText) {
+          statusText.textContent = hasNextPage
+            ? '아래로 스크롤하면 더 불러옵니다.'
+            : '마지막 사건입니다.';
+        }
+
+      } catch (error) {
+        console.error('무한 스크롤 로딩 오류:', error);
+        if (statusText) {
+          statusText.textContent = '불러오는 중 오류가 발생했습니다.';
+        }
+      } finally {
+        isLoadingMore = false;
+
+        if (observer && sentinel && hasNextPage) {
+          setTimeout(() => {
+            observer.observe(sentinel);
+          }, 250);
+        }
+      }
+    }
+
+    const sentinel = document.getElementById('scrollSentinel');
+
+    if (sentinel) {
+      observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !isLoadingMore && hasNextPage) {
+          loadMoreAlerts();
+        }
+      }, {
+        root: document.querySelector('.content'),
+        threshold: 0.2
+      });
+
+      observer.observe(sentinel);
+    }
+  </script>
 </body>
 </html>
