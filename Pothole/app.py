@@ -10,6 +10,7 @@ from werkzeug.utils import secure_filename
 import os
 import mysql.connector
 from ultralytics import YOLO
+from dotenv import load_dotenv
 
 # ================================================================
 # ⚙️ 기본 설정
@@ -23,13 +24,14 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 DB_CONFIG = {
-    'host'    : 'localhost',
-    'user'    : 'road',
-    'password': '1234',
-    'database': 'road'
+    'host'    : os.getenv('DB_HOST'),
+    'user'    : os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'database': os.getenv('DB_NAME')
 }
 
 model = YOLO('best.pt')
+load_dotenv()
 # ================================================================
 # 🔧 유틸 함수 0 — DB 연결
 # ================================================================
