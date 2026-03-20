@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Crack{% endblock %}</title>
+
+    <!-- Modern Typography: Inter & Outfit -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <!-- Third-Party Libraries -->
+    <!-- Cropper.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js" crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+    <!-- Daum Postcode API -->
+    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <!-- Kakao Maps SDK -->
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_js_key }}&libraries=services&autoload=false"
+        onload="window.kakaoSdkLoaded = true" onerror="window.kakaoSdkLoaded = false"></script>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json?v=15">
+    <meta name="theme-color" content="#F2F0EB">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CRACK">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png?v=3">
+
+    <!-- iOS Splash Screen (Startup Image) -->
+    <!-- iOS는 매니페스트를 타지 않으므로 개별 태그로 지정하여 스플래시 화면의 이질감 최소화 -->
+    <link rel="apple-touch-startup-image" href="/static/icons/icon-512.png?v=3">
+
+    <!-- [BRIDGE] Admin Transition State Check (Must be here to prevent flicker) -->
+    <script>
+        (function () {
+            if (window.location.pathname === '/admin/dashboard' && sessionStorage.getItem('admin_transition') === 'active') {
+                document.documentElement.classList.add('admin-bridge-mode');
+            } else {
+                sessionStorage.removeItem('admin_transition');
+                document.documentElement.classList.remove('admin-bridge-mode');
+            }
+            // [PLATFORM] iOS/Android Detection for Design Customization
+            const ua = navigator.userAgent;
+            const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isAndroid = /Android/i.test(ua);
+            if (isIOS) document.documentElement.classList.add('ios-device');
+            if (isAndroid) document.documentElement.classList.add('android-device');
+        })();
+    </script>
+
+
+    <style>
+        :root {
+            --bg-main: #F2F0EB;
+            --text-asphalt: #333333;
+            --point-orange: #FF8C00;
+            --accent-soft: rgba(255, 140, 0, 0.1);
+            --white: #FFFFFF;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --header-h: 60px;
+            --footer-h: 70px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #D6D6D6;
+            /* 배경색을 약간 더 어둡게 하여 앱 영역을 강조 */
+            color: var(--text-asphalt);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100dvh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+
+        .app-container {
+            height: calc(100dvh - 40px);
+            /* 화면에서 살짝 띄워서 곡률 강조 */
+            width: 100vw;
+            max-width: 480px;
+            margin: 20px auto;
+            background-color: var(--bg-main);
+            position: relative;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.2);
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            overflow: hidden !important;
+            transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border-radius: 24px !important;
+            /* 4 corners curvature */
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* Admin Dashboard: Exception for 100% PC Width */
+        .app-container.admin-page {
+            max-width: 100% !important;
+            width: 100vw !important;
+            margin: 0 !important;
+            height: 100dvh !important;
+            border-radius: 0 !important;
+            transition: all 1.2s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+        }
+
+        /* [BRIDGE] Mode: Override admin-page during transition to match old size */
+        .admin-bridge-mode .app-container.admin-page {
+            max-width: 480px !important;
+            margin: 20px auto !important;
+            height: calc(100dvh - 40px) !important;
+            border-radius: 24px !important;
+            box-shadow: 0 0 80px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 480px) {
+            .app-container {
+                max-width: 100% !important;
+                width: 100vw !important;
+                height: 100dvh !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                border: none !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            :root {
+                --header-h: 44px;
+                --footer-h: calc(60px + env(safe-area-inset-bottom));
+            }
+
+            header {
+                min-height: var(--header-h) !important;
+                padding: 4px 16px !important;
+            }
+
+            .brand {
+                font-size: 1.3rem !important;
+            }
+
+            .bottom-nav {
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                min-height: 60px !important;
+                height: var(--footer-h) !important;
+                padding: 10px 10px calc(8px + env(safe-area-inset-bottom)) !important;
+                background: #FFFFFF !important;
+                z-index: 9999 !important;
+                border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+            }
+
+            main {
+                padding-bottom: calc(var(--footer-h) + 10px) !important;
+            }
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: var(--header-h);
+            min-height: var(--header-h);
+            flex-shrink: 0;
+        }
+
+        /* Hide all scrollbars globally */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        * {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            /* Thin bar */
+            background-color: var(--point-orange);
+            /* Orange color */
+            width: 0%;
+            /* Initial width */
+            transition: width 0.1s ease-out;
+            /* Smooth transition for width changes */
+            z-index: 101;
+            /* Above header content */
+        }
+
+        .brand {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--text-asphalt);
+            text-transform: uppercase;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand i {
+            color: var(--point-orange);
+        }
+
+        main {
+            flex: 1;
+            padding: 24px 20px 24px 20px;
+            /* 상단 패딩을 8px에서 24px로 복구하여 헤더와의 간격 확보 */
+            overflow-y: auto;
+        }
+
+        /* Essential for Rubber-band effect on modern mobile browsers */
+        body {
+            overscroll-behavior-y: none;
+        }
+
+        /* [REMOVED] Duplicate .app-container definition that was overriding the grid layout */
+
+        .card {
+            background: #FFFFFF;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            margin-bottom: 12px;
+        }
+
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            background: #FFFFFF;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            height: var(--footer-h);
+            flex-shrink: 0;
+            z-index: 1000;
+            width: 100%;
+            box-sizing: border-box;
+            /* No position absolute, rely on flexbox layout inside app-container */
+        }
+
+        .admin-nav-hidden {
+            display: none !important;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-asphalt);
+            text-decoration: none;
+            font-size: 0.8rem;
+            opacity: 0.5;
+            gap: 2px;
+            transition: var(--transition);
+        }
+
+        .nav-item i {
+            font-size: 1.25rem;
+            margin-bottom: 2px;
+        }
+
+        .nav-item.active {
+            opacity: 1;
+            color: var(--point-orange);
+        }
+
+        .nav-item.has-unread {
+            opacity: 1 !important;
+            font-weight: 700;
+            color: var(--text-asphalt);
+        }
+
+        /* Admin Alert Badge */
+        .nav-item {
+            position: relative;
+        }
+
+        .badge-count {
+            position: absolute;
+            top: -2px;
+            right: calc(50% - 22px);
+            background-color: #FF4D4D;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            box-shadow: 0 2px 5px rgba(255, 77, 77, 0.3);
+            border: 1.5px solid white;
+            z-index: 10;
+        }
+
+        .nav-item:hover {
+            transform: scale(1.05) translateY(-1px);
+            opacity: 0.9 !important;
+        }
+
+        .nav-item:active {
+            transform: scale(1.0);
+        }
+
+
+        .btn-auth-outline {
+            background: transparent;
+            color: var(--text-asphalt);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            /* Even lighter border */
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .btn-auth-solid {
+            background: var(--point-orange);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            border: none !important;
+            /* Force remove any default borders */
+            cursor: pointer;
+            outline: none;
+            transition: var(--transition);
+            box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2);
+        }
+
+        .btn-auth-solid:hover {
+            background: #e67e00;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 16px rgba(255, 140, 0, 0.3) !important;
+            filter: none !important;
+        }
+
+        .admin-entry-btn:hover {
+            background: var(--point-orange) !important;
+            border-color: var(--point-orange) !important;
+        }
+
+        /* Auth Pages Global Styles */
+        .auth-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .auth-brand {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 40px;
+            color: var(--text-asphalt);
+        }
+
+        .auth-brand i {
+            color: var(--point-orange);
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 320px;
+            background: white;
+            padding: 30px;
+            border-radius: 32px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            background: var(--point-orange);
+            color: white;
+            border: none;
+            box-shadow: 0 8px 20px rgba(255, 140, 0, 0.2);
+        }
+
+        .auth-btn:hover {
+            background: #e67e00;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(255, 140, 0, 0.3);
+            filter: none;
+        }
+
+        .auth-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 10px rgba(255, 140, 0, 0.2);
+        }
+
+        /* Removed JS-dependent mobile UI classes in favor of media queries */
+
+        /* Global Modal Styles */
+        .global-modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .global-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .global-modal-content {
+            width: 85%;
+            max-width: 320px;
+            background: #fff;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .global-modal-overlay.active .global-modal-content {
+            transform: scale(1);
+        }
+
+        .gmodal-item {
+            padding: 18px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .gmodal-item i {
+            color: var(--point-orange);
+        }
+
+        .gmodal-divider {
+            height: 1px;
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .gmodal-item.cancel {
+            color: #FF4D4D;
+        }
+
+        #custom-toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translate(-50%, -150%);
+            background: #2D2D2D;
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 16px;
+            z-index: 999999 !important;
+            /* 그 어떤 레이어보다 앞에 보이도록 */
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+            width: auto;
+            max-width: 90vw;
+            min-width: 250px;
+            white-space: nowrap;
+        }
+
+        #custom-toast.active {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-4px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(4px);
+            }
+        }
+
+        .shake {
+            animation: shake 0.5s ease;
+            border-color: var(--point-orange) !important;
+        }
+
+        /* Global Click & Hover Effect */
+        button,
+        .btn-auth-solid,
+        .btn-auth-outline,
+        .login-btn,
+        .nav-item,
+        .card {
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover,
+        .btn-auth-solid:hover,
+        .login-btn:hover {
+            filter: brightness(0.9);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-auth-outline:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-item:hover {
+            opacity: 0.8 !important;
+        }
+
+        button:active,
+        .btn-auth-solid:active,
+        .btn-auth-outline:active,
+        .login-btn:active,
+        .nav-item:active,
+        .card:active {
+            transform: scale(0.96);
+        }
+
+        /* 관리자 대시보드 PC 전용 버튼 (원형) */
+        .admin-pc-btn {
+            display: none !important;
+            /* 기본적으로 숨김 (모바일) */
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 50% !important;
+            background: #333;
+            color: white !important;
+            text-decoration: none !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 1.1rem;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin-right: 4px;
+        }
+
+        @media (min-width: 1024px) {
+            .admin-pc-btn {
+                display: flex !important;
+            }
+        }
+
+        .admin-pc-btn:hover {
+            background: var(--point-orange) !important;
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: 0 8px 20px rgba(255, 140, 0, 0.4);
+            color: white !important;
+        }
+
+        .admin-pc-btn:active {
+            transform: scale(0.92);
+            background: #e67e00 !important;
+        }
+
+        .admin-pc-btn i {
+            transition: transform 0.2s ease;
+        }
+
+        .admin-pc-btn:active i {
+            transform: scale(0.8);
+        }
+
+        /* 기존 admin-icon-btn 스타일 유지 (필요 시) */
+        .admin-icon-btn {
+            display: none;
+            /* Hidden by default (mobile) */
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.04);
+            color: var(--text-asphalt);
+            text-decoration: none;
+            transition: var(--transition);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        @media (min-width: 601px) {
+            .admin-icon-btn {
+                display: flex;
+            }
+        }
+
+        .admin-icon-btn:hover {
+            background: var(--point-orange);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 140, 0, 0.25);
+        }
+
+        .admin-icon-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Premium Loader Styles */
+        #premium-loader {
+            position: absolute;
+            top: var(--header-h);
+            /* Header Height */
+            left: 0;
+            width: 100%;
+            bottom: var(--footer-h);
+            /* Bottom Nav Height */
+            background: #F2F0EB;
+            /* [FIX] PWA 스플래시 배경색(#F2F0EB)과 100% 일치시켜 전환 시 깜빡임 제거 */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            /* Extra high to cover all elements including filters */
+            padding-bottom: 3vh;
+            /* Nudge content up slightly for better visual balance */
+            transition: opacity 0.5s ease, visibility 0.5s;
+        }
+
+        #premium-loader.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            animation: loaderPulse 2s infinite ease-in-out;
+        }
+
+        .loader-logo i {
+            color: var(--point-orange);
+            filter: drop-shadow(0 0 15px rgba(255, 140, 0, 0.4));
+        }
+
+        .loader-bar-container {
+            width: 120px;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            margin-top: 30px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loader-bar-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80%;
+            /* 약간의 여유를 줌 */
+            height: 100%;
+            background: linear-gradient(90deg, transparent, var(--point-orange), transparent);
+            animation: loaderSlide 1.5s infinite linear;
+        }
+
+        /* Pull to Refresh Styles */
+        .ptr-indicator {
+            position: absolute;
+            top: var(--header-h);
+            left: 0;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .ptr-indicator i {
+            font-size: 1.2rem;
+            color: var(--point-orange);
+            background: white;
+            padding: 8px;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+        }
+
+        @keyframes loaderPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+        }
+
+        @keyframes loaderSlide {
+            0% {
+                transform: translateX(-120%);
+            }
+
+            100% {
+                transform: translateX(125%);
+            }
+        }
+
+        /* Admin Dashboard Transition: Expansion */
+        .app-container.admin-expanding {
+            max-width: 100% !important;
+            width: 100vw !important;
+            border-radius: 0 !important;
+            transition: all 0.8s cubic-bezier(0.65, 0, 0.35, 1) !important;
+        }
+
+        /* Admin Specific Loader: Modern Wave */
+        .admin-loader-bar {
+            width: 200px;
+            height: 6px;
+            background: rgba(255, 140, 0, 0.1);
+            border-radius: 20px;
+            margin-top: 30px;
+            position: relative;
+            overflow: hidden;
+            display: none;
+        }
+
+        .admin-loader-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, var(--point-orange), transparent);
+            animation: adminLoading 1.2s infinite ease-in-out;
+        }
+
+        @keyframes adminLoading {
+            0% {
+                left: -100%;
+            }
+
+            100% {
+                left: 100%;
+            }
+        }
+
+        /* [PERMANENT] My Page Stat Card Styles */
+        .stat-highlight-card {
+            background: #fcfcfc !important;
+            padding: 18px 8px !important;
+            border-radius: 20px !important;
+            border: 1px solid rgba(0, 0, 0, 0.08) !important;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+            cursor: pointer !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            position: relative;
+        }
+
+        .stat-highlight-card strong {
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            color: var(--point-orange) !important;
+            margin-bottom: 4px !important;
+        }
+
+        .stat-highlight-card span {
+            font-size: 0.85rem !important;
+            color: #444 !important;
+            font-weight: 800 !important;
+        }
+
+        .stat-highlight-card:hover {
+            transform: translateY(-10px) scale(1.05) !important;
+            box-shadow: 0 20px 40px rgba(255, 140, 0, 0.3) !important;
+            border-color: var(--point-orange) !important;
+            z-index: 10 !important;
+        }
+
+        .stat-highlight-card.cracker {
+            background: linear-gradient(135deg, var(--point-orange), #FFB347) !important;
+            border: none !important;
+            color: white !important;
+        }
+
+        .stat-highlight-card.cracker strong,
+        .stat-highlight-card.cracker span {
+            color: white !important;
+        }
+
+        /* [CUTE] Shake & Fall Sequence */
+        @keyframes shakeAndFall {
+            0% {
+                transform: translate(0, 0) rotate(0);
+            }
+
+            10% {
+                transform: translate(-3px, 0) rotate(-1deg);
+            }
+
+            20% {
+                transform: translate(3px, 0) rotate(1deg);
+            }
+
+            30% {
+                transform: translate(-5px, 0) rotate(-1.5deg);
+            }
+
+            40% {
+                transform: translate(5px, 0) rotate(1.5deg);
+            }
+
+            50% {
+                transform: translate(0, 0) rotate(0);
+            }
+
+            100% {
+                transform: translate(0, 100vh) rotate(20deg);
+                opacity: 0;
+            }
+        }
+
+        .fall-away {
+            animation: shakeAndFall 0.8s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards !important;
+            pointer-events: none !important;
+        }
+
+        main.fade-out {
+            opacity: 0 !important;
+            transform: translateY(20px) !important;
+            transition: all 0.5s ease !important;
+        }
+    </style>
+    {% block extra_style %}{% endblock %}
+    <script>
+        // Check sessionStorage before body renders to apply initial classes
+        if (sessionStorage.getItem('admin_transition') === 'active') {
+            document.documentElement.classList.add('admin-bridge-mode');
+        }
+    </script>
+</head>
+
+<body>
+    <div class="app-container {{ 'admin-page' if request.path == '/admin/dashboard' else '' }}">
+        <!-- Pull to Refresh Indicator -->
+        <div class="ptr-indicator" id="ptr-indicator">
+            <i class="bi bi-arrow-clockwise" id="ptr-icon"></i>
+        </div>
+        <!-- Premium Loading Screen -->
+        <div id="premium-loader">
+            <div class="loader-logo">
+                <i class="bi bi-lightning-charge-fill"></i> CRACK
+            </div>
+            <div id="loader-text"
+                style="margin-top: 15px; font-size: 0.95rem; color: #555; font-weight: 600; min-height: 1.4rem; text-align: center;">
+            </div>
+            <div class="loader-bar-container">
+                <div class="loader-bar-progress"></div>
+            </div>
+        </div>
+
+        <header>
+            <a href="/" class="brand" onclick="shakeElement(this)"><i class="bi bi-lightning-charge-fill"></i> CRACK</a>
+            <div class="auth-tools" style="display:flex; gap:12px; align-items:center;">
+                {% if session.get('user_id') %}
+
+                {% if session.get('is_admin') %}
+                <!-- Admin Only Tools -->
+                {% if request.path == '/admin/dashboard' %}
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <a href="/" class="admin-pc-btn" title="앱으로 돌아가기">
+                        <i class="bi bi-arrow-left-circle-fill"></i>
+                    </a>
+                    <a href="/admin/ppt" class="admin-pc-btn" title="프레젠테이션 (PPT)">
+                        <i class="bi bi-file-earmark-slides-fill"></i>
+                    </a>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                {% if session.get('is_admin') and request.path != '/admin/dashboard' %}
+                <a href="/admin/dashboard" class="admin-pc-btn admin-dashboard-link" title="관리자 대시보드">
+                    <i class="bi bi-speedometer2"></i>
+                </a>
+                {% endif %}
+
+                <a href="/logout" class="btn-auth-outline" style="color: #FF4D4D;"><i class="bi bi-box-arrow-right"></i>
+                    Logout</a>
+                {% else %}
+                <a href="/login" class="btn-auth-solid" style="padding: 6px 14px; font-size: 0.8rem;">로그인</a>
+                <a href="/signup" class="btn-auth-outline" style="padding: 6px 14px; font-size: 0.8rem;">회원가입</a>
+                {% endif %}
+            </div>
+            <!-- Scroll Progress Indicator -->
+            <div id="scroll-indicator"
+                style="position: absolute; bottom: 0; left: 0; height: 2px; width: 0%; background: var(--point-orange); z-index: 101; transition: width 0.1s ease-out; opacity: 0.8;">
+            </div>
+        </header>
+        <main>{% block content %}{% endblock %}</main>
+        <nav class="bottom-nav {{ 'admin-nav-hidden' if request.path == '/admin/dashboard' else '' }}">
+            <a href="/alert"
+                class="nav-item {{ 'active' if request.path.startswith('/alert') else '' }} {{ 'has-unread' if admin_unread_count > 0 else '' }}">
+                <i class="bi bi-bell-fill"></i>
+                {% if admin_unread_count > 0 %}
+                <span class="badge-count">{{ admin_unread_count if admin_unread_count < 100 else '99+' }}</span>
+                        {% endif %}
+                        Alert
+            </a>
+            <a href="/report" class="nav-item {{ 'active' if request.path.startswith('/report') else '' }}"
+                onclick="return checkMyPage(event)"><i class="bi bi-plus-circle-fill"></i> Report</a>
+            <a href="/status"
+                class="nav-item {{ 'active' if request.path.startswith('/status') or (request.path == '/' and not session.get('user_id')) else '' }}"
+                onclick="return checkMyPage(event)"><i class="bi bi-file-text-fill"></i> Status</a>
+            <a href="/mypage" class="nav-item {{ 'active' if request.path.startswith('/mypage') else '' }}"
+                onclick="return checkMyPage(event)"><i class="bi bi-person-fill"></i> My</a>
+        </nav>
+
+        <div id="custom-toast">
+            <i class="bi bi-info-circle-fill"></i> <span id="toast-message"></span>
+        </div>
+
+        <div id="global-upload-modal" class="global-modal-overlay" onclick="closeGlobalModal()">
+            <div class="global-modal-content" onclick="event.stopPropagation()">
+                <div class="gmodal-item" onclick="handleGlobalModalAction('FILE')"><i
+                        class="bi bi-collection-play-fill"></i> 이 디바이스에서 추가하기</div>
+                <div id="gmodal-camera-option" class="gmodal-item" onclick="handleGlobalModalAction('CAMERA')"><i
+                        class="bi bi-camera-reels-fill"></i> 직접 사진/영상 촬영하기</div>
+                <div class="gmodal-divider"></div>
+                <div class="gmodal-item cancel" onclick="closeGlobalModal()">취소</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let modalOriginSource = null;
+
+        function showToast(msg) {
+            const toast = document.getElementById('custom-toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.add('active');
+            setTimeout(() => toast.classList.remove('active'), 3000);
+        }
+
+        function openGlobalUploadModal(source) {
+            modalOriginSource = source;
+            const overlay = document.getElementById('global-upload-modal');
+            const cameraOpt = document.getElementById('gmodal-camera-option');
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 1024;
+            if (cameraOpt) cameraOpt.style.display = isMobile ? 'flex' : 'none';
+            overlay.classList.add('active');
+        }
+
+        function closeGlobalModal() {
+            document.getElementById('global-upload-modal').classList.remove('active');
+        }
+
+        function handleGlobalModalAction(action) {
+            closeGlobalModal();
+            window.postMessage({ type: 'MODAL_ACTION_SELECTED', action: action }, '*');
+        }
+
+        const shakeElement = (el) => {
+            if (!el) return;
+            el.classList.remove('shake');
+            void el.offsetWidth;
+            el.classList.add('shake');
+            setTimeout(() => el.classList.remove('shake'), 600);
+        };
+
+        window.addEventListener('message', function (e) {
+            if (!e.data) return;
+            if (e.data.type === 'SHAKE_LOGIN') shakeElement(document.querySelector('.btn-login'));
+            else if (e.data.type === 'SHOW_TOAST') showToast(e.data.message);
+            else if (e.data.type === 'REQUEST_UPLOAD_MODAL') openGlobalUploadModal(e.source);
+        });
+
+
+        function checkMyPage(e) {
+            const userId = '{{ session.get("user_id", "") }}';
+            if (!userId) {
+                e.preventDefault();
+                shakeElement(document.querySelector('.btn-login'));
+                showToast('로그인을 먼저 해주세요');
+                return false;
+            }
+            return true;
+        }
+
+        function showPremiumLoader(msg = "") {
+            const loader = document.getElementById('premium-loader');
+            const text = document.getElementById('loader-text');
+            if (text) text.innerText = msg;
+            if (loader) loader.classList.remove('fade-out');
+        }
+
+        function hidePremiumLoader() {
+            const loader = document.getElementById('premium-loader');
+            const text = document.getElementById('loader-text');
+            if (loader) loader.classList.add('fade-out');
+            setTimeout(() => { if (text) text.innerText = ""; }, 500);
+        }
+        window.addEventListener('load', () => { setTimeout(hidePremiumLoader, 300); });
+
+        (function () {
+            // SPA Routing: 메뉴 클릭 시 부드러운 전환 (페이지 새로고침 방지)
+            document.addEventListener('click', async function (e) {
+                // 입력 필드 클릭 시 SPA 로직 무시
+                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+                const link = e.target.closest('.nav-item, .brand, .btn-login, .btn-auth-solid, .alert-item, .notice-item, .back-btn');
+                if (!link) return;
+
+                if (e.defaultPrevented) return;
+
+                let href = link.getAttribute('href');
+                // onclick="location.href='...'" 또는 window.location.href='...' 형태 대응 (안전하게 참조)
+                if (!href) {
+                    const onclickVal = link.getAttribute('onclick');
+                    if (onclickVal) {
+                        const match = onclickVal.match(/(?:window\.)?location\.href=['"](.+?)['"]/);
+                        if (match) href = match[1];
+                    }
+                }
+
+                if (!href || href.startsWith('http') || href.startsWith('#')) return;
+
+                // [중요] 현재 페이지와 동일한 경로 클릭 시 무시 (새로고침 방지)
+                const targetPath = href.split('?')[0];
+                const currentPath = window.location.pathname;
+                if (targetPath === currentPath) {
+                    console.log("Already on this page, ignoring SPA fetch.");
+                    e.preventDefault();
+                    return;
+                }
+
+                // [필독] 관리자 대시보드는 레이아웃이 완전히 다르므로 SPA 전환에서 제외 (새로고침 강제)
+                if (href.includes('logout') || href.includes('admin/dashboard') || window.location.pathname.includes('admin/dashboard')) return;
+
+                // [FIX] 만약 대시보드 진입 애니메이션 대기 중이라면 즉시 중단 및 초기화
+                if (window.adminTransitionTimer) {
+                    clearTimeout(window.adminTransitionTimer);
+                    window.adminTransitionTimer = null;
+                    sessionStorage.removeItem('admin_transition');
+                    const fallMain = document.querySelector('main');
+                    const fallNav = document.querySelector('.bottom-nav');
+                    if (fallMain) fallMain.classList.remove('fall-away');
+                    if (fallNav) fallNav.classList.remove('fall-away');
+                }
+
+                e.preventDefault();
+                showPremiumLoader();
+
+                try {
+                    const response = await fetch(href);
+                    const html = await response.text();
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    if (doc.title) document.title = doc.title;
+
+                    const finalUrl = new URL(response.url).pathname;
+                    const currentPath = window.location.pathname;
+
+                    // URL 상태 변경을 먼저 적용하여 후속 초기화(PTR 등)가 새 경로를 인식하도록 함
+                    if (currentPath !== finalUrl) {
+                        window.history.pushState({}, '', finalUrl);
+                    }
+
+                    const newMain = doc.querySelector('main');
+                    const newAuth = doc.querySelector('.auth-tools');
+                    if (newMain) {
+                        const mainElem = document.querySelector('main');
+                        mainElem.innerHTML = newMain.innerHTML;
+                        mainElem.scrollTop = 0;
+                        // 페이지 전환 및 URL 업데이트 완료 후 PTR 초기화
+                        initPullToRefresh();
+                    }
+                    if (newAuth) {
+                        const authElem = document.querySelector('.auth-tools');
+                        authElem.innerHTML = newAuth.innerHTML;
+                    }
+
+                    document.querySelectorAll('.bottom-nav .nav-item').forEach(nav => {
+                        const navHref = nav.getAttribute('href');
+                        // 홈(/)은 정확히 일치할 때만, 그 외(/alert, /report 등)는 시작 부분 일치 시 활성화
+                        const isActive = (navHref === '/' && finalUrl === '/') || (navHref !== '/' && finalUrl.startsWith(navHref));
+                        nav.classList.toggle('active', isActive);
+                    });
+
+                    // 스크립트 재실행 (동적 로드 대응 강화)
+                    const scripts = Array.from(document.querySelector('main').querySelectorAll('script'));
+                    for (const oldScript of scripts) {
+                        const newScript = document.createElement('script');
+                        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+
+                        if (oldScript.src) {
+                            oldScript.parentNode.replaceChild(newScript, oldScript);
+                        } else {
+                            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                            oldScript.parentNode.replaceChild(newScript, oldScript);
+                        }
+                    }
+
+                    setTimeout(hidePremiumLoader, 400);
+                } catch (err) {
+                    window.location.href = href;
+                }
+            });
+
+            // 뒤로가기/앞으로가기 처리
+            window.addEventListener('popstate', async function (e) {
+                const href = window.location.pathname;
+
+                // [FIX] 관리자 대시보드와 모바일 화면 간의 history 이동 시 강제 새로고침하여 레이아웃 리셋
+                const appContainer = document.querySelector('.app-container');
+                const isContainerAdmin = appContainer ? (appContainer.classList.contains('admin-page') || appContainer.classList.contains('admin-expanding')) : false;
+                if (href.includes('admin/dashboard') || isContainerAdmin) {
+                    window.location.reload();
+                    return;
+                }
+                try {
+                    const response = await fetch(href);
+                    const html = await response.text();
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+                    const newMain = doc.querySelector('main');
+                    if (newMain) {
+                        const mainElem = document.querySelector('main');
+                        mainElem.innerHTML = newMain.innerHTML;
+                        mainElem.scrollTop = 0;
+                        initPullToRefresh(); // PTR 재설정
+                        document.querySelectorAll('.bottom-nav .nav-item').forEach(nav => {
+                            const navHref = nav.getAttribute('href');
+                            const isActive = (navHref === '/' && href === '/') || (navHref !== '/' && href.startsWith(navHref));
+                            nav.classList.toggle('active', isActive);
+                        });
+                        const scripts = document.querySelector('main').querySelectorAll('script');
+                        scripts.forEach(oldScript => {
+                            const newScript = document.createElement('script');
+                            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                            oldScript.parentNode.replaceChild(newScript, oldScript);
+                        });
+                    }
+                } catch (err) {
+                    window.location.reload();
+                }
+            });
+
+            // Pull to Refresh Implementation
+            let startY = 0;
+            let currentY = 0;
+            let pulling = false;
+            const threshold = 80;
+
+            function initPullToRefresh() {
+                const main = document.querySelector('main');
+                const path = window.location.pathname;
+
+                // Report 탭: 커스텀 PTR + 브라우저 기본 PTR 완전 차단
+                if (path.startsWith('/report')) {
+                    main.style.overscrollBehaviorY = 'contain';
+                    return; // PTR 이벤트 등록 자체를 하지 않음
+                }
+
+                // Alert/Status 이외 페이지도 PTR 불필요
+                if (!path.startsWith('/alert') && !path.startsWith('/status')) {
+                    main.style.overscrollBehaviorY = 'auto';
+                    return;
+                }
+
+                // Alert/Status: 즉시 PTR 활성화 (overscroll 차단으로 브라우저 기본 PTR 방지)
+                main.style.overscrollBehaviorY = 'contain';
+
+                // SPA 네비게이션 시마다 새로 등록되도록 기존 플래그 체크 제거
+                if (main.dataset.ptrInitialized) return;
+                main.dataset.ptrInitialized = 'true';
+
+                main.addEventListener('touchstart', e => {
+                    if (main.scrollTop === 0) {
+                        startY = e.touches[0].pageY;
+                        currentY = startY; // Reset currentY to startY to prevent stale diffs
+                        pulling = true;
+                    }
+                }, { passive: true });
+
+                main.addEventListener('touchmove', e => {
+                    if (!pulling) return;
+                    currentY = e.touches[0].pageY;
+                    const diff = currentY - startY;
+
+                    if (diff > 0) {
+                        // Resistance effect
+                        const move = Math.pow(diff, 0.85);
+                        main.style.transform = `translateY(${move}px)`;
+                        main.style.transition = 'none';
+
+                        // Indicator animation
+                        const indicator = document.getElementById('ptr-indicator');
+                        const icon = document.getElementById('ptr-icon');
+                        if (indicator && icon) {
+                            indicator.style.opacity = Math.min(diff / threshold, 1);
+                            indicator.style.transform = `translateY(${Math.min(move, 60)}px)`;
+                            icon.style.transform = `rotate(${diff * 2}deg)`;
+                        }
+                    } else {
+                        pulling = false;
+                        main.style.transform = '';
+                    }
+                }, { passive: true });
+
+                main.addEventListener('touchend', async () => {
+                    if (!pulling) return;
+                    pulling = false;
+                    const diff = currentY - startY;
+                    const indicator = document.getElementById('ptr-indicator');
+                    const icon = document.getElementById('ptr-icon');
+
+                    if (diff > threshold) {
+                        // Refresh trigger with bounce
+                        main.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                        main.style.transform = 'translateY(60px)';
+
+                        if (indicator) indicator.style.opacity = '1';
+                        if (icon) icon.style.transition = 'transform 0.5s ease-in-out';
+                        if (icon) icon.style.transform = 'rotate(720deg)';
+
+                        showPremiumLoader();
+                        // Actual refresh logic (SPA reload)
+                        try {
+                            const response = await fetch(window.location.pathname);
+                            const html = await response.text();
+                            const doc = new DOMParser().parseFromString(html, 'text/html');
+                            const newMain = doc.querySelector('main');
+                            if (newMain) {
+                                main.innerHTML = newMain.innerHTML;
+                            }
+                        } catch (e) {
+                            console.error("Refresh failed", e);
+                        }
+
+                        setTimeout(() => {
+                            main.style.transform = '';
+                            if (indicator) {
+                                indicator.style.opacity = '0';
+                                setTimeout(() => {
+                                    if (icon) icon.style.transition = 'none';
+                                    if (icon) icon.style.transform = '';
+                                }, 300);
+                            }
+                            setTimeout(hidePremiumLoader, 300);
+                        }, 800);
+                    } else {
+                        // Cancel pull with spring back
+                        main.style.transition = 'transform 0.3s ease';
+                        main.style.transform = '';
+                        if (indicator) indicator.style.opacity = '0';
+                    }
+                });
+            }
+
+            // Initial call
+            initPullToRefresh();
+
+            // Scroll Indicator Logic
+            const mainContent = document.querySelector('main');
+            const indicator = document.getElementById('scroll-indicator');
+            if (mainContent && indicator) {
+                mainContent.addEventListener('scroll', () => {
+                    const scrollHeight = mainContent.scrollHeight - mainContent.clientHeight;
+                    const scrolled = scrollHeight > 0 ? (mainContent.scrollTop / scrollHeight) * 100 : 0;
+                    indicator.style.width = scrolled + "%";
+                });
+            }
+        })();
+
+
+        // Clean up on Logout (Session Clear)
+        document.querySelectorAll('a[href*="logout"]').forEach(link => {
+            link.addEventListener('click', () => {
+                sessionStorage.clear(); // Clear all state on logout
+            });
+        });
+
+        // Premium Loader Logic (v15)
+        console.log("CRACK App Version: v15");
+        window.addEventListener('DOMContentLoaded', () => {
+            const loader = document.getElementById('premium-loader');
+            const minTime = 1500; // 1.5s minimum wow factor
+            const startTime = Date.now();
+
+            window.addEventListener('load', () => {
+                const elapsedTime = Date.now() - startTime;
+                const delay = Math.max(0, minTime - elapsedTime);
+
+                setTimeout(() => {
+                    loader.classList.add('fade-out');
+                }, delay);
+            });
+        });
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registered', reg))
+                    .catch(err => console.log('Service Worker registration failed', err));
+            });
+        }
+        // Admin Dashboard Transition Logic (Event Delegation - works with SPA)
+        // 이벤트 위임: document에 1회 등록하여 SPA 네비게이션 후에도 항상 작동
+        window.adminTransitionTimer = null;
+        document.addEventListener('click', function (e) {
+            var link = e.target.closest('.admin-dashboard-link');
+            if (!link) return;
+
+            e.preventDefault();
+            e.stopPropagation(); // SPA 라우터의 클릭 가로채기 방지
+
+            var targetUrl = link.getAttribute('href');
+            var main = document.querySelector('main');
+            var nav = document.querySelector('.bottom-nav');
+
+            // 1. 내용물 추락 애니메이션 시작
+            if (main) main.classList.add('fall-away');
+            if (nav) nav.classList.add('fall-away');
+
+            // 2. 상태 저장 (다음 페이지에서 브리지 애니메이션 실행을 위함)
+            sessionStorage.setItem('admin_transition', 'active');
+
+            // 3. 추락 완료 시점에 리다이렉트
+            if (window.adminTransitionTimer) clearTimeout(window.adminTransitionTimer);
+            window.adminTransitionTimer = setTimeout(function () {
+                window.location.href = targetUrl;
+            }, 900);
+        });
+
+        // [BRIDGE] Next Page Expand Sequence
+        (function () {
+            if (window.location.pathname === '/admin/dashboard' && document.documentElement.classList.contains('admin-bridge-mode')) {
+                var container = document.querySelector('.app-container');
+
+                // 페이지가 로드되었으므로 로더 표시
+                showPremiumLoader('관리자 세상을 확장하고 있습니다...');
+
+                // 약간의 지연 후 전체 화면 확장 시작
+                setTimeout(function () {
+                    document.documentElement.classList.remove('admin-bridge-mode');
+                    if (container) container.classList.add('admin-expanding');
+
+                    // 확장 완료 후 로더 제거
+                    setTimeout(function () {
+                        hidePremiumLoader();
+                        sessionStorage.removeItem('admin_transition');
+                    }, 1300);
+                }, 600);
+            }
+        })();
+
+        // [PPT RETURN] PPT 시연하기에서 메인으로 복귀 시 역방향 전환 애니메이션
+        (function () {
+            if (sessionStorage.getItem('ppt_return') === 'active') {
+                sessionStorage.removeItem('ppt_return');
+                var container = document.querySelector('.app-container');
+                if (container) {
+                    // 처음에 전체화면 크기에서 시작 (PPT가 축소되며 사라진 것처럼)
+                    container.style.transition = 'none';
+                    container.style.transform = 'scale(3)';
+                    container.style.opacity = '0';
+
+                    showPremiumLoader('시연 화면으로 돌아가고 있습니다...');
+
+                    // 약간의 지연 후 원래 크기로 부드럽게 축소
+                    setTimeout(function () {
+                        container.style.transition = 'transform 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.6s ease';
+                        container.style.transform = 'scale(1)';
+                        container.style.opacity = '1';
+
+                        setTimeout(function () {
+                            hidePremiumLoader();
+                            container.style.transition = '';
+                            container.style.transform = '';
+                        }, 1300);
+                    }, 100);
+                }
+            }
+        })();
+    </script>
+</body>
+
+</html>

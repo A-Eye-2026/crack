@@ -1,0 +1,1939 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRACK - Project Presentation</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Noto+Sans+KR:wght@300;400;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            /* 사용자가 지정한 메인 컬러 팔레트 적용 */
+            --bg-main: #F2F0EB;
+            --text-asphalt: #333333;
+            --point-orange: #FF8C00;
+            --accent-soft: rgba(255, 140, 0, 0.1);
+            --white: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+        }
+
+        body,
+        html {
+            background-color: var(--bg-main);
+            color: var(--text-asphalt);
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            overflow: hidden !important;
+            width: 100%;
+            height: 100vh;
+        }
+
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 부드러운 화이트 / 오렌지 액센트 플로팅 배경 */
+        .color-orbs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: floatOrb 30s infinite alternate ease-in-out;
+        }
+
+        .orb-white1 {
+            width: 80vw;
+            height: 80vw;
+            background: var(--white);
+            top: -20vw;
+            left: -10vw;
+            opacity: 0.6;
+        }
+
+        .orb-accent {
+            width: 60vw;
+            height: 60vw;
+            background: var(--accent-soft);
+            bottom: -10vw;
+            right: -10vw;
+            animation-delay: -10s;
+        }
+
+        @keyframes floatOrb {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(5vw, 5vh) scale(1.1);
+            }
+
+            100% {
+                transform: translate(-5vw, -5vh) scale(0.9);
+            }
+        }
+
+        /* 옅은 모눈종이 패턴 배경 */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2;
+            pointer-events: none;
+            /* 그리드 무늬를 아주 아주 투명하게 변경 (기계만 인지 가능하도록) */
+            background-image: linear-gradient(rgba(0, 0, 0, 0.005) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.005) 1px, transparent 1px);
+            background-size: 80px 80px;
+            opacity: 0.3;
+        }
+
+        /* 협업 툴 로고 전용 스타일 */
+        .collab-logo-container {
+            width: 250px;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .collab-logo {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.08));
+            cursor: pointer;
+            transform: rotate(var(--rot, 0deg));
+        }
+
+        .collab-logo:hover {
+            transform: scale(1.15) translateY(-10px) rotate(var(--rot, 0deg));
+            filter: drop-shadow(0 15px 30px rgba(255, 140, 0, 0.25));
+        }
+
+        .collab-logo.overlap {
+            position: absolute;
+        }
+
+        .viewport {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        /* 카메라 컨테이너: JS로 위치 보간 */
+        #camera {
+            position: absolute;
+            top: 50vh;
+            left: 50vw;
+            width: 0;
+            height: 0;
+            will-change: transform;
+            transition: none;
+        }
+
+        .spot {
+            position: absolute;
+            transform-origin: center center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            width: 1400px;
+            transition: opacity 0.5s;
+            opacity: 0.2;
+        }
+
+        /* 오렌지 & 모던 타이포그래피 */
+        h1 {
+            font-size: 8rem;
+            font-weight: 900;
+            margin-bottom: 2rem;
+            line-height: 1.1;
+            color: var(--text-asphalt);
+        }
+
+        h2 {
+            font-size: 5rem;
+            font-weight: 900;
+            margin-bottom: 3rem;
+            color: var(--text-asphalt);
+        }
+
+        h3 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-asphalt);
+        }
+
+        p {
+            font-size: 2rem;
+            font-weight: 400;
+            line-height: 1.6;
+            color: #555555;
+        }
+
+        .point {
+            color: var(--point-orange);
+        }
+
+        .flex-row {
+            display: flex;
+            width: 100%;
+            justify-content: space-evenly;
+            align-items: flex-start;
+            gap: 50px;
+        }
+
+        .flex-col {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .team-cluster {
+            display: flex;
+            gap: 60px;
+            justify-content: center;
+            margin-top: 60px;
+            perspective: 1200px;
+        }
+
+
+        /* [DENSITY TUNING] 팀원 카드 크기 축소 (인디케이터 침범 방지) */
+        .avatar-3d {
+            position: relative;
+            width: 305px;
+            height: 404px;
+            cursor: pointer;
+            overflow: hidden;
+            border-radius: 40px;
+            background: var(--white);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .avatar-cover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #eee;
+            background-size: cover;
+            background-position: center;
+            z-index: 2;
+            transition: transform 0.6s cubic-bezier(0.7, 0, 0.3, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+        }
+
+        .avatar-info {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--point-orange);
+            color: white;
+            padding: 25px 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .avatar-3d.active .avatar-cover {
+            transform: translateY(-100%);
+        }
+
+        .avatar-name {
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin-bottom: 12px;
+        }
+
+        .avatar-role {
+            font-size: 1.2rem;
+            font-weight: 600;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        .mega-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            font-size: 14rem;
+            font-weight: 900;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-asphalt);
+            letter-spacing: -12px;
+        }
+
+        .mega-logo .bolt {
+            color: var(--point-orange);
+            font-size: 1.1em;
+            margin: 0 -20px;
+            filter: drop-shadow(0 0 30px rgba(255, 140, 0, 0.4));
+            animation: boltFlash 3s infinite;
+        }
+
+        @keyframes boltFlash {
+
+            0%,
+            100% {
+                opacity: 1;
+                filter: drop-shadow(0 0 30px rgba(255, 140, 0, 0.4));
+            }
+
+            50% {
+                opacity: 0.8;
+                filter: drop-shadow(0 0 10px rgba(255, 140, 0, 0.2));
+            }
+        }
+
+        .btn-exit {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            z-index: 1000;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--white);
+            color: var(--text-asphalt);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-exit:hover {
+            background: var(--point-orange);
+            color: var(--white);
+            transform: rotate(15deg) scale(1.1);
+        }
+
+        .indicator-container {
+            position: fixed;
+            top: 50%;
+            left: 40px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1000;
+        }
+
+        .indicator-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .indicator-dot.active {
+            height: 40px;
+            width: 12px;
+            background: var(--point-orange);
+        }
+
+        .huge-icon {
+            font-size: 15rem;
+            line-height: 1;
+            opacity: 0.1;
+            position: absolute;
+            z-index: -1;
+        }
+
+        /* [MOBILE FRAME REFINEMENT] 베젤 축소 및 화면 극대화 */
+        .phone-frame {
+            flex: 0 0 420px;
+            height: 860px;
+            background: #1a1a1a;
+            border-radius: 44px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            position: relative;
+            border: 8px solid #333;
+            /* 얇고 세련된 베젤 */
+            padding: 0;
+            display: flex;
+        }
+
+        .phone-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 25px;
+            background: #333;
+            border-radius: 0 0 16px 16px;
+            z-index: 10;
+        }
+
+        .phone-frame iframe {
+            width: 100% !important;
+            height: 100% !important;
+            border: none;
+            border-radius: 36px;
+            background: var(--bg-main);
+            flex: 1;
+        }
+
+        .desc-panel {
+            flex: 1;
+            text-align: left;
+            max-width: 700px;
+        }
+
+        .desc-block {
+            display: none;
+            animation: descFadeIn 0.5s ease;
+        }
+
+        .desc-block.active {
+            display: block;
+        }
+
+        @keyframes descFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ppt-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: linear-gradient(135deg, #fef9f0 0%, #fff5e6 50%, #fef0d5 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .ppt-loader.fade-out {
+            opacity: 0;
+            transform: scale(1.1);
+            pointer-events: none;
+        }
+
+        .ppt-loader-logo {
+            font-size: 5rem;
+            font-weight: 900;
+            color: var(--text-asphalt);
+            margin-bottom: 30px;
+            letter-spacing: -4px;
+        }
+
+        .ppt-loader-logo .loader-bolt {
+            color: var(--point-orange);
+            display: inline-block;
+            animation: loaderBoltPulse 1.2s infinite;
+        }
+
+        @keyframes loaderBoltPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.15);
+            }
+        }
+
+        .ppt-loader-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.06);
+            border-top-color: var(--point-orange);
+            border-radius: 50%;
+            animation: loaderSpin 0.8s linear infinite;
+            margin-bottom: 24px;
+        }
+
+        @keyframes loaderSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .ppt-loader-text {
+            font-size: 1.1rem;
+            color: rgba(0, 0, 0, 0.35);
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+
+        .spot.scatter-init {
+            opacity: 0;
+            transform: translate(0, 0) scale(0.3);
+            transition: opacity 0.8s cubic-bezier(0.23, 1, 0.32, 1), transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .spot.scatter-done {
+            opacity: 1;
+            transform: translate(0, 0) scale(1);
+        }
+
+        /* 통계 카드 스타일 */
+        .stat-card {
+            background: white;
+            border-radius: 28px;
+            padding: 28px 30px;
+            box-shadow: 0 12px 40px rgba(139, 69, 19, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: default;
+            width: 340px;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-12px) scale(1.03);
+            box-shadow: 0 20px 60px rgba(255, 140, 0, 0.15);
+        }
+
+        .stat-icon {
+            font-size: 3.5rem;
+            color: var(--point-orange);
+            margin-bottom: 16px;
+        }
+
+        .stat-number {
+            font-size: 4rem;
+            font-weight: 900;
+            color: var(--point-orange);
+            line-height: 1.1;
+            margin-bottom: 8px;
+        }
+
+        .stat-unit {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-asphalt);
+        }
+
+        .stat-desc {
+            font-size: 1.4rem;
+            color: #888;
+            margin-top: 12px;
+            line-height: 1.5;
+            word-break: keep-all;
+        }
+
+        /* 기사 카드 스타일 */
+        .article-card {
+            background: white;
+            border-radius: 24px;
+            padding: 36px 40px;
+            box-shadow: 0 10px 35px rgba(139, 69, 19, 0.06);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            text-align: left;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            width: 380px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .article-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: var(--point-orange);
+            border-radius: 0 4px 4px 0;
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .article-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        .article-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(255, 140, 0, 0.12);
+        }
+
+        .article-card .article-source {
+            font-size: 1.1rem;
+            color: var(--point-orange);
+            font-weight: 800;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .article-card .article-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-asphalt);
+            line-height: 1.4;
+            margin-bottom: 12px;
+            word-break: keep-all;
+        }
+
+        .article-card .article-summary {
+            font-size: 1.2rem;
+            color: #777;
+            line-height: 1.5;
+            word-break: keep-all;
+        }
+
+        .article-card .article-link-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.4rem;
+            color: #ccc;
+            transition: color 0.3s;
+        }
+
+        .article-card:hover .article-link-icon {
+            color: var(--point-orange);
+        }
+
+        @keyframes pulse-orange {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 12px 40px rgba(255, 140, 0, 0.1);
+            }
+
+            50% {
+                transform: scale(1.03);
+                box-shadow: 0 24px 60px rgba(255, 140, 0, 0.25);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 12px 40px rgba(255, 140, 0, 0.1);
+            }
+        }
+
+        .flip-card {
+            perspective: 1000px;
+            width: 280px;
+            height: 420px;
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .flip-card:hover .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front,
+        .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            left: 0;
+            top: 0;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .flip-card-front {
+            background: white;
+            border-top: 5px solid #ccc;
+        }
+
+        .flip-card-back {
+            background: var(--point-orange);
+            color: white;
+            transform: rotateY(180deg);
+            justify-content: center;
+            align-items: center;
+            border-top: 5px solid white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="ppt-loader" id="ppt-loader">
+        <div class="ppt-loader-logo">CR<span class="loader-bolt">⚡</span>CK</div>
+        <div class="ppt-loader-spinner"></div>
+        <div class="ppt-loader-text">PRESENTATION LOADING</div>
+    </div>
+
+    <div class="color-orbs">
+        <div class="orb orb-accent"></div>
+        <div class="orb orb-white1"></div>
+    </div>
+    <div class="bg-grid"></div>
+
+    <a href="/admin/dashboard" class="btn-exit" title="대시보드로 복귀"><i class="bi bi-door-open-fill"></i></a>
+    <div class="indicator-container" id="indicators"></div>
+
+    <div class="viewport">
+        <div id="camera">
+
+            <!-- 17 Spots (0 ~ 16) -->
+            <div class="spot" id="spot-0">
+                <div class="mega-logo">CR<i class="bi bi-lightning-charge-fill bolt"></i>CK</div>
+                <p
+                    style="font-size: 3rem; font-weight: 700; color: var(--text-asphalt); letter-spacing: 5px; margin-top: 20px;">
+                    모두가 맘편히 이용할 수 있는 <span class="point">안전한 동네</span>를 만듭니다.
+                </p>
+            </div>
+
+            <div class="spot" id="spot-1"
+                style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <i class="bi bi-people-fill huge-icon" style="top: -180px;"></i>
+                <h2 style="margin-top: -40px; margin-bottom: 0px;"><span class="point">TEAM</span> CRACKER</h2>
+                <p style="font-size: 2.4rem; font-weight: 500; margin-top: 0px;">풀스택 개발에서 비전학습까지 함께한 팀원들을 소개합니다.
+                </p>
+                <div class="team-cluster">
+                    <!-- Teams -->
+                    <div class="avatar-3d">
+                        <div class="avatar-cover" style="background-image: url('/static/수빈.png');"></div>
+                        <div class="avatar-info">
+                            <div class="avatar-name">김수빈</div>
+                            <div class="avatar-role">Project Manager<br>& AI Engineering</div>
+                        </div>
+                    </div>
+                    <div class="avatar-3d">
+                        <div class="avatar-cover" style="background-image: url('/static/시환.png');"></div>
+                        <div class="avatar-info">
+                            <div class="avatar-name">이시환</div>
+                            <div class="avatar-role">Frontend Design<br>& Routing System</div>
+                        </div>
+                    </div>
+                    <div class="avatar-3d">
+                        <div class="avatar-cover" style="background-image: url('/static/형래.png');"></div>
+                        <div class="avatar-info">
+                            <div class="avatar-name">노형래</div>
+                            <div class="avatar-role">Backend Architecture<br>& Realtime Logic</div>
+                        </div>
+                    </div>
+                    <div class="avatar-3d">
+                        <div class="avatar-cover" style="background-image: url('/static/지건.png');"></div>
+                        <div class="avatar-info">
+                            <div class="avatar-name">이지건</div>
+                            <div class="avatar-role">UX/UI Design<br>& Motion Graphics</div>
+                        </div>
+                    </div>
+                    <div class="avatar-3d">
+                        <div class="avatar-cover" style="background-image: url('/static/지영.png');"></div>
+                        <div class="avatar-info">
+                            <div class="avatar-name">김지영</div>
+                            <div class="avatar-role">Full-Stack Dev<br>& QA Automation</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot" id="spot-2">
+                <h2 style="font-size: 10rem; opacity: 0.05; position: absolute; z-index: -1;">INDEX</h2>
+                <h2 style="font-size: 6rem;">프로젝트 <span class="point">섹션</span></h2>
+                <div class="flex-row"
+                    style="text-align: left; font-size: 2.2rem; font-weight: 800; line-height: 2.5; color: #555;">
+                    <div><span class="point">01.</span> 개발 배경<br><span class="point">02.</span> 차별성<br><span
+                            class="point">03.</span> 협업 툴<br><span class="point">04.</span> DB 구조</div>
+                    <div class="v-divider"></div>
+                    <div><span class="point">05.</span> 기술 스택<br><span class="point">06.</span> AI 모델<br><span
+                            class="point">07.</span> 핵심 서비스 로직<br><span class="point">08.</span> 데모 및 향후목표</div>
+                </div>
+            </div>
+
+            <div class="spot" id="spot-3">
+                <h2 style="font-size: 6rem;">왜 <span class="point">포트홀</span>인가요?</h2>
+                <p
+                    style="font-size: 2.2rem; max-width: 1200px; text-align: center; margin: 30px auto 0; line-height: 1.7; color: #555;">
+                    보이지 않는 도로 위의 지뢰, <strong style="color:var(--text-asphalt);">포트홀</strong>.<br>
+                    매년 수만 건이 발생하고, 피해 배상은 <span class="point">3배</span> 급증하고 있습니다.<br>
+                    <span style="font-size: 1.5rem; color: #aaa;">(2020년 14억 → 2024년 42억 원)</span>
+                </p>
+            </div>
+
+            <!-- spot-3a: 고속도로·간선도로 통계 -->
+            <div class="spot" id="spot-3a">
+                <h2 style="font-size: 4.5rem; margin-bottom: 40px;"><span class="point">고속도로</span>의 위험한 숫자들</h2>
+                <div style="display: flex; gap: 40px; justify-content: center; flex-wrap: wrap;">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                        <div class="stat-number">26,488</div>
+                        <div class="stat-unit">건</div>
+                        <div class="stat-desc">전국 고속도로 포트홀 발생<br>(2020~2024년 5년간)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+                        <div class="stat-number">154</div>
+                        <div class="stat-unit">억 원</div>
+                        <div class="stat-desc">포트홀 배상금 지급액<br>(2020~2024년 누적)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                        <div class="stat-number">3배</div>
+                        <div class="stat-unit">급증</div>
+                        <div class="stat-desc">연간 배상액 14억→42억<br>(2020년 대비 2024년)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- spot-3b: 일반도로·골목길 통계 -->
+            <div class="spot" id="spot-3b">
+                <h2 style="font-size: 4.5rem; margin-bottom: 15px;"><span class="point">골목길</span>과 일반도로는 더 심각합니다</h2>
+                <p style="font-size: 1.5rem; color: #777; margin-bottom: 40px; max-width: 1100px; text-align: center;">
+                    포트홀 민원의 <span class="point" style="font-size: 1.8rem;">90.6%</span>가 지자체 관리 도로(일반도로·골목길)에서 발생합니다
+                </p>
+                <div style="display: flex; gap: 40px; justify-content: center; flex-wrap: wrap;">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="bi bi-houses-fill"></i></div>
+                        <div class="stat-number">52,262</div>
+                        <div class="stat-unit">건</div>
+                        <div class="stat-desc">지자체 도로 포트홀 민원<br>(2022~2024.02, 약 2년간)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="bi bi-geo-alt-fill"></i></div>
+                        <div class="stat-number">152,551</div>
+                        <div class="stat-unit">건</div>
+                        <div class="stat-desc">서울시 일반도로 포트홀<br>(2019~2023년, 하루 평균 83건)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="bi bi-person-exclamation"></i></div>
+                        <div class="stat-number">654</div>
+                        <div class="stat-unit">건의 인적사고</div>
+                        <div class="stat-desc">일반도로·지방도 인명피해<br>(3개년 종합, 사망 2건 포함)</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; margin-top: 35px;">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="bi bi-cash-coin"></i></div>
+                        <div class="stat-number">103</div>
+                        <div class="stat-unit">억 원</div>
+                        <div class="stat-desc">서울시 일반도로 배상금<br>(2019~2023년 누적)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="bi bi-map-fill"></i></div>
+                        <div class="stat-number">65만+</div>
+                        <div class="stat-unit">개</div>
+                        <div class="stat-desc">전국 포트홀 총 집계<br>(3개년, 대부분 생활권 도로)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- spot-3c: 결론 빌드업 → CRACK -->
+            <div class="spot" id="spot-3c">
+                <h2 style="font-size: 4.5rem; margin-bottom: 50px;">그래서 <span class="point">CRACK</span></h2>
+                <div
+                    style="display: flex; gap: 60px; justify-content: center; align-items: stretch; max-width: 1300px;">
+                    <!-- 고속도로 현황 -->
+                    <div
+                        style="flex: 1; display: flex; flex-direction: column; background: white; border-radius: 28px; padding: 40px; box-shadow: 0 12px 40px rgba(0,0,0,0.05); text-align: center;">
+                        <i class="bi bi-signpost-split-fill" style="font-size: 4rem; color: #2E7D32;"></i>
+                        <h3 style="font-size: 2.2rem; margin: 20px 0 16px; color: #2E7D32;">고속도로 · 간선도로</h3>
+                        <p style="font-size: 1.5rem; color: #666; line-height: 1.7; word-break: keep-all;">
+                            지자체별 <strong>자동화 탐지 시스템</strong>이<br>빠르게 보급되고 있음
+                        </p>
+                        <div
+                            style="margin-top: auto; padding: 12px; background: #E8F5E9; border-radius: 14px; font-size: 1.3rem; font-weight: 700; color: #2E7D32;">
+                            <i class="bi bi-check-circle-fill"></i> 지자체별로 시스템 작동중
+                        </div>
+                    </div>
+                    <!-- VS -->
+                    <div style="display: flex; align-items: center; font-size: 3rem; font-weight: 900; color: #ccc;">VS
+                    </div>
+                    <!-- 골목길·일반도로 현황 -->
+                    <div
+                        style="flex: 1; display: flex; flex-direction: column; background: white; border-radius: 28px; padding: 40px; box-shadow: 0 12px 40px rgba(255,140,0,0.1); border: 2px solid var(--point-orange); text-align: center; animation: pulse-orange 2s infinite ease-in-out;">
+                        <i class="bi bi-houses-fill" style="font-size: 4rem; color: var(--point-orange);"></i>
+                        <h3 style="font-size: 2.2rem; margin: 20px 0 16px; color: var(--point-orange);">골목길 · 일반도로</h3>
+                        <p style="font-size: 1.5rem; color: #666; line-height: 1.7; word-break: keep-all;">
+                            전체 민원의 <strong>90.6%</strong>가 발생하지만<br>신고는 여전히 <strong>전화·민원앱</strong>에 의존
+                        </p>
+                        <div
+                            style="margin-top: auto; padding: 12px; background: #FFF3E0; border-radius: 14px; font-size: 1.3rem; font-weight: 700; color: #E65100;">
+                            <i class="bi bi-exclamation-triangle-fill"></i> 시스템 보완 필요
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 60px; text-align: center;">
+                    <p style="font-size: 2rem; font-weight: 800; color: var(--text-asphalt); line-height: 1.6;">
+                        <span class="point">휴먼 스케일</span> 도로에서의<br>
+                        가장 빠르고 정확한 신고 시스템이 필요했습니다.
+                    </p>
+                </div>
+            </div>
+
+            <div class="spot" id="spot-4">
+                <h2 style="font-size: 6rem;">CRACK만의 <span class="point">압도적 차별성</span></h2>
+                <div class="flex-row" style="margin-top: 80px; text-align: left;">
+                    <div style="flex:1;"><i class="bi bi-shield-check point" style="font-size: 5rem;"></i>
+                        <h3 style="margin-top:20px; font-size: 2.5rem;">AI 허위 신고 사전 방지</h3>
+                        <p style="font-size: 1.8rem;">Computer Vision이 사진을 분석해 유효성을 즉각 판단</p>
+                    </div>
+                    <div style="flex:1;"><i class="bi bi-geo-alt-fill point" style="font-size: 5rem;"></i>
+                        <h3 style="margin-top:20px; font-size: 2.5rem;">EXIF 자동 좌표 추출</h3>
+                        <p style="font-size: 1.8rem;">GPS 데이터를 백엔드에서 파싱해 사용자 주소 입력 최소화</p>
+                    </div>
+                    <div style="flex:1;"><i class="bi bi-app-indicator point" style="font-size: 5rem;"></i>
+                        <h3 style="margin-top:20px; font-size: 2.5rem;">PWA 네이티브 경험</h3>
+                        <p style="font-size: 1.8rem;">별도 설치 없이 웹앱에서 네이티브 수준의 부드러움과 기능 제공</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot" id="spot-5">
+                <h2 style="font-size: 6rem;"><span class="point">크랙팀</span>의 협업 툴</h2>
+                <div class="flex-row"
+                    style="gap: 120px; margin-top: 80px; justify-content: center; align-items: flex-start;">
+                    <!-- Notion -->
+                    <div class="flex-col" style="align-items: center; width: 400px; text-align: center;">
+                        <div class="collab-logo-container">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png"
+                                class="collab-logo" style="width: 160px;" alt="Notion">
+                        </div>
+                        <h3 style="font-size: 3rem; margin-bottom: 20px;">Notion</h3>
+                        <p style="font-size: 1.8rem; line-height: 1.6; color: #555; word-break: keep-all;">
+                            API 명세서 및 전체 회의록(문서) 통합 관리,<br>AI 데이터셋 및 분석 모델 학습 내용(파라미터 등) 아카이빙
+                        </p>
+                    </div>
+
+                    <!-- Git & Sourcetree -->
+                    <div class="flex-col" style="align-items: center; width: 500px; text-align: center;">
+                        <div class="collab-logo-container">
+                            <!-- GitHub Octocat (검정 고양이, 뒤쪽, 배경 없음) -->
+                            <img src="/static/github.svg" class="collab-logo overlap"
+                                style="width: 150px; left: 15px; top: 20px; z-index: 1; --rot: -5deg; opacity: 0.85;"
+                                alt="Git">
+                            <!-- Sourcetree (파란 원형 핀 아이콘, 앞쪽, 배경 없음) -->
+                            <img src="/static/sourcetree.svg" class="collab-logo overlap"
+                                style="width: 150px; right: 15px; bottom: 20px; z-index: 2; --rot: 5deg;"
+                                alt="Sourcetree">
+                        </div>
+                        <h3 style="font-size: 3rem; margin-bottom: 20px;">Git & Sourcetree</h3>
+                        <p style="font-size: 1.8rem; line-height: 1.6; color: #555; word-break: keep-all;">
+                            소스 코드 영구 백업 및 커밋 트래킹,<br>직관적 GUI(Sourcetree)를 활용한 충돌(Conflict) 해결 및 브랜치 병합
+                        </p>
+                    </div>
+
+                    <!-- Jira -->
+                    <div class="flex-col" style="align-items: center; width: 400px; text-align: center;">
+                        <div class="collab-logo-container">
+                            <img src="https://www.vectorlogo.zone/logos/atlassian_jira/atlassian_jira-icon.svg"
+                                class="collab-logo" style="width: 160px;" alt="Jira">
+                        </div>
+                        <h3 style="font-size: 3rem; margin-bottom: 20px;">Jira</h3>
+                        <p style="font-size: 1.8rem; line-height: 1.6; color: #555; word-break: keep-all;">
+                            애자일(Agile) 스프린트 보드를 활용한 이슈 분배,<br>실시간 워크플로우 추적 및 팀 프로젝트(에픽) 진척도 관리
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot" id="spot-6">
+                <i class="bi bi-clouds-fill huge-icon" style="right: 50px; top: -80px; opacity: 0.05;"></i>
+                <div style="text-align: center; width: 1300px;">
+                    <h2 style="font-size: 5rem; margin-bottom: 20px;">Database <span class="point">Architecture</span>
+                    </h2>
+                    <p style="font-size: 2rem; margin-bottom: 40px; color: #666; font-weight: 600;">
+                        추후 로컬 환경을 넘어 <span class="point">Cloud 기반 확장성</span>을 고려한 TiDB Serverless 도입
+                    </p>
+
+                    <div
+                        style="background: white; padding: 40px; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
+                        <table
+                            style="width: 100%; border-collapse: separate; border-spacing: 0 10px; font-size: 1.4rem; text-align: left;">
+                            <thead>
+                                <tr style="color: var(--point-orange); font-weight: 900; background: #fafafa;">
+                                    <th style="padding: 20px; border-bottom: 2px solid var(--point-orange);">Table
+                                        Name
+                                    </th>
+                                    <th style="padding: 20px; border-bottom: 2px solid var(--point-orange);">Usage &
+                                        Features</th>
+                                    <th style="padding: 20px; border-bottom: 2px solid var(--point-orange);">Major
+                                        Columns</th>
+                                    <th style="padding: 20px; border-bottom: 2px solid var(--point-orange);">
+                                        Relationships (FK)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    style="background: #ffffff; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                                    <td style="padding: 20px; font-weight: 700; color: var(--text-asphalt);">members
+                                    </td>
+                                    <td style="padding: 20px; color: #555;">사용자 계정, 관리자 권한 및 보상 포인트 관리</td>
+                                    <td style="padding: 20px; font-family: monospace; font-size: 1.2rem;">id,
+                                        is_admin,
+                                        points</td>
+                                    <td style="padding: 20px; color: #888;">-</td>
+                                </tr>
+                                <tr style="background: #fafafa; border-radius: 15px;">
+                                    <td style="padding: 20px; font-weight: 700; color: var(--text-asphalt);">report
+                                    </td>
+                                    <td style="padding: 20px; color: #555;">포트홀 제보 데이터 (GPS, 사진/영상 경로, 상태값)</td>
+                                    <td style="padding: 20px; font-family: monospace; font-size: 1.2rem;">user_id,
+                                        status, address</td>
+                                    <td style="padding: 20px; color: var(--point-orange); font-weight: 600;">user_id
+                                        →
+                                        members.id</td>
+                                </tr>
+                                <tr style="background: #ffffff; border-radius: 15px;">
+                                    <td style="padding: 20px; font-weight: 700; color: var(--text-asphalt);">
+                                        ai_results
+                                    </td>
+                                    <td style="padding: 20px; color: #555;">YOLOv8 분석 결과 (정확도, 파손 유형) 자동 기록</td>
+                                    <td style="padding: 20px; font-family: monospace; font-size: 1.2rem;">report_id,
+                                        confidence</td>
+                                    <td style="padding: 20px; color: var(--point-orange); font-weight: 600;">
+                                        report_id →
+                                        report.id</td>
+                                </tr>
+                                <tr style="background: #fafafa; border-radius: 15px;">
+                                    <td style="padding: 20px; font-weight: 700; color: var(--text-asphalt);">
+                                        point_logs
+                                    </td>
+                                    <td style="padding: 20px; color: #555;">제보 보상 및 포인트 변동 히스토리 로깅</td>
+                                    <td style="padding: 20px; font-family: monospace; font-size: 1.2rem;">user_id,
+                                        amount, reason</td>
+                                    <td style="padding: 20px; color: var(--point-orange); font-weight: 600;">user_id
+                                        →
+                                        members.id</td>
+                                </tr>
+                                <tr style="background: #ffffff; border-radius: 15px;">
+                                    <td style="padding: 20px; font-weight: 700; color: var(--text-asphalt);">notices
+                                        /
+                                        talk</td>
+                                    <td style="padding: 20px; color: #555;">시스템 공지사항 및 실시간 크랙톡 메시지 저장</td>
+                                    <td style="padding: 20px; font-family: monospace; font-size: 1.2rem;">author_id,
+                                        content</td>
+                                    <td style="padding: 20px; color: var(--point-orange); font-weight: 600;">
+                                        author_id →
+                                        members.id</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- spot-6a: 법적/운영 리스크 방어 -->
+            <div class="spot" id="spot-6a">
+                <i class="bi bi-shield-check huge-icon"
+                    style="left: -100px; top: -50px; opacity: 0.03; color: var(--point-orange);"></i>
+                <div style="text-align: center; margin-bottom: 50px;">
+                    <h2 style="font-size: 4.2rem; margin-bottom: 15px;">안정적인 서비스 운영을 위한<br><span class="point">Technical
+                            Risk Mitigation</span></h2>
+                    <p style="font-size: 1.8rem; color: #777; font-weight: 500;">
+                        단순한 신고 기능을 넘어, 발생 가능한 <strong>운영적·법적 리스크</strong>를 아키텍처 로직으로 사전 차단합니다.
+                    </p>
+                </div>
+
+                <div style="display: flex; gap: 30px; justify-content: center; max-width: 1400px; flex-wrap: wrap;">
+
+                    <!-- 1. 명예훼손 -->
+                    <div
+                        style="flex: 1; min-width: 320px; background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); border-top: 6px solid #E53935; display: flex; flex-direction: column;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                            <i class="bi bi-person-x-fill" style="font-size: 2.5rem; color: #E53935;"></i>
+                            <h3 style="font-size: 1.9rem; color: #333; margin: 0; font-weight: 800;">정보통신망법 (명예훼손)</h3>
+                        </div>
+                        <p style="font-size: 1.25rem; color: #E53935; font-weight: 700; margin-bottom: 12px;"><i
+                                class="bi bi-exclamation-triangle"></i> 우려: 민원 대상 타겟팅 및 비방</p>
+                        <p
+                            style="font-size: 1.45rem; color: #555; line-height: 1.6; word-break: keep-all; flex-grow: 1;">
+                            자유 게시판 형태로 운영될 경우, <strong>"담당자가 일을 안 한다"</strong> 등의 악의적인 조롱과 비방이 섞여 명예훼손 이슈가 발생할 수 있습니다.
+                        </p>
+                        <div
+                            style="margin-top: 20px; padding: 18px; background: #fafafa; border-radius: 12px; border: 1px solid #eee;">
+                            <p
+                                style="font-size: 1.3rem; color: var(--point-orange); font-weight: 800; margin-bottom: 8px;">
+                                방어 로직: Free-text Zero</p>
+                            <p
+                                style="font-size: 1.4rem; color: #444; line-height: 1.6; word-break: keep-all; font-weight: 500;">
+                                사용자 텍스트 입력창을 아예 배제했습니다.<br>오직 <strong>사진(Vision)</strong>과 <strong>자동
+                                    좌표(EXIF)</strong>만으로 동작하여 모욕적 텍스트 개입을 원천 차단합니다.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 2. 개인정보 -->
+                    <div
+                        style="flex: 1; min-width: 320px; background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); border-top: 6px solid #1E88E5; display: flex; flex-direction: column;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                            <i class="bi bi-shield-lock-fill" style="font-size: 2.5rem; color: #1E88E5;"></i>
+                            <h3 style="font-size: 1.9rem; color: #333; margin: 0; font-weight: 800;">개인정보 보호법</h3>
+                        </div>
+                        <p style="font-size: 1.25rem; color: #1E88E5; font-weight: 700; margin-bottom: 12px;"><i
+                                class="bi bi-exclamation-triangle"></i> 우려: 민원인 신상 및 사생활 노출</p>
+                        <p
+                            style="font-size: 1.45rem; color: #555; line-height: 1.6; word-break: keep-all; flex-grow: 1;">
+                            공공 피드에 신고자의 신원이 드러나거나, 사진 원본의 EXIF 메타데이터를 통해 개인의 이동 동선이 노출될 위험이 있습니다.
+                        </p>
+                        <div
+                            style="margin-top: 20px; padding: 18px; background: #fafafa; border-radius: 12px; border: 1px solid #eee;">
+                            <p
+                                style="font-size: 1.3rem; color: var(--point-orange); font-weight: 800; margin-bottom: 8px;">
+                                방어 로직: Data Minimization</p>
+                            <p
+                                style="font-size: 1.4rem; color: #444; line-height: 1.6; word-break: keep-all; font-weight: 500;">
+                                자체 DB 내 민감정보 보관을 없애기 위해 <strong>Kakao OAuth</strong> 인증만 활용하며, 사진의 EXIF 데이터는
+                                <strong>서버에서 파싱 후 즉각 파기</strong>합니다.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 3. 공무집행방해 -->
+                    <div
+                        style="flex: 1; min-width: 320px; background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); border-top: 6px solid #FDD835; display: flex; flex-direction: column;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                            <i class="bi bi-robot" style="font-size: 2.5rem; color: #FBC02D;"></i>
+                            <h3 style="font-size: 1.9rem; color: #333; margin: 0; font-weight: 800;">공무집행방해 (위계)</h3>
+                        </div>
+                        <p style="font-size: 1.25rem; color: #FBC02D; font-weight: 700; margin-bottom: 12px;"><i
+                                class="bi bi-exclamation-triangle"></i> 우려: 매크로 및 허위 신고 폭탄</p>
+                        <p
+                            style="font-size: 1.45rem; color: #555; line-height: 1.6; word-break: keep-all; flex-grow: 1;">
+                            무의미한 밈(Meme)이나 관계없는 사진을 대량으로 전송하여 행정망을 마비시키는 디지털 테러 가능성이 있습니다.
+                        </p>
+                        <div
+                            style="margin-top: 20px; padding: 18px; background: #fafafa; border-radius: 12px; border: 1px solid #eee;">
+                            <p
+                                style="font-size: 1.3rem; color: var(--point-orange); font-weight: 800; margin-bottom: 8px;">
+                                방어 로직: AI Filtering</p>
+                            <p
+                                style="font-size: 1.4rem; color: #444; line-height: 1.6; word-break: keep-all; font-weight: 500;">
+                                <strong>YOLOv8 + ResNet50 Vision AI</strong>가 이미지를 1차 판독하여, 도로 파손 특성이 발견되지 않으면
+                                <strong>DB 적재 전 메모리 단에서 Drop (거절)</strong> 처리합니다.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- spot-6b: 민간 포트홀 앱의 한계와 CRACK의 해결책 -->
+            <div class="spot" id="spot-6b" style="width: 1800px;">
+                <div style="text-align: center; margin-bottom: 60px;">
+                    <h2 style="font-size: 5rem; margin-bottom: 20px;">왜 <span class="point">민간</span> 신고 앱은
+                        실패하는가?<br>그리고 <span class="point">CRACK의 돌파구</span></h2>
+                </div>
+
+                <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
+                    <!-- 1 -->
+                    <div class="flip-card">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front" style="border-top-color: #E53935;">
+                                <i class="bi bi-bank" style="font-size: 3rem; color: #E53935; margin-bottom: 15px;"></i>
+                                <h3 style="font-size: 1.8rem; color: #333; font-weight: 800; margin-bottom: 15px;">1. 법적
+                                    책임</h3>
+                                <p style="font-size: 1.4rem; color: #666; word-break: keep-all; line-height: 1.6;">
+                                    공식적인 <strong>영조물 배상책임</strong> 근거로 쓰일 수 있도록 지자체의 법적 기록망에 직접 전달되어야 함
+                                </p>
+                            </div>
+                            <div class="flip-card-back">
+                                <i class="bi bi-box-arrow-up-right" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                                <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 15px;">B2G 파이프라인</h3>
+                                <p style="font-size: 1.4rem; word-break: keep-all; line-height: 1.5;">
+                                    향후 Open API를 통해 <strong>지자체망 다이렉트 Payload 연동</strong>을 추진하여 공식 행정망 편입
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2 -->
+                    <div class="flip-card">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front" style="border-top-color: #8E24AA;">
+                                <i class="bi bi-hdd-network-fill"
+                                    style="font-size: 3rem; color: #8E24AA; margin-bottom: 15px;"></i>
+                                <h3 style="font-size: 1.8rem; color: #333; font-weight: 800; margin-bottom: 15px;">2.
+                                    행정망 연동</h3>
+                                <p style="font-size: 1.4rem; color: #666; word-break: keep-all; line-height: 1.6;">
+                                    폐쇄적 인트라넷 접근의 어려움과 복잡한 작업 지시 시스템(워크플로우) 통합 비용 발생
+                                </p>
+                            </div>
+                            <div class="flip-card-back">
+                                <i class="bi bi-code-slash" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                                <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 15px;">표준 JSON & Admin
+                                </h3>
+                                <p style="font-size: 1.4rem; word-break: keep-all; line-height: 1.5;">
+                                    시스템 이식성을 최우선한 포맷 공유 및 <strong>지자체 관제 맞춤형 대시보드(Admin)</strong> 무상 분리 지원
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3 -->
+                    <div class="flip-card">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front" style="border-top-color: #1E88E5;">
+                                <i class="bi bi-intersect"
+                                    style="font-size: 3rem; color: #1E88E5; margin-bottom: 15px;"></i>
+                                <h3 style="font-size: 1.8rem; color: #333; font-weight: 800; margin-bottom: 15px;">3. 중복
+                                    다중신고</h3>
+                                <p style="font-size: 1.4rem; color: #666; word-break: keep-all; line-height: 1.6;">
+                                    번화가 위 동일 포트홀에 수백 건의 개별 신고가 발생할 경우 데이터 대조 행정력 낭비 초래
+                                </p>
+                            </div>
+                            <div class="flip-card-back">
+                                <i class="bi bi-map-fill" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                                <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 15px;">자동 클러스터링</h3>
+                                <p style="font-size: 1.4rem; word-break: keep-all; line-height: 1.5;">
+                                    EXIF 좌표 기반 분석으로 반경 내 데이터를 <strong>자동 병합(Merge)</strong>하여 단일 작업지시서 발행
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4 -->
+                    <div class="flip-card">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front" style="border-top-color: #43A047;">
+                                <i class="bi bi-graph-down-arrow"
+                                    style="font-size: 3rem; color: #43A047; margin-bottom: 15px;"></i>
+                                <h3 style="font-size: 1.8rem; color: #333; font-weight: 800; margin-bottom: 15px;">4.
+                                    비즈니스 모델(BM)</h3>
+                                <p style="font-size: 1.4rem; color: #666; word-break: keep-all; line-height: 1.6;">
+                                    공익 서비스의 특성과 짧은 체류 시간으로 인해 B2C 수익 및 광고 창출이 거의 불가능
+                                </p>
+                            </div>
+                            <div class="flip-card-back">
+                                <i class="bi bi-briefcase-fill" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                                <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 15px;">Data B2B 비즈니스</h3>
+                                <p style="font-size: 1.4rem; word-break: keep-all; line-height: 1.5;">
+                                    유저 리워드 생태계 구성, 향후 카카오/T맵 등에 <strong>실시간 위험구역 Data API 판매 (B2B)</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5 -->
+                    <div class="flip-card">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front" style="border-top-color: #FDD835;">
+                                <i class="bi bi-hammer"
+                                    style="font-size: 3rem; color: #FBC02D; margin-bottom: 15px;"></i>
+                                <h3 style="font-size: 1.8rem; color: #333; font-weight: 800; margin-bottom: 15px;">5.
+                                    실질적 해결 권한</h3>
+                                <p style="font-size: 1.4rem; color: #666; word-break: keep-all; line-height: 1.6;">
+                                    민간 기업은 아스팔트 공사를 할 수 없으므로 문제의 완전한 해결을 유도하기 힘듦
+                                </p>
+                            </div>
+                            <div class="flip-card-back">
+                                <i class="bi bi-broadcast-pin" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                                <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 15px;">양방향 통신 피드백</h3>
+                                <p style="font-size: 1.4rem; word-break: keep-all; line-height: 1.5;">
+                                    지자체의 '보수 완료' 상태를 즉각 앱 유저에게 <strong>실시간 Push 통보</strong>하여 체감 효능감 극대화
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="spot" id="spot-7">
+                <h2 style="font-size: 6rem;">Full-Stack <span class="point">Framework</span></h2>
+                <div class="flex-row" style="margin-top: 60px;">
+                    <div
+                        style="flex:1; text-align: left; padding: 40px; background: rgba(255,140,0,0.05); border-radius: 40px;">
+                        <h3 class="point" style="font-size: 4rem;">Backend</h3>
+                        <p style="font-size: 3rem; font-weight: 900; color: var(--text-asphalt); margin-bottom: 20px;">
+                            Python Flask</p>
+                        <p style="font-size: 2rem;">비동기 AI 분석 파이프라인 (Threading)<br>KST 기반 타임존 무결성 로직 구축</p>
+                    </div>
+                    <div
+                        style="flex:1; text-align: left; padding: 40px; background: var(--white); border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.05);">
+                        <h3 style="color: #666; font-size: 4rem;">Frontend</h3>
+                        <p style="font-size: 3rem; font-weight: 900; color: var(--text-asphalt); margin-bottom: 20px;">
+                            HTML / JS (No-deps)</p>
+                        <p style="font-size: 2rem;">React 등 무거운 라이브러리 없이 직접 구현한 Virtual SPA Routing 최적화 엔진 적용</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot" id="spot-8">
+                <h1 style="font-size: 10rem;" class="point">YOLOv8</h1>
+                <p style="font-size: 3rem; font-weight: 800; color: var(--text-asphalt);">초고속 Computer Vision 객체 탐지
+                </p>
+                <div class="flex-row" style="margin-top: 80px;">
+                    <div style="flex:1;">
+                        <div style="font-size: 6rem; font-weight: 900; color: var(--text-asphalt);">94%</div>
+                        <h3 style="color:#555;">실측 정확도 (mAP)</h3>
+                    </div>
+                    <div class="v-divider"></div>
+                    <div style="flex:1;">
+                        <div style="font-size: 6rem; font-weight: 900; color: var(--text-asphalt);">350+</div>
+                        <h3 style="color:#555;">FPS (초당 처리속도)</h3>
+                    </div>
+                    <div class="v-divider"></div>
+                    <div style="flex:1;">
+                        <div style="font-size: 6rem; font-weight: 900; color: var(--text-asphalt);">PyTorch</div>
+                        <h3 style="color:#555;">학습 환경 기반</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 1: Environment Tuning (v1~v4) -->
+            <div class="spot" id="spot-8a" style="width: 1400px;">
+                <h2 style="font-size: 4.5rem; margin-bottom: 20px;">Phase 1: <span class="point">Hyperparameter &
+                        Environment Tuning</span></h2>
+                <p style="font-size: 2.2rem; margin-bottom: 60px; color: #666; font-weight: 500;">
+                    214,219장 (225GB) 대규모 정밀 학습을 위한 기반 구축 과정 (v1 ~ v4)
+                </p>
+                <div class="flex-row" style="gap: 40px; justify-content: space-between;">
+                    <div class="stat-card" style="flex: 1; padding: 40px; border-top: 10px solid #8E24AA;">
+                        <div style="font-size: 4rem; margin-bottom: 20px; color: #8E24AA;"><i
+                                class="bi bi-gpu-card"></i></div>
+                        <h3 style="font-size: 2.5rem; color: #333; margin-bottom: 15px;">GPU Optimization</h3>
+                        <p
+                            style="font-size: 1.6rem; color: #555; line-height: 1.6; word-break: keep-all; text-align: left;">
+                            단일 그래픽카드(<strong>RTX 4060 Ti 12GB</strong>) 메모리 한계를 극복하기 위해 <strong>배치 사이즈(Batch
+                                16)</strong>와 메모리 스왑이 일어나지 않는 최적의
+                            <strong>워커(Workers=8)</strong> 비율 탐색
+                        </p>
+                    </div>
+                    <div class="stat-card" style="flex: 1; padding: 40px; border-top: 10px solid #1E88E5;">
+                        <div style="font-size: 4rem; margin-bottom: 20px; color: #1E88E5;"><i class="bi bi-sliders"></i>
+                        </div>
+                        <h3 style="font-size: 2.5rem; color: #333; margin-bottom: 15px;">Hyperparameters</h3>
+                        <p
+                            style="font-size: 1.6rem; color: #555; line-height: 1.6; word-break: keep-all; text-align: left;">
+                            Mosaic Augmentation(1.0) 등의 데이터 증강 기법 적용 및 100 Epoch 완주 전 과적합을 막는 <strong>Early Stopping
+                                (Patience=10)</strong> 튜닝
+                        </p>
+                    </div>
+                    <div class="stat-card" style="flex: 1; padding: 40px; border-top: 10px solid #43A047;">
+                        <div style="font-size: 4rem; margin-bottom: 20px; color: #43A047;"><i
+                                class="bi bi-shield-check"></i></div>
+                        <h3 style="font-size: 2.5rem; color: #333; margin-bottom: 15px;">Training Metrics</h3>
+                        <p
+                            style="font-size: 1.5rem; color: #555; line-height: 1.6; word-break: keep-all; text-align: left; margin-bottom: 15px;">
+                            Test Set 없이 Val 10% 할당으로 과적합 모니터링망 구축
+                        </p>
+                        <ul
+                            style="font-size: 1.4rem; color: #444; text-align: left; padding-left: 20px; line-height: 1.8;">
+                            <li><strong>총 100 Epoch</strong> 완주 수행</li>
+                            <li><strong>훈련(Train):</strong> 192,798장 / 에포크</li>
+                            <li><strong>검증(Val):</strong> 21,421장 / 에포크</li>
+                            <li><strong>에포크당 시간:</strong> 평균 약 44분 소요</li>
+                            <li><strong>100 에포크 누적:</strong> 약 74시간(3일) 소요</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 2: Big Data Processing (v5) -->
+            <div class="spot" id="spot-8b" style="width: 1400px;">
+                <h2 style="font-size: 4.5rem; margin-bottom: 20px;">Phase 2: <span class="point">Big Data
+                        Preprocessing</span></h2>
+                <p style="font-size: 2.2rem; margin-bottom: 60px; color: #666; font-weight: 500;">
+                    대규모 데이터셋 구축을 위한 고효율 파이프라인 (v5)
+                </p>
+                <div class="flex-row" style="gap: 60px; align-items: stretch;">
+                    <div
+                        style="flex: 1; background: white; padding: 50px; border-radius: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.05); text-align: left;">
+                        <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 30px;">
+                            <div
+                                style="background: rgba(255,140,0,0.1); width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-link-45deg point" style="font-size: 4rem;"></i>
+                            </div>
+                            <h3 style="font-size: 3rem; color: #333; margin: 0;">Hardlink Architecture</h3>
+                        </div>
+                        <p style="font-size: 1.8rem; color: #555; line-height: 1.6;">
+                            물리적 파일 복사 없이 파일 시스템 상의 '이름'만 추가 생성하는 기법.
+                            <br><br>
+                            <span style="color: #E53935; font-weight: bold;">[기존]</span> 225GB + 구조화 복사 225GB = 디스크 잔여
+                            용량 고갈 및 상당한 시간 소요
+                            <br><br>
+                            <span style="color: #43A047; font-weight: bold;">[개선]</span> 추가 용량 0GB, <strong
+                                class="point">지연 없는 즉각적인 IO 처리</strong>로 훈련 즉시 돌입 보장
+                        </p>
+                    </div>
+                    <div
+                        style="flex: 1; background: white; padding: 50px; border-radius: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.05); text-align: left;">
+                        <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 30px;">
+                            <div
+                                style="background: rgba(255,140,0,0.1); width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-cpu-fill point" style="font-size: 4rem;"></i>
+                            </div>
+                            <h3 style="font-size: 3rem; color: #333; margin: 0;">Multi-core Processing</h3>
+                        </div>
+                        <p style="font-size: 1.8rem; color: #555; line-height: 1.6;">
+                            파이썬 <code
+                                style="background: #eee; padding: 4px 10px; border-radius: 8px;">multiprocessing.Pool</code>
+                            활용 병렬 JSON 전처리.
+                            <br><br>
+                            단일 코어(Single-thread)로 21만 개의 JSON을 파싱할 경우 하루 이상의 시간이 소요되지만,
+                            가용 CPU 전역 코어를 동원하여 <strong class="point">수 분 내</strong>에 YOLO TXT 정규화 포맷 변환 및 Split 매핑
+                            완료.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 3: Performance Analysis & Sinkhole Integration (v6) -->
+            <div class="spot" id="spot-8c" style="width: 1500px;">
+                <h2 style="font-size: 5rem; margin-bottom: 40px;">Phase 3: <span class="point">Sinkhole Integration
+                        (v6)</span></h2>
+                <div class="flex-row" style="align-items: stretch; gap: 60px;">
+                    <!-- Chart Area -->
+                    <div
+                        style="flex: 1.5; background: white; padding: 40px; border-radius: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.05); position: relative;">
+                        <canvas id="trainingChart" style="max-height: 500px;"></canvas>
+                    </div>
+                    <!-- Stats Area -->
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+                        <div class="stat-card" style="width: 100%; text-align: left; padding: 30px;">
+                            <h3 class="point" style="font-size: 2rem; margin-bottom: 10px;"><i
+                                    class="bi bi-database-fill-add"></i> New Dataset</h3>
+                            <p style="font-size: 1.4rem; color: #333; font-weight: 700;">'Sinkhole' Class Add
+                            </p>
+                            <p style="font-size: 1.1rem; color: #777;">치명적 위험 요소인 씽크홀 데이터를 기존 도로 파손에 통합하여 재구성</p>
+                        </div>
+                        <div class="stat-card" style="width: 100%; text-align: left; padding: 30px;">
+                            <h3 class="point" style="font-size: 2rem; margin-bottom: 10px;"><i
+                                    class="bi bi-gear-wide-connected"></i> Method</h3>
+                            <p style="font-size: 1.4rem; color: #333; font-weight: 700;">Transfer Learning & Fine-tuning
+                            </p>
+                            <p style="font-size: 1.1rem; color: #777;">v5 최적 가중치를 상속하여 초기 수렴 속도 제고 및 18 에포크 심화 강화 학습</p>
+                        </div>
+                        <div class="stat-card" style="width: 100%; text-align: left; padding: 30px;">
+                            <h3 class="point" style="font-size: 2rem; margin-bottom: 10px;"><i
+                                    class="bi bi-graph-up-arrow"></i> Improvement</h3>
+                            <p style="font-size: 1.4rem; color: #333; font-weight: 700;">mAP50: +3.8% / Recall: +4.1%
+                            </p>
+                            <p style="font-size: 1.1rem; color: #777;">미검출(False Negative) 위험을 최소화한 v6 통합 관제 모델
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="spot" id="spot-9">
+                <div class="flex-row" style="gap: 80px; align-items: center; width: 1400px; margin: 0 auto;">
+                    <div class="phone-frame"><iframe src="/alert?ppt=1" id="iframe-alert"></iframe></div>
+                    <div class="desc-panel" id="desc-alert">
+                        <h2 style="font-size: 5rem;">핵심 서비스 로직 <span class="point">01</span></h2>
+                        <p style="font-size: 2rem; margin-bottom: 40px; color: #555;">Alert — 신고 피드</p>
+                        <div class="desc-block active" data-desc="reports">
+                            <i class="bi bi-geo-alt-fill point" style="font-size: 3rem;"></i>
+                            <h3 style="font-size: 2.5rem; margin: 12px 0;">거리 기반 우선 노출</h3>
+                            <p style="font-size: 1.6rem; margin-bottom: 30px;">관리자에게 가까운 신고가 피드 상단에 시각적 임팩트와 함께 우선
+                                노출됩니다.</p>
+                            <i class="bi bi-shield-check point" style="font-size: 3rem;"></i>
+                            <h3 style="font-size: 2.5rem; margin: 12px 0;">AI 60% 이상 필터링</h3>
+                            <p style="font-size: 1.6rem;">YOLOv8이 60% 이상의 확률로 판정한 신고만 노출하여 허위 신고를 자동 차단합니다.</p>
+                        </div>
+                        <div class="desc-block" data-desc="notices">
+                            <i class="bi bi-megaphone-fill point" style="font-size: 3rem;"></i>
+                            <h3 style="font-size: 2.5rem; margin: 12px 0;">공지사항 시스템</h3>
+                            <p style="font-size: 1.6rem;">관리자가 직접 공지를 등록하여 중요 안내를 신속히 전파합니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot" id="spot-10">
+                <div class="flex-row"
+                    style="gap: 80px; align-items: center; flex-direction: row-reverse; width: 1400px; margin: 0 auto;">
+                    <div class="phone-frame"><iframe src="/report?ppt=1" id="iframe-report"></iframe></div>
+                    <div class="desc-panel">
+                        <h2 style="font-size: 5rem;">핵심 서비스 로직 <span class="point">02</span></h2>
+                        <p style="font-size: 2rem; margin-bottom: 40px; color: #555;">Report — 신고 접수</p>
+                        <div class="desc-block active">
+                            <i class="bi bi-camera-reels-fill point" style="font-size: 2.5rem;"></i>
+                            <h3 style="font-size: 2.2rem; margin: 10px 0;">사진 & 동영상 첨부</h3>
+                            <p style="font-size: 1.5rem; margin-bottom: 25px;">동영상 자동 썸네일 지원</p>
+                            <i class="bi bi-pin-map-fill point" style="font-size: 2.5rem;"></i>
+                            <h3 style="font-size: 2.2rem; margin: 10px 0;">GPS 자동 추출</h3>
+                            <p style="font-size: 1.5rem;">EXIF 메타데이터 기반 자동 좌표 매핑</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot" id="spot-11">
+                <div class="flex-row" style="gap: 80px; align-items: center; width: 1400px; margin: 0 auto;">
+                    <div class="phone-frame"><iframe src="/status?ppt=1" id="iframe-status"></iframe></div>
+                    <div class="desc-panel" id="desc-status">
+                        <h2 style="font-size: 5rem;">핵심 서비스 로직 <span class="point">03</span></h2>
+                        <p style="font-size: 2rem; margin-bottom: 40px; color: #555;">Status — 처리 추적</p>
+                        <div class="desc-block active" data-desc="reports">
+                            <i class="bi bi-arrow-repeat point" style="font-size: 2.5rem;"></i>
+                            <h3 style="font-size: 2.2rem; margin: 10px 0;">실시간 단계 확인</h3>
+                            <p style="font-size: 1.5rem;">접수 → 처리중 → 완료 단계별 실시간 확인</p>
+                        </div>
+                        <div class="desc-block" data-desc="talk">
+                            <i class="bi bi-chat-dots-fill point" style="font-size: 2.5rem;"></i>
+                            <h3 style="font-size: 2.2rem; margin: 10px 0;">크랙톡</h3>
+                            <p style="font-size: 1.5rem;">즉각적인 팀원 및 소통 채널 제공</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot" id="spot-12">
+                <div class="flex-row"
+                    style="gap: 80px; align-items: center; flex-direction: row-reverse; width: 1400px; margin: 0 auto;">
+                    <div class="phone-frame"><iframe src="/mypage?ppt=1" id="iframe-mypage"></iframe></div>
+                    <div class="desc-panel">
+                        <h2 style="font-size: 5rem;">핵심 서비스 로직 <span class="point">04</span></h2>
+                        <p style="font-size: 2rem; margin-bottom: 40px; color: #555;">MyPage — 개인 관리</p>
+                        <div class="desc-block active"><i class="bi bi-coin point" style="font-size: 3rem;"></i>
+                            <h3 style="font-size: 2.5rem; margin: 12px 0;">크래커 포인트 로그</h3>
+                            <p style="font-size: 1.6rem;">보상 체계의 기틀이 되는 포인트 적립/사용 로그</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot" id="spot-13">
+                <div class="flex-row" style="gap: 80px; align-items: center; width: 1400px; margin: 0 auto;">
+                    <div
+                        style="flex: 0 0 600px; height: 400px; background: #1a1a1a; border-radius: 20px; box-shadow: 0 30px 80px rgba(0,0,0,0.18); overflow: hidden; border: 3px solid #333; position: relative;">
+                        <iframe src="/admin/dashboard?ppt=1" style="width:100%;height:100%;border:none;"></iframe>
+                    </div>
+                    <div class="desc-panel">
+                        <h2 style="font-size: 5rem;">핵심 서비스 로직 <span class="point">05</span></h2>
+                        <p style="font-size: 2rem; margin-bottom: 40px; color: #555;">Admin — 종합 관제</p>
+                        <div class="desc-block active">
+                            <p style="font-size: 1.8rem;">전체 신고 현황을 한눈에 파악하는 고성능 대시보드</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot" id="spot-14"
+                style="width: 1700px; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 80px;">
+                <div class="phone-frame" style="flex: 0 0 480px; height: 960px;"><iframe src="/"
+                        title="CRACK 앱 데모"></iframe></div>
+                <div class="desc-panel" style="max-width: 800px;">
+                    <h2 style="font-size: 6rem; margin-bottom: 40px; text-align: left;">Live <span
+                            class="point">Demo</span></h2>
+                    <div class="desc-block active">
+                        <i class="bi bi-phone-vibrate-fill"
+                            style="font-size: 3.5rem; color: var(--point-orange); margin-bottom: 25px;"></i>
+                        <p
+                            style="font-size: 2.2rem; color: #666; line-height: 1.6; margin-bottom: 50px; font-weight: 500;">
+                            이 화면 내에서 모든 기능을 직접 테스트하세요.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot" id="spot-15">
+                <h2 style="font-size: 6rem;">Next Steps</h2>
+                <div class="flex-col" style="gap: 50px; text-align: left; max-width: 1100px;">
+                    <div style="display: flex; gap: 40px; align-items: flex-start;"><span
+                            style="font-size: 4rem; font-weight: 900; color: rgba(255,140,0,0.2);">01</span>
+                        <div>
+                            <h3 style="font-size: 3rem;">AI 엣지 추론</h3>
+                            <p style="font-size: 2rem;">TFLite 기반 기기 내부 분석</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 40px; align-items: flex-start;"><span
+                            style="font-size: 4rem; font-weight: 900; color: rgba(255,140,0,0.2);">02</span>
+                        <div>
+                            <h3 style="font-size: 3rem;">공공데이터 연계</h3>
+                            <p style="font-size: 2rem;">안전신문고 다이렉트 이관</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot" id="spot-16"
+                style="display: flex; align-items: center; justify-content: center; gap: 120px;">
+                <div style="text-align: center;">
+                    <h1 style="font-size: 10rem; color: var(--point-orange);">Q & A</h1>
+                    <p style="font-size: 3.5rem; font-weight: 800; margin-top: 20px;">경청해 주셔서 감사합니다.</p>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 16px; min-width: 360px;">
+                    <p style="font-size: 1.4rem; font-weight: 800; color: #999; margin-bottom: 8px;"><i
+                            class="bi bi-link-45deg"></i> 주제 채택 근거 자료</p>
+                    <a href="https://www.speconomy.com/news/articleView.html?idxno=406621" target="_blank"
+                        onclick="event.stopPropagation();"
+                        style="display:flex; align-items:center; gap:12px; padding:14px 20px; background:white; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.04); text-decoration:none; color:var(--text-asphalt); font-size:1.2rem; font-weight:700; transition:all 0.3s; border:1px solid #eee;"
+                        onmouseover="this.style.transform='translateX(6px)';this.style.boxShadow='0 6px 24px rgba(255,140,0,0.12)';this.style.borderColor='var(--point-orange)';"
+                        onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.04)';this.style.borderColor='#eee';">
+                        <i class="bi bi-newspaper" style="color:var(--point-orange); font-size:1.4rem;"></i> 스페셜경제 —
+                        고속도로 포트홀 5년간 2만6천건
+                    </a>
+                    <a href="https://www.ikld.kr/news/articleView.html?idxno=322141" target="_blank"
+                        onclick="event.stopPropagation();"
+                        style="display:flex; align-items:center; gap:12px; padding:14px 20px; background:white; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.04); text-decoration:none; color:var(--text-asphalt); font-size:1.2rem; font-weight:700; transition:all 0.3s; border:1px solid #eee;"
+                        onmouseover="this.style.transform='translateX(6px)';this.style.boxShadow='0 6px 24px rgba(255,140,0,0.12)';this.style.borderColor='var(--point-orange)';"
+                        onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.04)';this.style.borderColor='#eee';">
+                        <i class="bi bi-newspaper" style="color:var(--point-orange); font-size:1.4rem;"></i> 국토일보 — 피해
+                        배상 건수 3배 급증
+                    </a>
+                    <a href="https://www.safetynews.co.kr/news/articleView.html?idxno=231854" target="_blank"
+                        onclick="event.stopPropagation();"
+                        style="display:flex; align-items:center; gap:12px; padding:14px 20px; background:white; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.04); text-decoration:none; color:var(--text-asphalt); font-size:1.2rem; font-weight:700; transition:all 0.3s; border:1px solid #eee;"
+                        onmouseover="this.style.transform='translateX(6px)';this.style.boxShadow='0 6px 24px rgba(255,140,0,0.12)';this.style.borderColor='var(--point-orange)';"
+                        onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.04)';this.style.borderColor='#eee';">
+                        <i class="bi bi-newspaper" style="color:var(--point-orange); font-size:1.4rem;"></i> 안전신문 — 서울시
+                        포트홀 15만개
+                    </a>
+                    <a href="https://www.yna.co.kr/view/AKR20191001144800063" target="_blank"
+                        onclick="event.stopPropagation();"
+                        style="display:flex; align-items:center; gap:12px; padding:14px 20px; background:white; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.04); text-decoration:none; color:var(--text-asphalt); font-size:1.2rem; font-weight:700; transition:all 0.3s; border:1px solid #eee;"
+                        onmouseover="this.style.transform='translateX(6px)';this.style.boxShadow='0 6px 24px rgba(255,140,0,0.12)';this.style.borderColor='var(--point-orange)';"
+                        onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.04)';this.style.borderColor='#eee';">
+                        <i class="bi bi-newspaper" style="color:var(--point-orange); font-size:1.4rem;"></i> 연합뉴스 — 전국
+                        포트홀 65만개 집계
+                    </a>
+                    <a href="https://council.songpa.go.kr/record/recordView.do?key=d028afde648b4807c620c31470e88630c1a4340e93656eb04a9c1ed19f287e8b65193a6241086205"
+                        target="_blank" onclick="event.stopPropagation();"
+                        style="display:flex; align-items:center; gap:12px; padding:14px 20px; background:white; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.04); text-decoration:none; color:var(--text-asphalt); font-size:1.2rem; font-weight:700; transition:all 0.3s; border:1px solid #eee;"
+                        onmouseover="this.style.transform='translateX(6px)';this.style.boxShadow='0 6px 24px rgba(255,140,0,0.12)';this.style.borderColor='var(--point-orange)';"
+                        onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.04)';this.style.borderColor='#eee';">
+                        <i class="bi bi-building" style="color:var(--point-orange); font-size:1.4rem;"></i> 송파구의회 — 영조물
+                        배상책임 현황
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const spotsCoord = [
+            { x: 0, y: 0, scale: 1, rot: 0 },         // 0: Cover
+            { x: 4000, y: 0, scale: 0.8, rot: 3 },     // 1: Team
+            { x: 8000, y: 2000, scale: 1.1, rot: -3 },  // 2: Index
+            { x: 4000, y: 4000, scale: 1, rot: 0 },     // 3: 왜 포트홀?
+            { x: 4000, y: 7000, scale: 0.7, rot: 2 },   // 3a: 고속도로 통계
+            { x: 0, y: 7000, scale: 0.7, rot: -2 },     // 3b: 골목길 통계
+            { x: -3000, y: 5500, scale: 0.9, rot: 3 },  // 3c: 결론 빌드업
+            { x: -1000, y: 4000, scale: 0.9, rot: 5 },  // 4: 차별점
+            { x: -5000, y: 2000, scale: 1.1, rot: -5 },  // 5: 협업
+            { x: -5000, y: -2000, scale: 1, rot: 0 },    // 6: DB
+            { x: -3000, y: -3000, scale: 0.9, rot: -2 }, // 6a: 리스크 방어
+            { x: -2000, y: -2000, scale: 0.8, rot: 2 },  // 6b: 민간 한계 극복
+            { x: -1000, y: -4000, scale: 1.1, rot: 3 },  // 7: 스택
+            { x: 4000, y: -4000, scale: 0.9, rot: -3 },  // 8: AI
+            { x: 4000, y: -7000, scale: 1.1, rot: 2 },   // 8a: Phase 1 (v1~v4)
+            { x: 8000, y: -7000, scale: 1.1, rot: -2 },  // 8b: Phase 2 (v5 Hardlink/MP)
+            { x: 8000, y: -4500, scale: 1.2, rot: 3 },   // 8c: Phase 3 (v6 Sinkhole Analysis)
+            { x: 8000, y: -2000, scale: 1, rot: 0 },     // 9: 서비스로직1
+            { x: 12000, y: -2000, scale: 1, rot: 3 },    // 10: 서비스로직2
+            { x: 12000, y: 2000, scale: 1, rot: -3 },    // 11: 서비스로직3
+            { x: 16000, y: 2000, scale: 1, rot: 0 },     // 12: 서비스로직4
+            { x: 16000, y: -2000, scale: 1.1, rot: 5 },  // 13: 서비스로직5
+            { x: 20000, y: 0, scale: 1.5, rot: 10 },     // 14: Demo
+            { x: 20000, y: 5000, scale: 1, rot: 0 },     // 15: Next Steps
+            { x: 10000, y: 500, scale: 0.12, rot: 0 }    // 16: Q&A
+        ];
+
+        const totalSpots = spotsCoord.length;
+        const camera = document.getElementById('camera');
+        const indicators = document.getElementById('indicators');
+        const spots = document.querySelectorAll('.spot');
+
+        const maxScroll = (totalSpots - 1) * 1000;
+        let currentPPTScroll = 0;
+        let targetPPTScroll = 0;
+        let velPPT = 0; // 물리 엔진용 속도
+        let activeIdx = -1; // 초기 업데이트 강제 수행
+
+        let targetX = 0, targetY = 0, targetScale = 1, targetRot = 0;
+        let cX = 0, cY = 0, cScale = 1, cRot = 0;
+
+        // [ANIMATION STATE]
+        let animStartTime = null;
+        let animStartScroll = 0;
+        let animTargetScroll = 0;
+        const animDuration = 2000;
+
+        const lerp = (s, e, a) => s + (e - s) * a;
+
+        // 초기 배치
+        for (let i = 0; i < totalSpots; i++) {
+            const data = spotsCoord[i];
+            spots[i].style.transform = `translate(-50%, -50%) translate(${data.x}px, ${data.y}px) scale(${data.scale}) rotate(${data.rot}deg)`;
+            const dot = document.createElement('div');
+            dot.className = 'indicator-dot';
+            dot.addEventListener('click', () => jumpToSlide(i));
+            indicators.appendChild(dot);
+        }
+        const dots = document.querySelectorAll('.indicator-dot');
+
+        function jumpToSlide(i) {
+            const loader = document.getElementById('ppt-loader');
+            loader.querySelector('.ppt-loader-text').innerText = "MOVING TO SLIDE " + (i + 1);
+            loader.classList.remove('fade-out');
+
+            setTimeout(() => {
+                currentPPTScroll = i * 1000;
+                animTargetScroll = i * 1000;
+                animStartTime = null; // 진행 중인 애니메이션 중단
+
+                setTimeout(() => {
+                    loader.classList.add('fade-out');
+                }, 400);
+            }, 300);
+        }
+
+
+
+
+        function render(time) {
+            if (animStartTime !== null) {
+                const elapsed = time - animStartTime;
+                const progress = Math.min(elapsed / animDuration, 1);
+                // Quintic Ease-In-Out: 매우 부드러운 가속과 감속
+                const ease = progress < 0.5 ? 16 * Math.pow(progress, 5) : 1 - Math.pow(-2 * progress + 2, 5) / 2;
+                currentPPTScroll = animStartScroll + (animTargetScroll - animStartScroll) * ease;
+                if (progress >= 1) animStartTime = null;
+            }
+
+            // [LINEAR CAMERA SYNC] 지연(Lag) 제거 -> 어지러움 해결 핵심
+            const globalProgress = Math.max(0, Math.min(totalSpots - 1, currentPPTScroll / 1000));
+            const idx1 = Math.floor(globalProgress);
+            const idx2 = Math.min(totalSpots - 1, idx1 + 1);
+            const localRatio = globalProgress - idx1;
+
+            const s1 = spotsCoord[idx1], s2 = spotsCoord[idx2];
+
+            // 두 지점 사이를 현재 스크롤 위치에 맞춰 즉각 선형 보간
+            const curX = -(s1.x + (s2.x - s1.x) * localRatio);
+            const curY = -(s1.y + (s2.y - s1.y) * localRatio);
+            const curScale = (1 / s1.scale) + ((1 / s2.scale) - (1 / s1.scale)) * localRatio;
+            const curRot = -(s1.rot + (s2.rot - s1.rot) * localRatio);
+
+            // Active Index & Indicator Update
+            const active = Math.round(globalProgress);
+            if (active !== activeIdx) {
+                activeIdx = active;
+                dots.forEach((dot, i) => {
+                    dot.classList.toggle('active', i === activeIdx);
+                    spots[i].style.opacity = (i === activeIdx) ? '1' : '0.2';
+                });
+                if (activeIdx !== 1) document.querySelectorAll('.avatar-3d.active').forEach(c => c.classList.remove('active'));
+            }
+
+            const fitScale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+            camera.style.transform = `translate(-50%, -50%) scale(${curScale * fitScale}) rotate(${curRot}deg) translate(${curX}px, ${curY}px)`;
+            requestAnimationFrame(render);
+        }
+
+        window.addEventListener('wheel', (e) => { if (!e.target.closest('iframe')) e.preventDefault(); }, { passive: false });
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') moveSlide(1);
+            else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') moveSlide(-1);
+        });
+
+        function moveSlide(dir) {
+            let nextIdx = Math.round(animTargetScroll / 1000) + dir;
+            if (nextIdx < 0) nextIdx = 0;
+            if (nextIdx >= totalSpots) nextIdx = totalSpots - 1;
+
+            animStartScroll = currentPPTScroll;
+            animTargetScroll = nextIdx * 1000;
+            animStartTime = performance.now();
+        }
+
+        // Teams toggle
+        document.querySelectorAll('.avatar-3d').forEach(card => {
+            card.addEventListener('click', (e) => { e.stopPropagation(); card.classList.toggle('active'); });
+        });
+
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('ppt-loader');
+            const spots = document.querySelectorAll('.spot');
+
+            // [FIX] 초기 수축 현상 방지: 렌더 루프 시작 전 fitScale 우선 적용
+            const fit = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+            camera.style.transform = `translate(-50%, -50%) scale(${fit}) rotate(0deg) translate(0px, 0px)`;
+
+            spots.forEach(s => s.classList.add('scatter-init'));
+            setTimeout(() => {
+                loader.classList.add('fade-out');
+                setTimeout(() => {
+                    spots.forEach(s => { s.classList.remove('scatter-init'); s.classList.add('scatter-done'); });
+                    setTimeout(() => {
+                        requestAnimationFrame(render);
+                        initCharts(); // 차트 초기화 함수 호출
+                    }, 400);
+                }, 100);
+            }, 800);
+        });
+
+        window.addEventListener('message', (e) => {
+            if (!e.data || e.data.type !== 'PPT_STATE_CHANGE') return;
+            const { page, state } = e.data;
+            const panelId = page === 'alert' ? 'desc-alert' : (page === 'status' ? 'desc-status' : null);
+            if (!panelId) return;
+            const panel = document.getElementById(panelId);
+            panel.querySelectorAll('.desc-block').forEach(b => b.classList.remove('active'));
+            const target = panel.querySelector(`.desc-block[data-desc="${state}"]`);
+            if (target) target.classList.add('active');
+        });
+
+        // Demo return
+        function startDemoReturn() {
+            document.body.style.transition = 'transform 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.8s ease';
+            document.body.style.transform = 'scale(0.3)'; document.body.style.opacity = '0';
+            sessionStorage.setItem('ppt_return', 'active');
+            setTimeout(() => { window.location.href = '/'; }, 900);
+        }
+
+        function initCharts() {
+            const ctx = document.getElementById('trainingChart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['mAP50', 'mAP50-95', 'Recall'],
+                    datasets: [
+                        {
+                            label: 'v5 (Road Damage)',
+                            data: [0.8688, 0.6504, 0.8075],
+                            backgroundColor: 'rgba(51, 51, 51, 0.1)',
+                            borderColor: '#333333',
+                            borderWidth: 2,
+                            borderRadius: 10,
+                            barThickness: 50
+                        },
+                        {
+                            label: 'v6 (Sinkhole Integrated)',
+                            data: [0.9017, 0.6528, 0.8484],
+                            backgroundColor: 'rgba(255, 140, 0, 0.8)',
+                            borderColor: '#FF8C00',
+                            borderWidth: 2,
+                            borderRadius: 10,
+                            barThickness: 50
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 0.6,
+                            max: 1.0,
+                            ticks: {
+                                font: { size: 14, family: 'Outfit' },
+                                color: '#999'
+                            },
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        },
+                        x: {
+                            ticks: {
+                                font: { size: 16, family: 'Outfit', weight: 'bold' },
+                                color: '#333'
+                            },
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: { size: 14, family: 'Outfit', weight: 'bold' },
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#FFFFFF',
+                            titleColor: '#333',
+                            titleFont: { size: 16, weight: 'bold' },
+                            bodyColor: '#666',
+                            bodyFont: { size: 14 },
+                            borderColor: '#FF8C00',
+                            borderWidth: 1,
+                            padding: 15,
+                            displayColors: true,
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) label += (context.parsed.y * 100).toFixed(2) + '%';
+                                    return label;
+                                },
+                                afterLabel: function (context) {
+                                    if (context.datasetIndex === 1) {
+                                        return 'v6 적용 시 이전 버전 대비 유의미한 성능 향상 달성';
+                                    }
+                                    return '';
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

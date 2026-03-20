@@ -1,0 +1,725 @@
+{% extends 'layout.html' %}
+
+{% block title %}Alert - Crack{% endblock %}
+
+{% block content %}
+
+<!-- 필터 패널 (슬라이드 업) -->
+<div id="filter-panel"
+    style="position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(120%); width:92%; max-width:440px; z-index:10001; background:white; border-radius:24px; box-shadow:0 8px 40px rgba(0,0,0,0.15); padding:24px 20px; box-sizing: border-box; border: 1px solid rgba(0,0,0,0.05); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); opacity:0; pointer-events:none;">
+    <div style="width:36px;height:4px;background:rgba(0,0,0,0.12);border-radius:2px;margin:0 auto 20px;"></div>
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:18px;">필터</h3>
+
+    <!-- 거리 필터 -->
+    <div style="margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <p style="font-size:0.82rem;opacity:0.5;font-weight:600;margin:0;">📍 내 위치 기준 거리</p>
+            <span id="current-location-text"
+                style="font-size:0.75rem; color:var(--point-orange); font-weight:600; display:none;">위치 확인 중...</span>
+        </div>
+        <div id="dist-btns" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-start;">
+            <button type="button" class="filter-dist-btn active" data-km="" onclick="setDist(this,'')"
+                style="padding:8px 16px;border-radius:20px;border:1.5px solid var(--point-orange);background:var(--point-orange);color:white;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;">전체</button>
+            <button type="button" class="filter-dist-btn" data-km="1" onclick="setDist(this,1)"
+                style="padding:8px 16px;border-radius:20px;border:1.5px solid rgba(0,0,0,0.1);background:white;color:inherit;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;">1km
+                이내</button>
+            <button type="button" class="filter-dist-btn" data-km="3" onclick="setDist(this,3)"
+                style="padding:8px 16px;border-radius:20px;border:1.5px solid rgba(0,0,0,0.1);background:white;color:inherit;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;">3km
+                이내</button>
+            <button type="button" class="filter-dist-btn" data-km="10" onclick="setDist(this,10)"
+                style="padding:8px 16px;border-radius:20px;border:1.5px solid rgba(0,0,0,0.1);background:white;color:inherit;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;">10km
+                이내</button>
+        </div>
+    </div>
+
+    <!-- 처리 상태 필터 -->
+    <div style="margin-bottom:24px;">
+        <p style="font-size:0.82rem;opacity:0.5;margin-bottom:12px;font-weight:600;">🚦 처리 상태</p>
+        <div id="status-btns" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-start;">
+            <button type="button" class="filter-status-btn active" data-status="" onclick="setStatus(this,'')"
+                style="padding:8px 16px;border-radius:20px;border:1.5px solid var(--point-orange);background:var(--point-orange);color:white;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;">전체</button>
+            {% if is_admin %}
+            <button type="button" class="filter-status-btn" data-status="담당자 확인중" onclick="setStatus(this,'담당자 확인중')"
+                style="padding:8px 16px;border-radius:20px;border:1.5px solid rgba(0,0,0,0.1);background:white;color:inherit;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;">담당자
+                확인중</button>
+            {% endif %}
+            <button type="button" class="filter-status-btn" data-status="접수완료" onclick="setStatus(this,'접수완료')"
+                style="padding:8px 16px;border-radius:20px;border:1.5px solid rgba(0,0,0,0.1);background:white;color:inherit;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;">접수완료</button>
+            <button type="button" class="filter-status-btn" data-status="신고 처리중" onclick="setStatus(this,'신고 처리중')"
+                style="padding:8px 16px;border-radius:20px;border:1.5px solid rgba(0,0,0,0.1);background:white;color:inherit;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;">신고
+                처리중</button>
+            <button type="button" class="filter-status-btn" data-status="처리 완료" onclick="setStatus(this,'처리 완료')"
+                style="padding:8px 16px;border-radius:20px;border:1.5px solid rgba(0,0,0,0.1);background:white;color:inherit;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;">처리
+                완료</button>
+            {% if is_admin %}
+            <button type="button" class="filter-status-btn" data-status="반려" onclick="setStatus(this,'반려')"
+                style="padding:8px 16px;border-radius:20px;border:1.5px solid rgba(0,0,0,0.1);background:white;color:inherit;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;">반려</button>
+            {% endif %}
+        </div>
+    </div>
+
+    <button type="button" onclick="applyFilter()"
+        style="width:100%;padding:14px;border-radius:16px;border:none;background:var(--point-orange);color:white;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 6px 16px rgba(255,140,0,0.25);">적용하기</button>
+</div>
+<div id="filter-backdrop" onclick="closeFilter()"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:10000; transition: opacity 0.3s ease;">
+</div>
+
+<style>
+    .alert-tab {
+        padding-bottom: 8px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: rgba(0, 0, 0, 0.3);
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .alert-item {
+        position: relative;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        z-index: 1;
+        overflow: visible;
+    }
+
+    .alert-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 14px 40px rgba(139, 69, 19, 0.15) !important;
+    }
+
+    .alert-item:active {
+        transform: scale(0.98);
+    }
+
+    .alert-item.dropdown-open {
+        z-index: 100 !important;
+    }
+
+    .alert-tab.active {
+        color: var(--point-orange) !important;
+        border-bottom-color: var(--point-orange) !important;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block !important;
+    }
+
+    .tab-content {
+        padding-top: 10px;
+    }
+
+    .notice-item:active {
+        transform: scale(0.98);
+    }
+
+    main {
+        padding-top: 0 !important;
+    }
+</style>
+
+<!-- 탭 및 필터 버튼 헤더 (Sticky) -->
+<div class="sticky-header"
+    style="position: sticky; top: 0; margin-top: -20px; margin-left: -20px; margin-right: -20px; padding: 12px 20px; z-index: 1000; background: var(--bg-main); border-bottom:1px solid rgba(0,0,0,0.05); margin-bottom: 16px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:0; min-height: 42px;">
+        <div id="alert-tabs" style="display:flex; gap:24px;">
+            <div onclick="switchAlertTab('reports')" id="tab-reports" class="alert-tab active">신고내역</div>
+            <div onclick="switchAlertTab('notices')" id="tab-notices" class="alert-tab">공지사항</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <div id="active-filter-tags" style="display:none; gap:6px; flex-wrap:wrap; margin-right:12px;"></div>
+            <button type="button" onclick="openFilter()" id="filter-btn"
+                style="width:42px;height:42px;border-radius:50%;border:none;background:rgba(0,0,0,0.05);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;">
+                <i class="bi bi-sliders" style="font-size:1.15rem;color:var(--text-asphalt);"></i>
+            </button>
+            {% if is_admin %}
+            <button type="button" onclick="openNoticeModal()" id="notice-write-btn"
+                style="display:none; width:42px;height:42px;border-radius:50%;border:none;background:rgba(255,140,0,0.1);cursor:pointer;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;">
+                <i class="bi bi-pencil-fill" style="font-size:1.1rem;color:var(--point-orange);"></i>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .alert-item.dropdown-open {
+        z-index: 9999 !important;
+    }
+</style>
+
+<!-- 피드 컨테이너 -->
+<div id="feed-container-reports" class="tab-content active">
+    <div id="alert-feed" class="alert-feed">
+        {% if alerts %}
+        {% for alert in alerts %}
+        <div id="alert-card-{{ alert.id }}" class="alert-item" data-status="{{ alert.status }}"
+            data-lat="{{ alert.lat }}" data-lng="{{ alert.lng }}"
+            onclick="window.location.href='/alert/view/{{ alert.id }}'"
+            style="margin-bottom:16px; position:relative; background:white; border-radius:24px; box-shadow:0 10px 30px rgba(139,69,19, 0.08); transition:all 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor:pointer; border:1px solid rgba(0,0,0,0.02); border-left: 6px solid {% if alert.status == '처리 완료' %}#4CAF50{% elif alert.status == '신고 처리중' %}#2196F3{% elif alert.status == '접수완료' %}#FF8C00{% elif alert.status == '반려' %}#D32F2F{% elif alert.status == 'AI 분석중' %}#C2185B{% else %}#607D8B{% endif %};">
+            <!-- Thumbnail and Content Wrapper -->
+            <div style="display:flex; gap: 12px; align-items: flex-start; padding: 16px;">
+                {% if alert.file_path %}
+                <div
+                    style="flex-shrink: 0; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; background: #eee;">
+                    {% if alert.file_type == 'video' %}
+                    <video src="{{ alert.file_path }}" style="width: 100%; height: 100%; object-fit: cover;"></video>
+                    {% else %}
+                    <img src="{{ alert.file_path }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <div style="flex: 1; display: flex; flex-direction: column; position: relative;">
+                    <div style="padding-right: 90px;"> <!-- 배지 공간 확보 -->
+                        <h3 style="font-size:0.9rem; margin:0 0 6px 0; word-break: break-all; line-height: 1.3;">
+                            {% if alert.reporter_count > 1 %}
+                            <span
+                                style="background:var(--point-orange); color:white; padding:2px 6px; border-radius:6px; font-weight:700; font-size:0.7rem; margin-right:4px;">{{
+                                alert.reporter_count }}건 접수</span>
+                            {% endif %}
+                            {{ alert.title }}
+                        </h3>
+                        <p
+                            style="font-size:0.85rem;display:flex;align-items:center;gap:6px;opacity:0.8;margin-bottom:2px;">
+                            <i class="bi bi-geo-alt-fill" style="color:var(--point-orange);"></i>
+                            {{ alert.address if alert.address else ('[좌표] ' + (alert.lat | round(4) | string) + ', ' +
+                            (alert.lng | round(4) | string) if alert.lat and alert.lng else '위치 정보 없음') }}
+                        </p>
+                        <p style="font-size:0.75rem;opacity:0.5;margin:0;">{{ alert.time }}</p>
+                    </div>
+
+                    <!-- 우측 상단 배지 (레이아웃에서 분리하여 제목과 주소 사이 공백 방지) -->
+                    <div
+                        style="position: absolute; top: 0; right: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                        <span
+                            style="background:var(--accent-soft); color:var(--point-orange); padding:2px 8px; border-radius:6px; font-weight:700; font-size:0.65rem; white-space: nowrap;">
+                            AI {{ alert.confidence }}%
+                        </span>
+                        <div style="position: relative;">
+                            <span id="status-badge-{{ alert.id }}" {% if is_admin
+                                %}onclick="toggleAdminStatusMenu({{ alert.id }}, event)" {% endif %} style="display:inline-flex; align-items:center; gap:3px; padding:2px 10px; border-radius:10px; font-size:0.65rem; font-weight:700; white-space: nowrap; cursor: {% if is_admin %}pointer{% else %}default{% endif %};
+                                {% if alert.status == '처리 완료' %}background:#E8F5E9;color:#2E7D32;
+                                {% elif alert.status == '신고 처리중' %}background:#E3F2FD;color:#1E88E5;
+                                {% elif alert.status == '접수완료' %}background:#FFF3E0;color:#E65100;
+                                {% elif alert.status == '반려' %}background:#FFEBEE;color:#D32F2F;
+                                {% else %}background:#ECEFF1;color:#455A64;{% endif %}">
+                                <span id="badge-text-{{ alert.id }}">{{ alert.status }}</span>
+                                {% if is_admin %}<i class="bi bi-chevron-down" style="font-size:0.6rem;"></i>{% endif %}
+                            </span>
+
+                            {% if is_admin %}
+                            <div id="admin-status-menu-{{ alert.id }}" class="admin-status-menu"
+                                onclick="event.stopPropagation()"
+                                style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:white; border-radius:16px; box-shadow:0 8px 30px rgba(0,0,0,0.12); border:1px solid rgba(0,0,0,0.05); padding:8px; z-index:100; min-width: 140px;">
+                                <div onclick="updateStatus({{ alert.id }}, '관리자 확인중', event)" class="status-option"
+                                    style="padding:10px 14px; font-size:0.8rem; font-weight:600; cursor:pointer; border-radius:10px; margin-bottom:2px; text-align:right; color:#607D8B;">
+                                    관리자 확인중</div>
+                                <div onclick="updateStatus({{ alert.id }}, '담당자 확인중', event)" class="status-option"
+                                    style="padding:10px 14px; font-size:0.8rem; font-weight:600; cursor:pointer; border-radius:10px; margin-bottom:2px; text-align:right; color:#455A64;">
+                                    담당자 확인중</div>
+                                <div onclick="updateStatus({{ alert.id }}, '접수완료', event)" class="status-option"
+                                    style="padding:10px 14px; font-size:0.8rem; font-weight:600; cursor:pointer; border-radius:10px; margin-bottom:2px; text-align:right; color:#E65100;">
+                                    접수완료</div>
+                                <div onclick="updateStatus({{ alert.id }}, '신고 처리중', event)" class="status-option"
+                                    style="padding:10px 14px; font-size:0.8rem; font-weight:600; cursor:pointer; border-radius:10px; margin-bottom:2px; text-align:right; color:#1E88E5;">
+                                    신고 처리중</div>
+                                <div onclick="updateStatus({{ alert.id }}, '처리 완료', event)" class="status-option"
+                                    style="padding:10px 14px; font-size:0.8rem; font-weight:600; cursor:pointer; border-radius:10px; margin-bottom:2px; text-align:right; color:#2E7D32;">
+                                    처리 완료</div>
+                                <div onclick="updateStatus({{ alert.id }}, '반려', event)" class="status-option"
+                                    style="padding:10px 14px; font-size:0.8rem; font-weight:600; cursor:pointer; border-radius:10px; text-align:right; color:#D32F2F; border-top:1px solid rgba(0,0,0,0.05); margin-bottom:2px;">
+                                    반려</div>
+                                <div onclick="updateStatus({{ alert.id }}, '삭제', event)" class="status-option"
+                                    style="padding:10px 14px; font-size:0.8rem; font-weight:600; cursor:pointer; border-radius:10px; text-align:right; color:#757575; border-top:1px solid rgba(0,0,0,0.05);">
+                                    삭제</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        {% endfor %}
+        {% else %}
+        <div id="empty-state" style="text-align:center;padding:60px 20px;opacity:0.4;">
+            <i class="bi bi-bell-slash" style="font-size:3rem;display:block;margin-bottom:12px;"></i>
+            <p style="font-size:0.95rem;">{% if is_admin %}AI 검증된 신고가 없습니다.{% else %}현재 접수된 알림이 없습니다.{% endif %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 공지사항 작성 모달 (슬라이드 업) -->
+{% if is_admin %}
+<div id="notice-write-modal"
+    style="position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(120%); width:92%; max-width:440px; z-index:10001; background:white; border-radius:24px; box-shadow:0 8px 40px rgba(0,0,0,0.15); padding:24px 20px; box-sizing: border-box; border: 1px solid rgba(0,0,0,0.05); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); opacity:0; pointer-events:none;">
+    <div style="width:36px;height:4px;background:rgba(0,0,0,0.12);border-radius:2px;margin:0 auto 20px;"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+        <h3 style="font-size:1.1rem;font-weight:700;margin:0;color:var(--point-orange);">📢 새 공지사항 등록</h3>
+    </div>
+    <input type="text" id="notice-title" placeholder="공지 제목"
+        style="width: 100%; padding: 14px; border: 1px solid #eee; border-radius: 12px; margin-bottom: 12px; font-size: 0.95rem; outline:none;">
+    <textarea id="notice-content" placeholder="공지 내용"
+        style="width: 100%; padding: 14px; border: 1px solid #eee; border-radius: 12px; margin-bottom: 12px; font-size: 0.95rem; min-height: 120px; resize: none; outline:none; font-family:inherit;"></textarea>
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <select id="notice-category"
+            style="padding: 12px; border: 1px solid #eee; border-radius: 12px; font-size: 0.9rem; flex: 1; background: white; outline:none;">
+            <option value="일반">일반</option>
+            <option value="시스템">시스템</option>
+            <option value="이벤트">이벤트</option>
+        </select>
+    </div>
+
+    <button type="button" onclick="addNotice()"
+        style="width: 100%; padding: 14px; border-radius: 16px; border: none; background: var(--point-orange); color: white; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size:1rem; box-shadow:0 6px 16px rgba(255,140,0,0.25);">
+        작성완료 <i class="bi bi-send-fill" style="font-size:0.9rem;"></i>
+    </button>
+</div>
+{% endif %}
+
+<!-- 공지사항 컨테이너 -->
+<div id="feed-container-notices" class="tab-content" style="display: none; padding-top: 10px;">
+
+
+    <div class="notice-list">
+        {% if notices %}
+        {% for notice in notices %}
+        <div class="card notice-item"
+            onclick="openNoticeDetail({{ notice.id }}, {{ notice.title | tojson }}, {{ notice.content | tojson }})"
+            style="margin-bottom: 12px; padding: 18px; border-radius: 16px; border-left: 5px solid {% if notice.category == '시스템' %}#666{% else %}var(--point-orange){% endif %}; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.03); cursor: pointer; transition: transform 0.2s;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span
+                    style="background:{% if notice.category == '시스템' %}#eee{% else %}var(--accent-soft){% endif %}; color:{% if notice.category == '시스템' %}#333{% else %}var(--point-orange){% endif %}; padding:3px 10px; border-radius:6px; font-size:0.7rem; font-weight:800;">{{
+                    notice.category }}</span>
+                <span style="font-size:0.7rem; opacity:0.4;">{{ notice.date }}</span>
+            </div>
+            <h3 style="font-size:1rem; margin-bottom:6px; font-weight: 800;">{{ notice.title }}</h3>
+            <p style="font-size:0.88rem; opacity:0.75; word-break: break-all; margin-bottom: 10px; line-height: 1.4;">
+                {{
+                notice.content }}</p>
+            <p style="font-size:0.7rem; opacity:0.3; text-align:right;">작성자: {% if is_admin %}{{
+                notice.author }}{% else %}관리자{% endif %}</p>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div style="text-align:center;padding:60px 20px;opacity:0.3;">
+            <i class="bi bi-megaphone" style="font-size:3rem;display:block;margin-bottom:12px;"></i>
+            <p style="font-size:0.95rem;">등록된 공지사항이 없습니다.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    console.log('Kakao JS Key Loaded:', '{{ kakao_js_key }}' ? 'Yes' : 'No');
+    var activeDistKm = null;
+    var activeStatus = '';
+    var userLat = null, userLng = null;
+
+    function requestAndDisplayLocation() {
+        const locText = document.getElementById('current-location-text');
+        locText.style.display = 'block';
+        locText.innerText = '위치 확인 중...';
+        locText.style.color = 'var(--point-orange)';
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    userLat = pos.coords.latitude;
+                    userLng = pos.coords.longitude;
+                    if (window.kakao && kakao.maps) {
+                        const tryGeocode = (retryCount) => {
+                            kakao.maps.load(function () {
+                                if (kakao.maps.services && kakao.maps.services.Geocoder) {
+                                    const geocoder = new kakao.maps.services.Geocoder();
+                                    geocoder.coord2RegionCode(userLng, userLat, function (result, status) {
+                                        if (status === kakao.maps.services.Status.OK) {
+                                            let address = "";
+                                            for (let i = 0; i < result.length; i++) {
+                                                if (result[i].region_type === 'H') { // 행정동 기준
+                                                    address = result[i].region_2depth_name + ' ' + result[i].region_3depth_name;
+                                                    break;
+                                                }
+                                            }
+                                            locText.innerText = '[ ' + address.trim() + ' ]';
+                                        } else {
+                                            locText.innerText = '위치 확인 완료 (주소조회 실패)';
+                                        }
+                                    });
+                                } else if (retryCount < 5) {
+                                    console.log('Waiting for Kakao Services library... count:', retryCount);
+                                    setTimeout(() => tryGeocode(retryCount + 1), 300);
+                                } else {
+                                    locText.innerText = '위치 확인 완료 (SDK서비스 로드대기)';
+                                }
+                            });
+                        };
+                        tryGeocode(0);
+                    } else {
+                        locText.innerText = '위치 확인 완료';
+                        console.error('Kakao SDK not found on page');
+                    }
+                },
+                err => {
+                    locText.innerText = '위치 알 수 없음 (접근 차단됨)';
+                    locText.style.color = '#FF4D4D';
+                    userLat = null;
+                    userLng = null;
+                }
+            );
+        } else {
+            locText.innerText = 'GPS 지원 불가 기기';
+            locText.style.color = '#FF4D4D';
+        }
+    }
+
+    window.openFilter = function () {
+        if (userLat === null && document.getElementById('current-location-text').innerText !== '위치 알 수 없음 (접근 차단됨)') {
+            requestAndDisplayLocation();
+        }
+
+        const panel = document.getElementById('filter-panel');
+        const backdrop = document.getElementById('filter-backdrop');
+        if (panel) {
+            panel.style.opacity = '1';
+            panel.style.pointerEvents = 'auto';
+            panel.style.transform = 'translateX(-50%) translateY(0)';
+        }
+        if (backdrop) backdrop.style.display = 'block';
+        const filterBtn = document.getElementById('filter-btn');
+        if (filterBtn) filterBtn.style.background = 'var(--accent-soft)';
+    }
+
+    window.closeFilter = function () {
+        const panel = document.getElementById('filter-panel');
+        const backdrop = document.getElementById('filter-backdrop');
+        const noticeModal = document.getElementById('notice-write-modal');
+
+        if (panel) {
+            panel.style.opacity = '0';
+            panel.style.pointerEvents = 'none';
+            panel.style.transform = 'translateX(-50%) translateY(120%)';
+        }
+        if (noticeModal) {
+            noticeModal.style.opacity = '0';
+            noticeModal.style.pointerEvents = 'none';
+            noticeModal.style.transform = 'translateX(-50%) translateY(120%)';
+        }
+        setTimeout(() => {
+            if (backdrop) backdrop.style.display = 'none';
+        }, 300);
+        const filterBtn = document.getElementById('filter-btn');
+        if (filterBtn) filterBtn.style.background = 'rgba(0,0,0,0.05)';
+        const noticeBtn = document.getElementById('notice-write-btn');
+        if (noticeBtn) noticeBtn.style.background = 'rgba(255,140,0,0.1)';
+    }
+
+    window.openNoticeModal = function () {
+        const modal = document.getElementById('notice-write-modal');
+        const backdrop = document.getElementById('filter-backdrop');
+        if (modal) {
+            modal.style.opacity = '1';
+            modal.style.pointerEvents = 'auto';
+            modal.style.transform = 'translateX(-50%) translateY(0)';
+        }
+        if (backdrop) backdrop.style.display = 'block';
+        const noticeWriteBtn = document.getElementById('notice-write-btn');
+        if (noticeWriteBtn) noticeWriteBtn.style.background = 'var(--accent-soft)';
+    }
+
+    window.switchAlertTab = function (tabId) {
+        console.log('Switching to tab:', tabId);
+
+        // 모든 탭 버튼 비활성화 (연한 회색 처리)
+        document.querySelectorAll('.alert-tab').forEach(t => {
+            t.classList.remove('active');
+            t.style.color = 'rgba(0,0,0,0.3)';
+            t.style.borderBottomColor = 'transparent';
+        });
+
+        // 모든 컨텐츠 숨기기
+        document.querySelectorAll('.tab-content').forEach(c => {
+            c.classList.remove('active');
+            c.style.display = 'none';
+        });
+
+        // 선택한 탭 활성화 (오렌지색)
+        const activeTab = document.getElementById('tab-' + tabId);
+        const activeContent = document.getElementById('feed-container-' + tabId);
+
+        if (activeTab) {
+            activeTab.classList.add('active');
+            activeTab.style.color = 'var(--point-orange)';
+            activeTab.style.borderBottomColor = 'var(--point-orange)';
+        }
+        if (activeContent) {
+            activeContent.classList.add('active');
+            activeContent.style.display = 'block';
+        }
+
+        // 필터 버튼 처리
+        const filterBtn = document.getElementById('filter-btn');
+        const noticeWriteBtn = document.getElementById('notice-write-btn');
+        if (filterBtn) {
+            if (tabId === 'notices') {
+                filterBtn.style.display = 'none';
+                if (noticeWriteBtn) noticeWriteBtn.style.display = 'flex';
+            } else {
+                filterBtn.style.display = 'flex';
+                if (noticeWriteBtn) noticeWriteBtn.style.display = 'none';
+            }
+        }
+
+        // 상단 스티키 헤더 그림자 제어 등 추가 로직 가능
+
+        // [PPT 통신] iframe 안에서 작동 중이면 부모(PPT)에 탭 전환 알림
+        if (window.parent !== window) {
+            window.parent.postMessage({ type: 'PPT_STATE_CHANGE', page: 'alert', state: tabId }, '*');
+        }
+    }
+
+    window.openNoticeDetail = function (noticeId, title, content) {
+        // 전역 모달이나 토스트 대신, 간단한 상세 팝업을 띄우거나 이동할 수 있습니다.
+        // 여기서는 기존 모달 UI가 제거되었으므로, 간단한 알림창으로 내용을 보여줍니다.
+        alert(`[${title}]\n\n${content}`);
+    }
+
+    window.setDist = function (el, km) {
+        if (km !== '' && userLat === null) {
+            alert('위치 정보 제공에 동의해야 내 위치 기준 거리 필터를 사용할 수 있습니다.\n기기 또는 브라우저 설정에서 위치 권한을 허용해주세요.');
+            return;
+        }
+        activeDistKm = km === '' ? null : Number(km);
+        document.querySelectorAll('.filter-dist-btn').forEach(b => {
+            b.style.background = 'white';
+            b.style.color = 'inherit';
+            b.style.borderColor = 'rgba(0,0,0,0.1)';
+        });
+        el.style.background = 'var(--point-orange)';
+        el.style.color = 'white';
+        el.style.borderColor = 'var(--point-orange)';
+    }
+
+    window.setStatus = function (el, status) {
+        activeStatus = status;
+        document.querySelectorAll('.filter-status-btn').forEach(b => {
+            b.style.background = 'white';
+            b.style.color = 'inherit';
+            b.style.borderColor = 'rgba(0,0,0,0.1)';
+        });
+        el.style.background = 'var(--point-orange)';
+        el.style.color = 'white';
+        el.style.borderColor = 'var(--point-orange)';
+    }
+    // --- 하버사인 거리 계산 함수 복구 ---
+    function haversineKm(lat1, lng1, lat2, lng2) {
+        const R = 6371, toRad = d => d * Math.PI / 180;
+        const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    // --- 레이지 로딩 (Progressive Reveal) ---
+    var itemsToShow = 20;
+    var increment = 20;
+    var observer = null;
+
+    function initLazyLoading() {
+        const items = document.querySelectorAll('.alert-item');
+        // 필터링된(보이는) 아이템만 대상으로 레이지 로딩 적용
+        const visibleItems = Array.from(items).filter(item => item.getAttribute('data-filtered-out') !== 'true');
+
+        visibleItems.forEach((item, index) => {
+            if (index >= itemsToShow) {
+                item.style.display = 'none';
+            } else {
+                // 원래 display 속성 복구 (필터링 로직 고려)
+                item.style.display = 'block';
+            }
+        });
+
+        // 이미 로드된 아이템 수 업데이트
+        updateSentinel(visibleItems);
+    }
+
+    function updateSentinel(visibleItems) {
+        if (window.alertObserver) window.alertObserver.disconnect();
+
+        // 마지막에서 두 번째 아이템을 관찰 대상으로 설정 (부드러운 로딩)
+        const targetIndex = Math.min(itemsToShow - 2, visibleItems.length - 1);
+        if (targetIndex >= 0 && itemsToShow < visibleItems.length) {
+            window.alertObserver = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    itemsToShow += increment;
+                    initLazyLoading();
+                }
+            }, { threshold: 0.1 });
+            window.alertObserver.observe(visibleItems[targetIndex]);
+        }
+    }
+
+    // SPA 대응: 스크립트 로드 시 즉시 실행
+    initLazyLoading();
+
+    // 필터 로직에 레이지 로딩 호환성 추가
+    const originalApplyFilter = window.applyFilter;
+    window.applyFilter = function () {
+        // 기존 필터 로직 수행
+        closeFilter();
+        const cards = document.querySelectorAll('.alert-item');
+        let visibleCount = 0;
+        cards.forEach(card => {
+            let showByFilter = true;
+            if (activeStatus && card.dataset.status !== activeStatus) showByFilter = false;
+            if (activeDistKm !== null && userLat !== null) {
+                const lat = parseFloat(card.dataset.lat);
+                const lng = parseFloat(card.dataset.lng);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    const km = haversineKm(userLat, userLng, lat, lng);
+                    if (km > activeDistKm) showByFilter = false;
+                }
+            }
+            // 필터링 결과 저장 후 물리적으로 화면에서 보이지 않게 처리
+            card.setAttribute('data-filtered-out', showByFilter ? 'false' : 'true');
+            if (!showByFilter) {
+                card.style.display = 'none';
+            }
+            if (showByFilter) visibleCount++;
+        });
+
+        // 필터 적용 후 레이지 로딩 리셋
+        itemsToShow = 20;
+        initLazyLoading();
+
+        // 상단 태그 및 버튼 스타일 업데이트 (기존 코드 유지)
+        const tagArea = document.getElementById('active-filter-tags');
+        const filterBtn = document.getElementById('filter-btn');
+        if (tagArea) {
+            tagArea.innerHTML = '';
+            const hasFilter = activeDistKm || activeStatus;
+            if (activeDistKm) tagArea.innerHTML += `<span style="padding:2px 8px; border-radius:12px; background:var(--point-orange); color:white; font-size:0.7rem; font-weight:700;">${activeDistKm}km</span>`;
+            if (activeStatus) tagArea.innerHTML += `<span style="padding:2px 8px; border-radius:12px; background:var(--point-orange); color:white; font-size:0.7rem; font-weight:700;">${activeStatus}</span>`;
+            tagArea.style.display = hasFilter ? 'flex' : 'none';
+            if (filterBtn) {
+                const hasFilterActive = (activeDistKm !== null && activeDistKm !== '') || (activeStatus !== null && activeStatus !== '');
+                if (hasFilterActive) {
+                    filterBtn.style.background = 'var(--point-orange)';
+                    const icon = filterBtn.querySelector('i');
+                    if (icon) icon.style.color = 'white';
+                } else {
+                    filterBtn.style.background = 'rgba(0,0,0,0.05)';
+                    const icon = filterBtn.querySelector('i');
+                    if (icon) icon.style.color = 'var(--text-asphalt)';
+                }
+            }
+        }
+        const empty = document.getElementById('empty-state');
+        if (empty) empty.style.display = visibleCount === 0 ? 'block' : 'none';
+    };
+
+    // --- 통일된 상태 업데이트 함수 (에러 수정) ---
+    window.updateStatus = async function (reportId, newStatus, e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        const payload = { status: newStatus };
+        if (newStatus === '반려' || newStatus === '삭제') {
+            const reason = prompt(newStatus + ' 사유를 입력해주세요:');
+            if (reason === null) return;
+            payload.reject_reason = reason;
+        }
+
+        // 즉시 로딩 인디케이터 표시
+        if (typeof showPremiumLoader === 'function') showPremiumLoader();
+
+        try {
+            const resp = await fetch('/api/admin/report/' + reportId + '/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await resp.json();
+            if (data.success) {
+                // UI 상 즉시 반영 후 리로드
+                window.location.reload();
+            } else {
+                alert('변경 실패: ' + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('상태 업데이트 중 서버와 통신 오류가 발생했습니다.');
+        }
+    };
+
+    // --- 공지사항 등록 함수 ---
+    window.addNotice = async function () {
+        const title = document.getElementById('notice-title').value;
+        const content = document.getElementById('notice-content').value;
+        const category = document.getElementById('notice-category').value;
+
+        if (!title || !content) {
+            alert('제목과 내용을 모두 입력해주세요.');
+            return;
+        }
+
+        // 로딩 표시 (필요 시)
+        if (typeof showPremiumLoader === 'function') showPremiumLoader();
+
+        try {
+            const resp = await fetch('/api/admin/notice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content, category })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                alert('공지사항이 작성되었습니다.');
+                closeFilter(); // 모달 닫기
+                window.location.reload();
+            } else {
+                alert('작성 실패: ' + data.message);
+                if (typeof hidePremiumLoader === 'function') hidePremiumLoader();
+            }
+        } catch (err) {
+            console.error(err);
+            alert('서버와 통신 중 오류가 발생했습니다.');
+            if (typeof hidePremiumLoader === 'function') hidePremiumLoader();
+        }
+    };
+
+    // --- 관리자 전용: 상태 변경 메뉴 토글 ---
+    window.toggleAdminStatusMenu = function (id, e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        const menu = document.getElementById('admin-status-menu-' + id);
+        const card = document.getElementById('alert-card-' + id);
+        if (!menu) return;
+
+        const isVisible = menu.style.display === 'block';
+
+        // 다른 모든 메뉴 닫기
+        document.querySelectorAll('.admin-status-menu').forEach(m => m.style.display = 'none');
+        document.querySelectorAll('.alert-item').forEach(c => c.classList.remove('dropdown-open'));
+
+        if (!isVisible) {
+            menu.style.display = 'block';
+            if (card) card.classList.add('dropdown-open');
+        }
+    };
+
+    // 문서 클릭 시 메뉴 닫기
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.admin-status-menu').forEach(m => m.style.display = 'none');
+        document.querySelectorAll('.alert-item').forEach(c => c.classList.remove('dropdown-open'));
+    });
+</script>
+{% endblock %}

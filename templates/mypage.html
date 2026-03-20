@@ -1,0 +1,458 @@
+{% extends 'layout.html' %}
+
+{% block title %}My Page - Crack{% endblock %}
+
+{% block content %}
+<style>
+    .clickable-item {
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+    }
+
+    .clickable-item:hover {
+        background-color: rgba(0, 0, 0, 0.04) !important;
+        transform: translateY(-1px);
+    }
+
+    .clickable-item:active {
+        transform: scale(0.98);
+    }
+
+
+    .point-card:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 8px 20px rgba(255, 140, 0, 0.3);
+    }
+
+    /* 모든 버튼 호버 효과 강조 */
+    .auth-btn:hover {
+        filter: brightness(0.95);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(255, 140, 0, 0.15) !important;
+    }
+</style>
+<!-- 프로필 헤더 -->
+<div class="profile-section card" style="text-align: center; padding: 24px 20px 16px; margin-bottom: 12px;">
+    <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 4px; color: #333;">{{ session.get('user_name',
+        'Guest') }}</h2>
+    <p style="font-size: 0.82rem; opacity: 0.5; margin-bottom: 20px; font-weight: 500;">{{ '관리자 계정' if is_admin else '일반
+        유저' }}</p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 25px;">
+        <!-- 나의 신고 -->
+        <div class="stat-highlight-card" onclick="location.href='/status'">
+            <strong style="display: block; font-size: 1.3rem; color: var(--point-orange); margin-bottom: 4px;">{{
+                my_report_count }}</strong>
+            <span style="font-size: 0.75rem; opacity: 0.8; font-weight: 800; color: #444;">나의 신고</span>
+        </div>
+        <!-- 처리 완료 -->
+        <div class="stat-highlight-card" onclick="location.href='/status'">
+            <strong style="display: block; font-size: 1.3rem; color: var(--point-orange); margin-bottom: 4px;">{{
+                completed_count }}</strong>
+            <span style="font-size: 0.75rem; opacity: 0.8; font-weight: 800; color: #444;">처리 완료</span>
+        </div>
+        <!-- 크래커 (포인트) -->
+        <div class="stat-highlight-card cracker" onclick="openPointModal()">
+            <strong style="display: block; font-size: 1.3rem; font-family: 'Outfit'; margin-bottom: 4px;">{{
+                member.points or 0 }}</strong>
+            <span style="font-size: 0.75rem; opacity: 0.95; font-weight: 800;">크래커</span>
+            <i class="bi bi-lightning-charge-fill"
+                style="position: absolute; right: 6px; bottom: 6px; font-size: 1.5rem; color: white; opacity: 0.25;"></i>
+        </div>
+    </div>
+</div>
+
+<!-- 포인트 상세 내역 모달 -->
+<div id="point-modal"
+    style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;">
+    <div onclick="closePointModal()"
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
+    </div>
+    <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: white; border-radius: 30px 30px 0 0; padding: 24px 20px; max-height: 80%; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -10px 25px rgba(0,0,0,0.1);"
+        id="point-modal-content">
+        <div
+            style="width: 40px; height: 4px; background: rgba(0,0,0,0.1); border-radius: 2px; margin: -12px auto 20px;">
+        </div>
+        <h3
+            style="font-size: 1.1rem; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+            <i class="bi bi-clock-history" style="color: var(--point-orange);"></i> 크래커 적립/사용 내역
+        </h3>
+
+        {% if point_logs %}
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            {% for log in point_logs %}
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid rgba(0,0,0,0.03);">
+                <div>
+                    <p style="font-size: 0.9rem; font-weight: 600; margin-bottom: 4px;">{{ log.reason }}</p>
+                    <span style="font-size: 0.75rem; opacity: 0.4;">{{ log.created_at.strftime('%Y.%m.%d %H:%M')
+                        }}</span>
+                </div>
+                <strong
+                    style="color: {% if log.amount > 0 %}var(--point-orange){% else %}#FF4D4D{% endif %}; font-size: 1rem;">
+                    {% if log.amount > 0 %}+{% endif %}{{ log.amount }}
+                </strong>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 40px 0;">
+            <i class="bi bi-lightning-charge-fill"
+                style="font-size: 3rem; opacity: 0.1; display: block; margin-bottom: 12px;"></i>
+            <p style="font-size: 0.9rem; opacity: 0.3;">아직 적립된 크래커가 없습니다.</p>
+        </div>
+        {% endif %}
+
+        <button onclick="closePointModal()" class="auth-btn"
+            style="margin-top: 30px; background: var(--point-orange); color: white; border-radius: 16px; font-weight: 700; box-shadow: 0 6px 15px rgba(255, 140, 0, 0.2) !important;">닫기</button>
+    </div>
+</div>
+
+<!-- 설정 리스트 (통합) -->
+<div class="card" style="padding: 0; overflow: hidden; border-radius: 20px; margin-bottom: 12px;">
+    <!-- 내 정보 변경 (폴딩) -->
+    <div onclick="toggleMenu('info-edit-menu')" class="clickable-item"
+        style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.03); cursor: pointer;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="bi bi-person-gear" style="font-size: 1.1rem; color: var(--point-orange);"></i>
+            <span>내 정보 변경</span>
+        </div>
+        <i class="bi bi-chevron-down" id="info-edit-icon" style="opacity: 0.3; transition: transform 0.2s;"></i>
+    </div>
+
+    <!-- 폴딩될 입력 폼 -->
+    <div id="info-edit-menu"
+        style="display: none; padding: 16px 20px; background: #fafafa; border-bottom: 1px solid rgba(0,0,0,0.03);">
+        <div style="margin-bottom: 14px;">
+            <label style="font-size: 0.8rem; opacity: 0.5; display: block; margin-bottom: 6px;">닉네임 변경</label>
+            <div style="display:flex; gap:8px;">
+                <input id="input-nickname" type="text" placeholder="{{ session.get('user_name', '') }}" maxlength="20"
+                    style="flex:1; padding: 10px 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.9rem; outline:none; background:white;">
+                <button id="btn-save-nickname" onclick="saveNickname()" class="auth-btn"
+                    style="padding: 10px 16px; margin-bottom:0; font-size:0.85rem; width:auto; flex-shrink:0;">저장</button>
+            </div>
+        </div>
+
+        <div style="border-top: 1px solid rgba(0,0,0,0.04); padding-top: 14px;">
+            <label style="font-size: 0.8rem; opacity: 0.5; display: block; margin-bottom: 6px;">비밀번호 변경</label>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <input id="input-current-pw" type="password" placeholder="현재 비밀번호"
+                    style="padding: 10px 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.9rem; outline:none; background:white;">
+                <input id="input-new-pw" type="password" placeholder="새 비밀번호"
+                    style="padding: 10px 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.9rem; outline:none; background:white;">
+                <button id="btn-save-password" onclick="savePassword()" class="auth-btn"
+                    style="padding: 10px 16px; margin-bottom:0; font-size:0.85rem;">비밀번호 변경</button>
+            </div>
+        </div>
+        <p id="profile-msg" style="font-size:0.82rem; margin-top:8px; color: var(--point-orange); display:none;"></p>
+    </div>
+
+    <!-- 알림 설정 -->
+    <div class="clickable-item"
+        style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.03); cursor: default;">
+        <div>
+            <span style="font-weight: 600;">알림 설정</span>
+            <p style="font-size: 0.8rem; opacity: 0.5; margin-top: 2px;">신고 및 시스템 알림 수신</p>
+        </div>
+        <label style="position:relative; display:inline-block; width:46px; height:26px; cursor:pointer; flex-shrink:0;">
+            <input type="checkbox" id="notification-toggle" {% if notification_enabled %}checked{% endif %}
+                onchange="saveNotificationSetting(this.checked)" style="opacity:0; width:0; height:0;">
+            <span id="toggle-track" style="position:absolute; top:0; left:0; right:0; bottom:0; border-radius:13px; transition:.3s;
+                background: {{ 'var(--point-orange)' if notification_enabled else 'rgba(0,0,0,0.12)' }};"></span>
+            <span id="toggle-knob" style="position:absolute; content:''; height:20px; width:20px; left:3px; bottom:3px; background:white; border-radius:50%; transition:.3s;
+                transform: {{ 'translateX(20px)' if notification_enabled else 'translateX(0)' }};"></span>
+        </label>
+    </div>
+
+    <div class="clickable-item" onclick="openAppInfoModal()"
+        style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.03); cursor: pointer;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="bi bi-info-circle" style="font-size: 1.1rem; color: var(--point-orange);"></i>
+            <span>앱 정보</span>
+        </div>
+        <i class="bi bi-chevron-right" style="opacity: 0.3;"></i>
+    </div>
+    <div class="clickable-item" onclick="openWithdrawModal()"
+        style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; color: #FF4D4D; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.03);">
+        <span>회원 탈퇴</span>
+        <i class="bi bi-chevron-right" style="opacity: 0.3;"></i>
+    </div>
+    <div class="clickable-item"
+        style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; color: #666; cursor: pointer;">
+        <a href="/logout" style="color: inherit; text-decoration: none; width: 100%;">로그아웃</a>
+    </div>
+</div>
+
+<!-- 회원 탈퇴 확인 모달 -->
+<div id="withdraw-modal"
+    style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;">
+    <div onclick="closeWithdrawModal()"
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
+    </div>
+    <div style="position: absolute; top: 50%; left: 50%; width: 85%; max-width: 320px; transform: translate(-50%, -50%) scale(0.9); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: white; border-radius: 20px; padding: 24px 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.15);"
+        id="withdraw-modal-content">
+        <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 15px; color: #FF4D4D; text-align: center;">회원 탈퇴
+        </h3>
+        <p style="font-size: 0.85rem; text-align: center; opacity: 0.7; margin-bottom: 20px;">
+            모든 제보 내역과 포인트가 즉시 삭제되며<br>복구할 수 없습니다.<br>계속하시려면 비밀번호를 입력해주세요.
+        </p>
+        <input type="password" id="withdraw-password" placeholder="비밀번호 확인"
+            style="width: 100%; padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; outline: none; margin-bottom: 15px;">
+
+        <div style="display: flex; gap: 8px;">
+            <button onclick="closeWithdrawModal()" class="auth-btn"
+                style="flex: 1; margin-bottom: 0; background: #f0f0f0; color: #666;">취소</button>
+            <button onclick="processWithdraw()" class="auth-btn"
+                style="flex: 1; margin-bottom: 0; background: #FF4D4D;">탈퇴하기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 앱 정보 모달 -->
+<div id="app-info-modal"
+    style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;">
+    <div onclick="closeAppInfoModal()"
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
+    </div>
+    <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: white; border-radius: 30px 30px 0 0; padding: 30px 24px; max-height: 85%; overflow-y: auto; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -10px 30px rgba(0,0,0,0.15);"
+        id="app-info-modal-content">
+        <div
+            style="width: 40px; height: 4px; background: rgba(0,0,0,0.1); border-radius: 2px; margin: -10px auto 25px;">
+        </div>
+
+        <div style="text-align: center; margin-bottom: 25px;">
+            <div
+                style="width: 70px; height: 70px; background: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; transform: rotate(-3deg); box-shadow: 0 10px 25px rgba(255, 140, 0, 0.2); overflow: hidden; border: 1px solid rgba(0,0,0,0.03);">
+                <img src="/static/icons/icon-192.png" alt="Crack Icon"
+                    style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            <h3 style="font-size: 1.4rem; font-weight: 800; color: #333;">CRACK <span
+                    style="font-size: 0.9rem; font-weight: 500; opacity: 0.4;">v1.2.0</span></h3>
+            <p style="font-size: 0.85rem; color: var(--point-orange); font-weight: 600; margin-top: 4px;">Smart Road
+                Safety Platform</p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 20px; color: #444; line-height: 1.6;">
+            <div>
+                <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: #222;">🚀 앱 소개</h4>
+                <p style="font-size: 0.9rem; opacity: 0.8;">
+                    CRACK은 인공지능 기술을 활용하여 시민들과 함께 안전한 도로 환경을 만들어가는 스마트 제보 플랫폼입니다. 시민의 눈으로 도로 위 위험 요소(포트홀 등)를 발견하고, AI의
+                    눈으로 정밀하게 분석하여 신속한 보수가 이루어질 수 있도록 돕습니다.
+                </p>
+            </div>
+
+            <div style="background: #fcfcfc; border: 1px solid rgba(0,0,0,0.03); border-radius: 20px; padding: 18px;">
+                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: #222;">✨ 주요 기능</h4>
+                <ul
+                    style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem;">
+                    <li style="display: flex; gap: 10px; align-items: flex-start;">
+                        <i class="bi bi-robot" style="color: var(--point-orange);"></i>
+                        <span><strong>AI 실시간 분석:</strong> 업로드된 사진을 딥러닝 모델이 즉시 분석하여 파손 여부와 심각도를 판별합니다.</span>
+                    </li>
+                    <li style="display: flex; gap: 10px; align-items: flex-start;">
+                        <i class="bi bi-geo-alt-fill" style="color: var(--point-orange);"></i>
+                        <span><strong>위치 기반 제보:</strong> 스마트폰의 GPS 기능을 활용하여 사고 지점을 정확하게 지도 위에 마킹합니다.</span>
+                    </li>
+                    <li style="display: flex; gap: 10px; align-items: flex-start;">
+                        <i class="bi bi-lightning-fill" style="color: var(--point-orange);"></i>
+                        <span><strong>크래커 리워드:</strong> 유효한 제보를 해주신 시민분들께 감사의 의미로 크래커 포인트를 지급합니다.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: #222;">🎯 우리의 목표</h4>
+                <p style="font-size: 0.9rem; opacity: 0.8;">
+                    우리는 기술이 사회적 불편함을 해결할 때 가장 가치 있다고 믿습니다. CRACK은 지자체와 시민 사이의 투명한 소통 창구가 되어, 모두가 안심하고 걸을 수 있는 내일의 도로를
+                    꿈꿉니다.
+                </p>
+            </div>
+
+            <p style="font-size: 0.75rem; text-align: center; opacity: 0.4; margin-top: 20px;">
+                © 2026 CRACK Team. All rights reserved.
+            </p>
+        </div>
+
+        <button onclick="closeAppInfoModal()" class="auth-btn"
+            style="margin-top: 30px; background: var(--point-orange); color: white; border-radius: 16px; font-weight: 700; box-shadow: 0 6px 15px rgba(255, 140, 0, 0.2) !important;">닫기</button>
+    </div>
+</div>
+
+<script>
+    // 탈퇴 모달 제어
+    function openWithdrawModal() {
+        const modal = document.getElementById('withdraw-modal');
+        const content = document.getElementById('withdraw-modal-content');
+        document.getElementById('withdraw-password').value = '';
+        modal.style.display = 'block';
+        setTimeout(() => {
+            content.style.transform = 'translate(-50%, -50%) scale(1)';
+        }, 10);
+    }
+
+    function closeWithdrawModal() {
+        const modal = document.getElementById('withdraw-modal');
+        const content = document.getElementById('withdraw-modal-content');
+        content.style.transform = 'translate(-50%, -50%) scale(0.9)';
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
+
+    async function processWithdraw() {
+        const password_confirm = document.getElementById('withdraw-password').value;
+        if (!password_confirm) {
+            alert("비밀번호를 입력해주세요.");
+            return;
+        }
+
+        if (!confirm("정말 탈퇴하시겠습니까? 이 작업은 취소할 수 없습니다.")) return;
+
+        try {
+            const resp = await fetch('/api/withdraw', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password_confirm })
+            });
+            const data = await resp.json();
+
+            if (data.success) {
+                alert(data.message);
+                location.href = '/';
+            } else {
+                alert(data.message);
+            }
+        } catch (e) {
+            alert("처리 중 오류가 발생했습니다.");
+        }
+    }
+    function toggleMenu(id) {
+        const menu = document.getElementById(id);
+        const icon = document.getElementById(id + '-icon');
+        if (menu.style.display === 'none') {
+            menu.style.display = 'block';
+            if (icon) icon.style.transform = 'rotate(180deg)';
+        } else {
+            menu.style.display = 'none';
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    async function saveNickname() {
+        const nickname = document.getElementById('input-nickname').value.trim();
+        if (!nickname) return;
+
+        const btn = document.getElementById('btn-save-nickname');
+        const originalText = btn.textContent;
+        btn.textContent = '처리 중...';
+        btn.disabled = true;
+
+        try {
+            const resp = await fetch('/api/mypage/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nickname })
+            });
+            const data = await resp.json();
+            const msg = document.getElementById('profile-msg');
+            msg.style.display = 'block';
+            msg.style.color = data.success ? 'var(--point-orange)' : '#FF4D4D';
+            msg.textContent = data.success ? '닉네임이 변경되었습니다.' : data.message;
+            if (data.success) {
+                setTimeout(() => location.reload(), 1000);
+            }
+        } catch (e) {
+            alert("처리 중 오류가 발생했습니다.");
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    async function savePassword() {
+        const current_password = document.getElementById('input-current-pw').value;
+        const new_password = document.getElementById('input-new-pw').value;
+        if (!current_password || !new_password) {
+            alert("현재 비밀번호와 새 비밀번호를 모두 입력해주세요.");
+            return;
+        }
+
+        const btn = document.getElementById('btn-save-password');
+        const originalText = btn.textContent;
+        btn.textContent = '처리 중...';
+        btn.disabled = true;
+
+        try {
+            const resp = await fetch('/api/mypage/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ current_password, new_password })
+            });
+            const data = await resp.json();
+            const msg = document.getElementById('profile-msg');
+            msg.style.display = 'block';
+            msg.style.color = data.success ? 'var(--point-orange)' : '#FF4D4D';
+            msg.textContent = data.message;
+            if (data.success) {
+                document.getElementById('input-current-pw').value = '';
+                document.getElementById('input-new-pw').value = '';
+                setTimeout(() => msg.style.display = 'none', 3000);
+            }
+        } catch (e) {
+            alert("처리 중 오류가 발생했습니다.");
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    async function saveNotificationSetting(enabled) {
+        const track = document.getElementById('toggle-track');
+        const knob = document.getElementById('toggle-knob');
+        track.style.background = enabled ? 'var(--point-orange)' : 'rgba(0,0,0,0.12)';
+        knob.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
+        await fetch('/api/mypage/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notification_enabled: enabled })
+        });
+        showToast(enabled ? '알림이 켜졌습니다.' : '알림이 꺼졌습니다.');
+    }
+
+    function openPointModal() {
+        const modal = document.getElementById('point-modal');
+        const content = document.getElementById('point-modal-content');
+        modal.style.display = 'block';
+        setTimeout(() => {
+            content.style.transform = 'translateY(0)';
+        }, 10);
+    }
+
+    function closePointModal() {
+        const modal = document.getElementById('point-modal');
+        const content = document.getElementById('point-modal-content');
+        content.style.transform = 'translateY(100%)';
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
+
+    // 앱 정보 모달 제어
+    function openAppInfoModal() {
+        const modal = document.getElementById('app-info-modal');
+        const content = document.getElementById('app-info-modal-content');
+        modal.style.display = 'block';
+        setTimeout(() => {
+            content.style.transform = 'translateY(0)';
+        }, 10);
+    }
+
+    function closeAppInfoModal() {
+        const modal = document.getElementById('app-info-modal');
+        const content = document.getElementById('app-info-modal-content');
+        content.style.transform = 'translateY(100%)';
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 400);
+    }
+</script>
+{% endblock %}
