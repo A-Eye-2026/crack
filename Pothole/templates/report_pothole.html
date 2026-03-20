@@ -149,8 +149,9 @@ function checkGPS(file) {
             selectedLon = gps.lon.toFixed(6);
             document.getElementById('img-gps-status').innerHTML =
                 '<span class="badge bg-success">📡 GPS 자동 추출 완료! (' + selectedLat + ', ' + selectedLon + ')</span>';
-            showMap();
-            // GPS 위치로 지도 이동!
+
+            showMap(false);
+
             map.setView([selectedLat, selectedLon], 16);
             if (marker) map.removeLayer(marker);
             marker = L.marker([selectedLat, selectedLon]).addTo(map)
@@ -160,7 +161,7 @@ function checkGPS(file) {
         } else {
             document.getElementById('img-gps-status').innerHTML =
                 '<span class="badge bg-warning text-dark">📍 GPS 없음 — 지도에서 위치 선택 필요</span>';
-            showMap();
+            showMap(true);
         }
 
         document.getElementById('img-submit-btn').disabled = false;
@@ -238,7 +239,10 @@ function readASCII(gps) {
 }
 
     // ── Leaflet 지도 초기화 ──
-    function showMap() {
+
+    function showMap(useCurrentLocation) {
+        if (useCurrentLocation === undefined) useCurrentLocation = true;
+
         document.getElementById('map-section').style.display = 'block';
         if (map) return;
 
@@ -250,16 +254,15 @@ function readASCII(gps) {
         map.on('click', function(e) {
             selectedLat = e.latlng.lat.toFixed(6);
             selectedLon = e.latlng.lng.toFixed(6);
-
             if (marker) map.removeLayer(marker);
             marker = L.marker([selectedLat, selectedLon]).addTo(map);
-
             document.getElementById('coords-display').textContent =
                 '📍 위도: ' + selectedLat + '  경도: ' + selectedLon;
         });
 
-        // 지도 뜨자마자 현재 위치로 이동
-        moveToCurrentLocation();
+        if (useCurrentLocation) {
+            moveToCurrentLocation();
+        }
     }
 
     // ── 현재 위치로 이동 ──
