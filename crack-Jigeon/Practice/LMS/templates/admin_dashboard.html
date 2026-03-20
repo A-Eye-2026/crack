@@ -294,9 +294,17 @@
     }
 
     .summary-card.active {
-      border-color: #ff7a1a;
-      box-shadow: 0 14px 30px rgba(255, 122, 26, 0.12);
-      transform: translateY(-2px);
+      border-color: var(--border);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+      transform: translateY(0);
+    }
+
+    .summary-card:focus,
+    .summary-card:focus-visible,
+    .summary-card:active {
+      outline: none;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+      border-color: var(--border);
     }
 
     .summary-card:hover {
@@ -1274,6 +1282,53 @@
       }
     }
 
+    .summary-card {
+      transform-origin: center;
+    }
+
+    .summary-grid.is-loading .summary-card {
+      pointer-events: none;
+    }
+
+    .summary-grid.is-loading .summary-card:not(.active) {
+      opacity: 0.9;
+    }
+
+.page-transition-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(244, 246, 248, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
+  z-index: 3000;
+}
+
+.page-transition-overlay.show {
+  opacity: 1;
+}
+
+.dashboard-shell.page-leaving {
+  opacity: 0.92;
+  transition: opacity 0.12s ease;
+}
+
+.dashboard-panel {
+  opacity: 1;
+  transition: opacity 0.18s ease;
+}
+
+.dashboard-panel.is-switching {
+  pointer-events: none;
+}
+
+.dashboard-panel.fade-out {
+  opacity: 0;
+}
+
+.dashboard-panel.fade-in {
+  opacity: 1;
+}
 
   </style>
 </head>
@@ -1297,8 +1352,9 @@
 
           <div class="topbar-menu">
             <a href="#" class="menu-item active">대시보드</a>
-            <a href="/admin/incidents" class="menu-item">신고관리</a>
-            <a href="#" class="menu-item">통계</a>
+            <a href="/admin/incidents" class="menu-item js-page-transition-link">신고관리</a>
+            <a href="/admin/members" class="menu-item js-page-transition-link">회원관리</a>
+            <a href="/admin/statistics" class="menu-item js-page-transition-link">통계</a>
           </div>
 
           <div class="account-chip">
@@ -1308,33 +1364,33 @@
         </div>
       </div>
 
-       <div class="summary-grid">
-          <a href="/admin/dashboard?tab=urgent" class="summary-card urgent {{ 'active' if selected_tab == 'urgent' else '' }}">
+       <div class="summary-grid" id="dashboardSummaryGrid">
+          <a href="/admin/dashboard?tab=urgent" class="summary-card js-summary-card urgent {{ 'active' if selected_tab == 'urgent' else '' }}">
             <div class="summary-label">긴급</div>
             <div class="summary-value"><strong>{{ summary.urgent_count }}</strong>건</div>
             <div class="summary-meta">우선 조치가 필요한 신고</div>
           </a>
 
-          <a href="/admin/dashboard?tab=today" class="summary-card today {{ 'active' if selected_tab == 'today' else '' }}">
+          <a href="/admin/dashboard?tab=today" class="summary-card js-summary-card today {{ 'active' if selected_tab == 'today' else '' }}">
             <div class="summary-label">오늘 접수</div>
             <div class="summary-value"><strong>{{ summary.today_count }}</strong>건</div>
             <div class="summary-meta">오늘 등록된 위험 지점 수</div>
           </a>
 
-          <a href="/admin/dashboard?tab=pending" class="summary-card pending-strong {{ 'active' if selected_tab == 'pending' else '' }}">
+          <a href="/admin/dashboard?tab=pending" class="summary-card js-summary-card pending-strong {{ 'active' if selected_tab == 'pending' else '' }}">
             <div class="summary-label">미처리</div>
             <div class="summary-value"><strong>{{ summary.pending_count }}</strong>건</div>
             <div class="summary-meta">아직 검토 전인 위험 지점</div>
           </a>
 
-          <a href="/admin/dashboard?tab=long_pending" class="summary-card long-pending {{ 'active' if selected_tab == 'long_pending' else '' }}">
+          <a href="/admin/dashboard?tab=long_pending" class="summary-card js-summary-card long-pending {{ 'active' if selected_tab == 'long_pending' else '' }}">
             <div class="summary-label">장기 미처리</div>
             <div class="summary-value"><strong>{{ summary.long_pending_count }}</strong>건</div>
             <div class="summary-meta">24시간 이상 조치되지 않은 위험 지점</div>
             <div class="summary-action-hint">운영 병목 여부를 우선 확인하세요.</div>
           </a>
 
-          <a href="/admin/dashboard?tab=rejected" class="summary-card rejected {{ 'active' if selected_tab == 'rejected' else '' }}">
+          <a href="/admin/dashboard?tab=rejected" class="summary-card js-summary-card rejected {{ 'active' if selected_tab == 'rejected' else '' }}">
             <div class="summary-label">반려</div>
             <div class="summary-value"><strong>{{ summary.rejected_count }}</strong>건</div>
             <div class="summary-meta">관리 기준에 따라 반려된 신고</div>
@@ -1342,7 +1398,7 @@
           </a>
         </div>
 
-      <section class="section" style="margin-bottom:18px;">
+      <section class="section dashboard-panel" id="dashboardPanel" style="margin-bottom:18px;">
         <div class="section-header">
           <div class="section-title-wrap">
             <div class="section-title">{{ dashboard_section_title }}</div>
@@ -1350,7 +1406,7 @@
           </div>
 
           <div class="section-actions">
-            <a href="{{ dashboard_more_url }}" class="mini-btn" style="display:inline-flex; align-items:center; text-decoration:none;">
+            <a href="{{ dashboard_more_url }}" class="mini-btn js-page-transition-link" style="display:inline-flex; align-items:center; text-decoration:none;">
               전체보기
             </a>
           </div>
@@ -1431,7 +1487,7 @@
                     '{{ incident.longitude|default('', true) }}'
                   )"
                 >
-                  상세
+                  상세보기
                 </button>
               </div>
             </div>
@@ -1549,6 +1605,7 @@
     </div>
   </div>
 </div>
+<div id="pageTransitionOverlay" class="page-transition-overlay"></div>
 <script>
 
 let dashboardDetailLat = '';
@@ -1756,6 +1813,142 @@ document.addEventListener('click', function(e) {
   if (!wrap.contains(e.target)) {
     wrap.classList.remove('open');
   }
+});
+
+let dashboardTabLoading = false;
+let pageTransitionRunning = false;
+
+async function switchDashboardTab(href, clickedCard = null, updateHistory = true) {
+  const panel = document.getElementById('dashboardPanel');
+  const summaryGrid = document.getElementById('dashboardSummaryGrid');
+
+  if (!panel || !summaryGrid || dashboardTabLoading) return;
+
+  dashboardTabLoading = true;
+  summaryGrid.classList.add('is-loading');
+
+  panel.classList.add('is-switching', 'fade-out');
+
+  try {
+    const response = await fetch(href, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
+
+    const html = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    const nextPanel = doc.getElementById('dashboardPanel');
+    const nextSummaryGrid = doc.getElementById('dashboardSummaryGrid');
+
+    if (!nextPanel || !nextSummaryGrid) {
+      window.location.href = href;
+      return;
+    }
+
+    setTimeout(() => {
+      summaryGrid.innerHTML = nextSummaryGrid.innerHTML;
+      panel.innerHTML = nextPanel.innerHTML;
+
+      panel.classList.remove('fade-out');
+      panel.classList.add('fade-in');
+
+      if (updateHistory) {
+        history.pushState({}, '', href);
+      }
+
+      setTimeout(() => {
+        panel.classList.remove('fade-in', 'is-switching');
+        summaryGrid.classList.remove('is-loading');
+        dashboardTabLoading = false;
+      }, 180);
+    }, 140);
+
+  } catch (error) {
+    console.error('대시보드 탭 전환 오류:', error);
+    window.location.href = href;
+  }
+}
+
+function runPageTransition(href) {
+  if (!href || pageTransitionRunning) return;
+
+  pageTransitionRunning = true;
+
+  const shell = document.querySelector('.dashboard-shell');
+  const overlay = document.getElementById('pageTransitionOverlay');
+
+  if (overlay) {
+    overlay.classList.add('show');
+  }
+
+  if (shell) {
+    shell.classList.add('page-leaving');
+  }
+
+  setTimeout(() => {
+    window.location.href = href;
+  }, 160);
+}
+
+document.addEventListener('click', function (e) {
+  const card = e.target.closest('.js-summary-card');
+  if (!card) return;
+
+  const href = card.getAttribute('href');
+  if (!href) return;
+
+  if (
+    e.ctrlKey ||
+    e.metaKey ||
+    e.shiftKey ||
+    e.altKey ||
+    e.button !== 0
+  ) {
+    return;
+  }
+
+  if (card.classList.contains('active')) {
+    e.preventDefault();
+    return;
+  }
+
+  e.preventDefault();
+  switchDashboardTab(href, card, true);
+});
+
+document.addEventListener('click', function (e) {
+  const link = e.target.closest('.js-page-transition-link');
+  if (!link) return;
+
+  const href = link.getAttribute('href');
+  if (!href) return;
+
+  if (
+    e.ctrlKey ||
+    e.metaKey ||
+    e.shiftKey ||
+    e.altKey ||
+    e.button !== 0
+  ) {
+    return;
+  }
+
+  const currentUrl = new URL(window.location.href);
+  const nextUrl = new URL(href, window.location.origin);
+
+  if (currentUrl.pathname === nextUrl.pathname && currentUrl.search === nextUrl.search) {
+    return;
+  }
+
+  e.preventDefault();
+  runPageTransition(href);
+});
+
+window.addEventListener('popstate', function () {
+  switchDashboardTab(window.location.href, null, false);
 });
 </script>
 </body>

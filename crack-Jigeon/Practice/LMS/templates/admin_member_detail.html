@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRACK 회원 상세</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --border: #e5e7eb;
+      --border-strong: #d8dde6;
+      --text: #0f172a;
+      --text-sub: #64748b;
+      --sidebar: #162132;
+      --sidebar-soft: #223148;
+      --sidebar-hover: #2b3c56;
+      --accent: #ff7a1a;
+      --accent-dark: #ea6500;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      --shadow-soft: 0 4px 14px rgba(15, 23, 42, 0.04);
+      --radius-xl: 22px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Pretendard", "Noto Sans KR", Arial, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(180deg, #eef3f8 0%, #f4f6f8 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .layout {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .main {
+      width: 100%;
+      max-width: 1240px;
+      margin: 0;
+      padding: 0;
+    }
+
+    .dashboard-shell {
+      width: 100%;
+      height: 730px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid #dbe3ec;
+      border-radius: 30px;
+      padding: 26px 28px 30px;
+      box-shadow:
+        0 18px 40px rgba(15, 23, 42, 0.08),
+        0 4px 12px rgba(15, 23, 42, 0.04);
+      backdrop-filter: blur(6px);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      margin-bottom: 16px;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .header-brand {
+      flex-shrink: 0;
+    }
+
+    .header-brand-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .header-brand-main {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--accent);
+      letter-spacing: -0.8px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .header-brand-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 24px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #0f172a;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid #e2e8f0;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .header-brand-sub {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      flex-shrink: 0;
+    }
+
+    .topbar-menu {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-right: 12px;
+    }
+
+    .menu-item {
+      font-size: 15px;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: -0.2px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .menu-item:hover {
+      color: #0f172a;
+    }
+
+    .menu-item.active {
+      color: #0f172a;
+      font-weight: 800;
+    }
+
+    .account-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px 8px 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.55);
+      border: 1px solid rgba(219, 227, 236, 0.9);
+      box-shadow:
+        0 8px 20px rgba(15, 23, 42, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(8px);
+    }
+
+    .topbar-user {
+      font-size: 14px;
+      font-weight: 700;
+      color: #475569;
+      white-space: nowrap;
+    }
+
+    .logout-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid #dbe3ec;
+      color: #334155;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+      transition: all 0.18s ease;
+    }
+
+    .logout-pill:hover {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+    }
+
+    .profile-hero {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 24px;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #fff7ed 0%, #ffffff 45%, #f8fafc 100%);
+      border: 1px solid #e8edf3;
+      border-radius: 22px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .profile-hero-left {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .profile-avatar {
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff7a1a 0%, #fb923c 100%);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      box-shadow: 0 10px 20px rgba(249, 115, 22, 0.22);
+      flex-shrink: 0;
+    }
+
+    .profile-main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .profile-name-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .profile-name {
+      font-size: 30px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.8px;
+      line-height: 1.1;
+    }
+
+    .profile-id {
+      font-size: 15px;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    .profile-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .profile-meta-chip {
+      display: inline-flex;
+      align-items: center;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .profile-hero-right {
+      min-width: 250px;
+      max-width: 280px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .profile-mini-card {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #e7edf4;
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+
+    .profile-mini-label {
+      font-size: 12px;
+      color: #7b8794;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .profile-mini-value {
+      font-size: 22px;
+      line-height: 1.15;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.4px;
+    }
+
+    .profile-content-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .info-panel {
+      background: #ffffff;
+      border: 1px solid #e8edf3;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .info-panel-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.4px;
+      margin-bottom: 14px;
+    }
+
+    .info-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid #e9eef5;
+    }
+
+    .info-item-label {
+      font-size: 13px;
+      font-weight: 800;
+      color: #7b8794;
+    }
+
+    .info-item-value {
+      font-size: 16px;
+      font-weight: 900;
+      color: #0f172a;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .profile-note-box {
+      margin-top: 12px;
+      padding: 16px;
+      border-radius: 14px;
+      background: #fbfdff;
+      border: 1px dashed #d8e2ec;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .summary-card {
+      position: relative;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px 12px;
+      min-height: 92px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+      display: block;
+    }
+
+    .summary-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 5px;
+      background: #dbe3ec;
+    }
+
+    .summary-card.member-id::before {
+      background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+    }
+
+    .summary-card.member-role::before {
+      background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);
+    }
+
+    .summary-card.member-name::before {
+      background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);
+    }
+
+    .summary-card.member-status::before {
+      background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+    }
+
+    .summary-card.member-id {
+      background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
+    }
+
+    .summary-card.member-role {
+      background: linear-gradient(180deg, #fffaf5 0%, #ffffff 100%);
+    }
+
+    .summary-card.member-name {
+      background: linear-gradient(180deg, #faf7ff 0%, #ffffff 100%);
+    }
+
+    .summary-card.member-status {
+      background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+    }
+
+    .summary-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #7b8794;
+      margin-bottom: 10px;
+    }
+
+    .summary-value {
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: -0.6px;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+
+    .summary-meta {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .section {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+      margin-bottom: 18px;
+    }
+
+    .section-fill {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .section-title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      color: #0f172a;
+    }
+
+    .section-subtitle {
+      font-size: 12px;
+      color: #7b8794;
+      font-weight: 600;
+    }
+
+    .section-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mini-btn {
+      height: 34px;
+      padding: 0 14px;
+      border: 1px solid #d7dde5;
+      background: #fff;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      color: #334155;
+      transition: all 0.18s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mini-btn:hover {
+      background: #f8fafc;
+      border-color: #c9d3df;
+      transform: translateY(-1px);
+    }
+
+    .table-shell {
+      border: 1px solid #edf1f5;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #fff;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .member-detail-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .member-detail-row {
+      background: #f8fafc;
+      border: 1px solid #e9eef5;
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      transition: background 0.16s ease;
+    }
+
+    .member-detail-row:hover {
+      background: #fcfcfd;
+    }
+
+    .member-detail-main,
+    .member-detail-side {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .member-detail-main {
+      flex: 1;
+    }
+
+    .member-detail-side {
+      min-width: 180px;
+      align-items: flex-start;
+    }
+
+    .member-detail-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: #7b8794;
+    }
+
+    .member-detail-value {
+      font-size: 24px;
+      line-height: 1.2;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.4px;
+      word-break: break-word;
+    }
+
+    .member-detail-subtext {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .member-detail-badge-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #7b8794;
+      margin-bottom: 6px;
+    }
+
+    .info-card {
+      background: #f8fafc;
+      border: 1px solid #e9eef5;
+      border-radius: 16px;
+      padding: 16px;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .info-value {
+      font-size: 16px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.2px;
+      line-height: 1.28;
+      word-break: break-word;
+    }
+
+    .role-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 88px;
+      height: 28px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .role-admin {
+      background: #fff1f2;
+      color: #dc2626;
+    }
+
+    .role-manager {
+      background: #fff7ed;
+      color: #ea580c;
+    }
+
+    .role-user {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 88px;
+      height: 28px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+      background: #f0fdf4;
+      color: #16a34a;
+    }
+
+    .empty-box {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 26px;
+      border: 1px dashed #d6dee8;
+      border-radius: 18px;
+      color: #94a3b8;
+      background: #fbfdff;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.2px;
+    }
+
+    .page-transition-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(244, 246, 248, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.16s ease;
+      z-index: 3000;
+    }
+
+    .page-transition-overlay.show {
+      opacity: 1;
+    }
+
+    .dashboard-shell.page-leaving {
+      opacity: 0.92;
+      transition: opacity 0.12s ease;
+    }
+
+    @media (max-width: 1400px) {
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+  .layout {
+    padding: 16px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .topbar-menu {
+    margin-right: 0;
+    flex-wrap: wrap;
+  }
+
+  .profile-hero {
+    flex-direction: column;
+  }
+
+  .profile-hero-right {
+    min-width: 0;
+    max-width: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .section-actions {
+    justify-content: flex-end;
+  }
+
+  .section-title {
+    font-size: 24px;
+  }
+
+  .profile-name {
+    font-size: 24px;
+  }
+
+  .profile-hero-right {
+    grid-template-columns: 1fr;
+  }
+
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .info-item-value {
+    text-align: left;
+  }
+}
+
+    @media (max-width: 640px) {
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .section-actions {
+        justify-content: flex-end;
+      }
+
+      .section-title {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <main class="main">
+      <div class="dashboard-shell">
+        <div class="topbar">
+          <div class="topbar-left">
+            <div class="header-brand">
+              <div class="header-brand-row">
+                <div class="header-brand-main">CRACK</div>
+                <div class="header-brand-badge">관리자용</div>
+              </div>
+              <div class="header-brand-sub">Admin Monitoring System</div>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <div class="topbar-menu">
+              <a href="/admin/dashboard" class="menu-item js-page-transition-link">대시보드</a>
+              <a href="/admin/incidents" class="menu-item js-page-transition-link">신고관리</a>
+              <a href="/admin/members" class="menu-item active">회원관리</a>
+              <a href="/admin/statistics" class="menu-item js-page-transition-link">통계</a>
+            </div>
+
+            <div class="account-chip">
+              <span class="topbar-user">{{ session['user_name'] }}님</span>
+              <a href="/logout" class="logout-pill">로그아웃</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-hero">
+          <div class="profile-hero-left">
+            <div class="profile-avatar">
+              {{ member.name[:1] }}
+            </div>
+
+            <div class="profile-main">
+              <div class="profile-name-row">
+                <div class="profile-name">{{ member.name }}</div>
+
+                {% if member.role == 'admin' %}
+                  <span class="role-badge role-admin">관리자</span>
+                {% elif member.role == 'manager' %}
+                  <span class="role-badge role-manager">매니저</span>
+                {% else %}
+                  <span class="role-badge role-user">일반회원</span>
+                {% endif %}
+
+                <span class="status-badge">정상</span>
+              </div>
+
+              <div class="profile-id">@{{ member.uid }}</div>
+
+              <div class="profile-meta-row">
+                <span class="profile-meta-chip">회원번호 {{ member.id }}</span>
+                <span class="profile-meta-chip">CRACK 계정</span>
+                <span class="profile-meta-chip">프로필 상세 보기</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-hero-right">
+            <div class="profile-mini-card">
+              <div class="profile-mini-label">계정 상태</div>
+              <div class="profile-mini-value">정상</div>
+            </div>
+
+            <div class="profile-mini-card">
+              <div class="profile-mini-label">권한 수준</div>
+              <div class="profile-mini-value">
+                {% if member.role == 'admin' %}
+                  관리자
+                {% elif member.role == 'manager' %}
+                  매니저
+                {% else %}
+                  일반회원
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section class="section section-fill">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <div class="section-title">회원 상세 정보</div>
+              <div class="section-subtitle">선택한 회원의 기본 프로필과 계정 정보를 확인할 수 있습니다.</div>
+            </div>
+
+            <div class="section-actions">
+              <a href="/admin/members" class="mini-btn js-page-transition-link">목록으로</a>
+            </div>
+          </div>
+
+          <div class="profile-content-grid">
+              <div class="info-panel">
+                <div class="info-panel-title">기본 정보</div>
+
+                <div class="info-list">
+                  <div class="info-item">
+                    <div class="info-item-label">회원 번호</div>
+                    <div class="info-item-value">{{ member.id }}</div>
+                  </div>
+
+                  <div class="info-item">
+                    <div class="info-item-label">이름</div>
+                    <div class="info-item-value">{{ member.name }}</div>
+                  </div>
+
+                  <div class="info-item">
+                    <div class="info-item-label">아이디</div>
+                    <div class="info-item-value">{{ member.uid }}</div>
+                  </div>
+                </div>
+
+                <div class="profile-note-box">
+                  이 영역은 나중에 가입일, 최근 로그인, 신고 수, 처리 이력 같은 회원 활동 정보를 자연스럽게 확장하기 좋습니다.
+                </div>
+              </div>
+
+              <div class="info-panel">
+                <div class="info-panel-title">계정 정보</div>
+
+                <div class="info-list">
+                  <div class="info-item">
+                    <div class="info-item-label">역할</div>
+                    <div class="info-item-value">
+                      {% if member.role == 'admin' %}
+                        관리자
+                      {% elif member.role == 'manager' %}
+                        매니저
+                      {% else %}
+                        일반회원
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <div class="info-item">
+                    <div class="info-item-label">계정 상태</div>
+                    <div class="info-item-value">정상</div>
+                  </div>
+
+                  <div class="info-item">
+                    <div class="info-item-label">추가 정보</div>
+                    <div class="info-item-value">추후 확장 예정</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="pageTransitionOverlay" class="page-transition-overlay"></div>
+
+  <script>
+    let pageTransitionRunning = false;
+
+    function runPageTransition(href) {
+      if (!href || pageTransitionRunning) return;
+
+      pageTransitionRunning = true;
+
+      const shell = document.querySelector('.dashboard-shell');
+      const overlay = document.getElementById('pageTransitionOverlay');
+
+      if (overlay) {
+        overlay.classList.add('show');
+      }
+
+      if (shell) {
+        shell.classList.add('page-leaving');
+      }
+
+      setTimeout(() => {
+        window.location.href = href;
+      }, 160);
+    }
+
+    document.addEventListener('click', function (e) {
+      const link = e.target.closest('.js-page-transition-link');
+      if (!link) return;
+
+      const href = link.getAttribute('href');
+      if (!href) return;
+
+      if (
+        e.ctrlKey ||
+        e.metaKey ||
+        e.shiftKey ||
+        e.altKey ||
+        e.button !== 0
+      ) {
+        return;
+      }
+
+      const currentUrl = new URL(window.location.href);
+      const nextUrl = new URL(href, window.location.origin);
+
+      if (currentUrl.pathname === nextUrl.pathname && currentUrl.search === nextUrl.search) {
+        return;
+      }
+
+      e.preventDefault();
+      runPageTransition(href);
+    });
+  </script>
+</body>
+</html>

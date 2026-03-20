@@ -1090,6 +1090,10 @@ def admin_incidents():
     selected_risk = request.args.get('risk', '').strip()
     keyword = request.args.get('keyword', '').strip()
     sort_by = request.args.get('sort', '').strip()
+
+    sort_order = request.args.get('order', 'desc').strip().lower()
+    if sort_order not in ['asc', 'desc']:
+        sort_order = 'desc'
     if not sort_by:
         if quick_filter == 'urgent':
             sort_by = 'priority'
@@ -1102,7 +1106,7 @@ def admin_incidents():
     selected_region = request.args.get('region', '').strip()
 
     page = int(request.args.get('page', 1))
-    per_page = 10
+    per_page = 6
 
     conn = Session.get_connection()
     try:
@@ -1201,41 +1205,75 @@ def admin_incidents():
 
                 filtered_incidents.append(incident)
 
-            if sort_by == 'priority':
+            reverse_sort = (sort_order == 'desc')
+
+            if sort_by == 'id':
+                filtered_incidents.sort(
+                    key=lambda x: int(x.get('id') or 0),
+                    reverse=reverse_sort
+                )
+
+            elif sort_by == 'location':
+                filtered_incidents.sort(
+                    key=lambda x: (x.get('location') or ''),
+                    reverse=reverse_sort
+                )
+
+            elif sort_by == 'priority':
                 filtered_incidents.sort(
                     key=lambda x: (
                         get_priority_score(x),
                         x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
                     ),
-                    reverse=True
+                    reverse=reverse_sort
                 )
+
             elif sort_by == 'risk':
                 filtered_incidents.sort(
                     key=lambda x: (
                         float(x.get('risk_score') or 0),
                         x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
                     ),
-                    reverse=True
+                    reverse=reverse_sort
                 )
+
             elif sort_by == 'reports':
                 filtered_incidents.sort(
                     key=lambda x: (
                         int(x.get('group_reporter_count') or 0),
                         x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
                     ),
-                    reverse=True
+                    reverse=reverse_sort
                 )
+
+            elif sort_by == 'status':
+                status_order_map = {
+                    '접수완료': 0,
+                    '처리중': 1,
+                    '처리완료': 2,
+                    '반려': 3
+                }
+                filtered_incidents.sort(
+                    key=lambda x: (
+                        status_order_map.get(x.get('status'), 99),
+                        x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
+                    ),
+                    reverse=reverse_sort
+                )
+
             elif sort_by == 'pending':
                 filtered_incidents.sort(
                     key=lambda x: (
                         0 if x.get('status') == '접수완료' else 1,
-                        -(x.get('first_created_at').timestamp()) if x.get('first_created_at') else 0
-                    )
+                        x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
+                    ),
+                    reverse=reverse_sort
                 )
-            else:
+
+            else:  # latest
                 filtered_incidents.sort(
                     key=lambda x: x.get('first_created_at').timestamp() if x.get('first_created_at') else 0,
-                    reverse=True
+                    reverse=reverse_sort
                 )
 
             total_count = len(filtered_incidents)
@@ -1346,6 +1384,108 @@ def admin_incidents_bulk_update():
         conn.close()
 
 
+@app.route('/admin/members')
+def admin_members():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('alert_page'))
+
+    page = request.args.get('page', 1, type=int)
+    keyword = request.args.get('keyword', '').strip()
+    role = request.args.get('role', '').strip()
+    per_page = 8
+
+    conn = Session.get_connection()
+    try:
+        with conn.cursor() as cursor:
+            where_clauses = []
+            params = []
+
+            if keyword:
+                where_clauses.append("(name LIKE %s OR uid LIKE %s)")
+                like_keyword = f"%{keyword}%"
+                params.extend([like_keyword, like_keyword])
+
+            if role:
+                where_clauses.append("role = %s")
+                params.append(role)
+
+            where_sql = ""
+            if where_clauses:
+                where_sql = " WHERE " + " AND ".join(where_clauses)
+
+            count_sql = f"SELECT COUNT(*) AS cnt FROM members{where_sql}"
+            cursor.execute(count_sql, params)
+            total_count = cursor.fetchone()['cnt']
+            total_pages = (total_count + per_page - 1) // per_page
+
+            if page < 1:
+                page = 1
+
+            if total_pages > 0 and page > total_pages:
+                page = total_pages
+
+            offset = (page - 1) * per_page
+
+            sql = f"""
+                SELECT id, name, uid, role
+                FROM members
+                {where_sql}
+                ORDER BY id DESC
+                LIMIT %s OFFSET %s
+            """
+            cursor.execute(sql, params + [per_page, offset])
+            members = cursor.fetchall()
+
+            return render_template(
+                'admin_members.html',
+                members=members,
+                page=page,
+                total_pages=total_pages,
+                keyword=keyword,
+                role=role
+            )
+    finally:
+        conn.close()
+
+@app.route('/admin/members/<int:member_id>')
+def admin_member_detail(member_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('alert_page'))
+
+    conn = Session.get_connection()
+    try:
+        with conn.cursor() as cursor:
+            sql = """
+                SELECT id, name, uid, role
+                FROM members
+                WHERE id = %s
+            """
+            cursor.execute(sql, (member_id,))
+            member = cursor.fetchone()
+
+            if not member:
+                return "<script>alert('존재하지 않는 회원입니다.'); history.back();</script>"
+
+            return render_template('admin_member_detail.html', member=member)
+    finally:
+        conn.close()
+
+@app.route('/admin/statistics')
+def admin_statistics():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('alert_page'))
+
+    return render_template('admin_statistics.html')
+
 @app.route('/incident/update-status', methods=['POST'])
 def incident_update_status():
     if 'user_id' not in session:
@@ -1426,4 +1566,4 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(host='172.30.1.22', port=5001, debug=True)
+    app.run(host='192.168.0.164', port=5001, debug=True)
