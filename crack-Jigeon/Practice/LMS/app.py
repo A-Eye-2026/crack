@@ -10,7 +10,7 @@
 
 import math
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 import requests
@@ -73,10 +73,266 @@ def normalize_region_name(region_text):
 
     return ''
 
+def normalize_top_region_name(region_name):
+    if not region_name:
+        return '기타'
+
+    text = str(region_name).strip()
+
+    alias_map = {
+        '서울': '서울특별시',
+        '서울시': '서울특별시',
+        '부산': '부산광역시',
+        '부산시': '부산광역시',
+        '대구': '대구광역시',
+        '대구시': '대구광역시',
+        '인천': '인천광역시',
+        '인천시': '인천광역시',
+        '광주': '광주광역시',
+        '광주시': '광주광역시',
+        '대전': '대전광역시',
+        '대전시': '대전광역시',
+        '울산': '울산광역시',
+        '울산시': '울산광역시',
+        '세종': '세종특별자치시',
+        '세종시': '세종특별자치시',
+        '경기': '경기도',
+        '강원': '강원특별자치도',
+        '충북': '충청북도',
+        '충남': '충청남도',
+        '전북': '전북특별자치도',
+        '전남': '전라남도',
+        '경북': '경상북도',
+        '경남': '경상남도',
+        '제주': '제주특별자치도',
+        '제주도': '제주특별자치도',
+        '경상도': '경상도',
+        '전라도': '전라도',
+        '충청도': '충청도'
+    }
+
+    return alias_map.get(text, text)
 
 def extract_region_name_from_location(location):
     return normalize_region_name(location)
 
+def split_region_hierarchy(region_text):
+    if not region_text:
+        return ('기타', None)
+
+    text = str(region_text).strip()
+    parts = text.split()
+
+    if not parts:
+        return ('기타', None)
+
+    first = normalize_top_region_name(parts[0])
+    second = parts[1] if len(parts) >= 2 else None
+
+    metro_keywords = ('특별시', '광역시', '특별자치시', '특별자치도', '도')
+
+    if first == '경상도':
+        return ('경상권', second)
+
+    if first == '전라도':
+        return ('전라권', second)
+
+    if first == '충청도':
+        return ('충청권', second)
+
+    if first.endswith(metro_keywords):
+        top_region = first
+        sub_region = second
+        return (top_region, sub_region)
+
+    if first.endswith('시'):
+        gyeonggi_cities = {
+            '수원시', '성남시', '안양시', '용인시', '고양시', '부천시', '화성시',
+            '남양주시', '평택시', '의정부시', '시흥시', '파주시', '김포시',
+            '광명시', '군포시', '광주시', '이천시', '오산시', '안산시'
+        }
+
+        if first in gyeonggi_cities:
+            return ('경기도', first)
+
+        return (first, second)
+
+    return (first, second)
+
+def parse_location_hierarchy(location):
+    if not location:
+        return {
+            'level1': '기타',
+            'level2': None,
+            'level3': None
+        }
+
+    parts = str(location).strip().split()
+    if not parts:
+        return {
+            'level1': '기타',
+            'level2': None,
+            'level3': None
+        }
+
+    level1 = None
+    level2 = None
+    level3 = None
+
+    # 1단계: 광역/도 단위 판별
+    first = parts[0]
+
+    if (
+        first.endswith('도')
+        or first.endswith('특별시')
+        or first.endswith('광역시')
+        or first.endswith('특별자치시')
+        or first.endswith('특별자치도')
+        or first.endswith('자치시')
+    ):
+        level1 = first
+
+        if len(parts) >= 2:
+            level2 = parts[1]
+
+        if len(parts) >= 3:
+            # level2가 시/군이고, level3가 구일 수 있음
+            if parts[1].endswith('시') or parts[1].endswith('군'):
+                if parts[2].endswith('구'):
+                    level3 = parts[2]
+            # 특별시/광역시 안에서는 level2가 바로 구
+            elif parts[1].endswith('구'):
+                level3 = None
+
+    else:
+        # 2단계: 광역단위 없이 바로 시/군/구로 시작하는 경우
+        if first.endswith('시') or first.endswith('군'):
+            level1 = first
+
+            if len(parts) >= 2:
+                level2 = parts[1]
+
+                if len(parts) >= 3 and parts[1].endswith('구'):
+                    level3 = None
+
+        elif first.endswith('구'):
+            level1 = first
+
+        else:
+            level1 = first
+
+    return {
+        'level1': level1 or '기타',
+        'level2': level2,
+        'level3': level3
+    }
+
+def parse_region_hierarchy(region_name, location):
+    location_text = (location or '').strip()
+    location_parts = location_text.split()
+
+    normalized_region = normalize_region_name(region_name)
+    region_parts = normalized_region.split() if normalized_region else []
+
+    level1 = None   # 도 / 광역시 / 특별시
+    level2 = None   # 시 / 군 / 구
+    level3 = None   # 구 (경기도 수원시 영통구 같은 케이스에서만 사용)
+
+    metro_suffixes = ('특별시', '광역시', '특별자치시', '특별자치도', '도')
+
+    # 1. region_name 기준 우선 파싱
+    if len(region_parts) >= 2:
+        first = region_parts[0]
+        second = region_parts[1]
+
+        if first.endswith(metro_suffixes):
+            level1 = first
+            level2 = second
+        elif first.endswith('시') or first.endswith('군'):
+            # 예: 수원시 영통구 -> 경기도 / 수원시 / 영통구 로 보정해야 함
+            gyeonggi_cities = {
+                '수원시', '성남시', '안양시', '용인시', '고양시', '부천시', '화성시',
+                '남양주시', '평택시', '의정부시', '시흥시', '파주시', '김포시',
+                '광명시', '군포시', '광주시', '이천시', '오산시', '안산시'
+            }
+
+            if first in gyeonggi_cities:
+                level1 = '경기도'
+                level2 = first
+                if second.endswith('구'):
+                    level3 = second
+            else:
+                level1 = first
+                level2 = second
+
+    elif len(region_parts) == 1:
+        first = region_parts[0]
+
+        if first.endswith(metro_suffixes):
+            level1 = first
+        elif first.endswith('시') or first.endswith('군'):
+            gyeonggi_cities = {
+                '수원시', '성남시', '안양시', '용인시', '고양시', '부천시', '화성시',
+                '남양주시', '평택시', '의정부시', '시흥시', '파주시', '김포시',
+                '광명시', '군포시', '광주시', '이천시', '오산시', '안산시'
+            }
+
+            if first in gyeonggi_cities:
+                level1 = '경기도'
+                level2 = first
+            else:
+                level1 = first
+
+    # 2. location으로 부족한 단계 보완
+    if not level1:
+        if location_parts:
+            first = location_parts[0]
+
+            if first.endswith(metro_suffixes):
+                level1 = first
+                if len(location_parts) >= 2:
+                    level2 = location_parts[1]
+                if len(location_parts) >= 3 and location_parts[2].endswith('구'):
+                    level3 = location_parts[2]
+
+            elif first.endswith('시') or first.endswith('군'):
+                gyeonggi_cities = {
+                    '수원시', '성남시', '안양시', '용인시', '고양시', '부천시', '화성시',
+                    '남양주시', '평택시', '의정부시', '시흥시', '파주시', '김포시',
+                    '광명시', '군포시', '광주시', '이천시', '오산시', '안산시'
+                }
+
+                if first in gyeonggi_cities:
+                    level1 = '경기도'
+                    level2 = first
+                    if len(location_parts) >= 2 and location_parts[1].endswith('구'):
+                        level3 = location_parts[1]
+                else:
+                    level1 = first
+                    if len(location_parts) >= 2:
+                        level2 = location_parts[1]
+
+            else:
+                level1 = first
+
+    else:
+        # 이미 level1, level2가 잡혔으면 location으로 level3만 보정
+        if level1 == '경기도':
+            if len(location_parts) >= 3 and location_parts[2].endswith('구'):
+                level3 = location_parts[2]
+            elif len(location_parts) >= 2 and location_parts[1].endswith('구'):
+                level3 = location_parts[1]
+
+        elif level1.endswith(('특별시', '광역시', '특별자치시')):
+            # 서울특별시 강남구 역삼동 -> 여기서는 강남구까지만
+            if not level2 and len(location_parts) >= 2 and location_parts[1].endswith('구'):
+                level2 = location_parts[1]
+
+    return {
+        'level1': level1 or '기타',
+        'level2': level2,
+        'level3': level3
+    }
 
 # 두 좌표 사이 실제 거리를 계산하여 위치 기반 사건 필터링에 사용하는 함수
 def haversine_m(lat1, lon1, lat2, lon2):
@@ -275,6 +531,138 @@ def find_group_incident_ids(target_incident, raw_incidents):
 
     return group_ids
 
+def build_incident_groups(raw_incidents):
+    groups = []
+    used_ids = set()
+
+    for incident in raw_incidents:
+        if incident['id'] in used_ids:
+            continue
+
+        base_lat = incident.get('latitude')
+        base_lng = incident.get('longitude')
+        base_time = incident.get('first_created_at')
+
+        group_members = [incident]
+        used_ids.add(incident['id'])
+
+        for other in raw_incidents:
+            if other['id'] == incident['id']:
+                continue
+            if other['id'] in used_ids:
+                continue
+
+            other_time = other.get('first_created_at')
+            other_lat = other.get('latitude')
+            other_lng = other.get('longitude')
+
+            if base_lat is None or base_lng is None or other_lat is None or other_lng is None:
+                continue
+
+            distance_m = haversine_m(base_lat, base_lng, other_lat, other_lng)
+            time_diff_sec = abs((base_time - other_time).total_seconds()) if base_time and other_time else 999999
+
+            if distance_m <= 50 and time_diff_sec <= 86400:
+                used_ids.add(other['id'])
+                group_members.append(other)
+
+        representative = max(
+            group_members,
+            key=lambda x: (
+                float(x.get('risk_score') or 0),
+                x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
+            )
+        )
+
+        groups.append({
+            'representative': representative,
+            'members': group_members
+        })
+
+    return groups
+
+
+def sync_duplicate_group_statuses(cursor):
+    cursor.execute("""
+        SELECT
+            id,
+            latitude,
+            longitude,
+            first_created_at,
+            risk_score,
+            status,
+            reject_reason
+        FROM incidents
+        ORDER BY first_created_at DESC
+    """)
+    raw_incidents = cursor.fetchall()
+
+    groups = build_incident_groups(raw_incidents)
+    synced_group_count = 0
+
+    for group in groups:
+        members = group['members']
+        representative = group['representative']
+
+        if len(members) < 2:
+            continue
+
+        target_status = representative.get('status') or '접수완료'
+
+        if target_status == '반려':
+            target_reject_reason = representative.get('reject_reason') or ''
+            if not target_reject_reason:
+                for member in members:
+                    if member.get('reject_reason'):
+                        target_reject_reason = member.get('reject_reason')
+                        break
+        else:
+            target_reject_reason = None
+
+        need_sync = False
+        for member in members:
+            member_status = member.get('status')
+            member_reject_reason = member.get('reject_reason') or ''
+
+            if member_status != target_status:
+                need_sync = True
+                break
+
+            if target_status == '반려':
+                if member_reject_reason != (target_reject_reason or ''):
+                    need_sync = True
+                    break
+            else:
+                if member.get('reject_reason') is not None:
+                    need_sync = True
+                    break
+
+        if not need_sync:
+            continue
+
+        group_ids = [member['id'] for member in members]
+        placeholders = ', '.join(['%s'] * len(group_ids))
+
+        if target_status == '반려':
+            sql = f"""
+                UPDATE incidents
+                SET status = %s, reject_reason = %s
+                WHERE id IN ({placeholders})
+            """
+            params = [target_status, target_reject_reason] + group_ids
+        else:
+            sql = f"""
+                UPDATE incidents
+                SET status = %s, reject_reason = NULL
+                WHERE id IN ({placeholders})
+            """
+            params = [target_status] + group_ids
+
+        cursor.execute(sql, params)
+        synced_group_count += 1
+
+    return synced_group_count
+
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
@@ -294,6 +682,9 @@ def admin_dashboard():
 
     try:
         with conn.cursor() as cursor:
+            sync_duplicate_group_statuses(cursor)
+            conn.commit()
+
             sql = """
                 SELECT
                     i.id,
@@ -1090,6 +1481,7 @@ def admin_incidents():
     selected_risk = request.args.get('risk', '').strip()
     keyword = request.args.get('keyword', '').strip()
     sort_by = request.args.get('sort', '').strip()
+    member_id = request.args.get('member_id', '').strip()
 
     sort_order = request.args.get('order', 'desc').strip().lower()
     if sort_order not in ['asc', 'desc']:
@@ -1111,6 +1503,9 @@ def admin_incidents():
     conn = Session.get_connection()
     try:
         with conn.cursor() as cursor:
+            sync_duplicate_group_statuses(cursor)
+            conn.commit()
+
             sql = """
                 SELECT
                     i.id,
@@ -1130,6 +1525,12 @@ def admin_incidents():
             """
             cursor.execute(sql)
             raw_incidents = cursor.fetchall()
+
+            if member_id:
+                raw_incidents = [
+                    incident for incident in raw_incidents
+                    if str(incident.get('member_id') or '') == member_id
+                ]
 
             incidents = group_incidents(raw_incidents)
 
@@ -1307,6 +1708,88 @@ def admin_incidents():
         conn.close()
 
 
+@app.route('/admin/incidents/group/<int:incident_id>')
+def admin_incident_group_detail(incident_id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+
+    if session.get('user_role') != 'admin':
+        return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+
+    conn = Session.get_connection()
+    try:
+        with conn.cursor() as cursor:
+            sync_duplicate_group_statuses(cursor)
+            conn.commit()
+
+            cursor.execute("""
+                SELECT
+                    i.id,
+                    i.member_id,
+                    m.name AS member_name,
+                    i.title,
+                    i.location,
+                    i.region_name,
+                    i.latitude,
+                    i.longitude,
+                    i.image_path,
+                    i.status,
+                    i.reject_reason,
+                    i.risk_score,
+                    i.first_created_at,
+                    i.last_checked_at
+                FROM incidents i
+                LEFT JOIN members m
+                  ON i.member_id = m.id
+                ORDER BY i.first_created_at DESC
+            """)
+            raw_incidents = cursor.fetchall()
+
+            target_incident = None
+            for item in raw_incidents:
+                if item.get('id') == incident_id:
+                    target_incident = item
+                    break
+
+            if not target_incident:
+                return jsonify({'success': False, 'message': '존재하지 않는 사건입니다.'}), 404
+
+            group_ids = find_group_incident_ids(target_incident, raw_incidents)
+            group_items = [item for item in raw_incidents if item.get('id') in group_ids]
+
+            representative = max(
+                group_items,
+                key=lambda x: (
+                    float(x.get('risk_score') or 0),
+                    x.get('first_created_at').timestamp() if x.get('first_created_at') else 0
+                )
+            )
+
+            items = []
+            for item in sorted(
+                group_items,
+                key=lambda x: x.get('first_created_at').timestamp() if x.get('first_created_at') else 0,
+                reverse=True
+            ):
+                items.append({
+                    'id': item.get('id'),
+                    'title': item.get('title'),
+                    'member_name': item.get('member_name') or f"회원#{item.get('member_id')}",
+                    'location': item.get('location'),
+                    'status': item.get('status'),
+                    'first_created_at': item.get('first_created_at').strftime('%m-%d %H:%M') if item.get(
+                        'first_created_at') else '-',
+                    'is_representative': item.get('id') == representative.get('id')
+                })
+
+            return jsonify({
+                'success': True,
+                'items': items
+            })
+    finally:
+        conn.close()
+
+
 @app.route('/admin/incidents/bulk-update', methods=['POST'])
 def admin_incidents_bulk_update():
     if 'user_id' not in session:
@@ -1395,7 +1878,9 @@ def admin_members():
     page = request.args.get('page', 1, type=int)
     keyword = request.args.get('keyword', '').strip()
     role = request.args.get('role', '').strip()
-    per_page = 8
+    sort = request.args.get('sort', 'role').strip()
+    order = request.args.get('order', 'asc').strip().lower()
+    per_page = 10
 
     conn = Session.get_connection()
     try:
@@ -1416,6 +1901,36 @@ def admin_members():
             if where_clauses:
                 where_sql = " WHERE " + " AND ".join(where_clauses)
 
+            allowed_sort = ['id', 'name', 'uid', 'role', 'active', 'created_at']
+            if sort not in allowed_sort:
+                sort = 'role'
+
+            order_sql = 'ASC' if order == 'asc' else 'DESC'
+
+            if sort == 'role':
+                if order == 'asc':
+                    order_by_sql = """
+                        CASE
+                            WHEN role = 'admin' THEN 1
+                            WHEN role = 'manager' THEN 2
+                            WHEN role = 'user' THEN 3
+                            ELSE 4
+                        END ASC
+                    """
+                else:
+                    order_by_sql = """
+                        CASE
+                            WHEN role = 'admin' THEN 1
+                            WHEN role = 'manager' THEN 2
+                            WHEN role = 'user' THEN 3
+                            ELSE 4
+                        END DESC
+                    """
+            elif sort == 'active':
+                order_by_sql = f"active {order_sql}, id DESC"
+            else:
+                order_by_sql = f"{sort} {order_sql}"
+
             count_sql = f"SELECT COUNT(*) AS cnt FROM members{where_sql}"
             cursor.execute(count_sql, params)
             total_count = cursor.fetchone()['cnt']
@@ -1430,10 +1945,10 @@ def admin_members():
             offset = (page - 1) * per_page
 
             sql = f"""
-                SELECT id, name, uid, role
+                SELECT id, name, uid, role, active, created_at
                 FROM members
                 {where_sql}
-                ORDER BY id DESC
+                ORDER BY {order_by_sql}
                 LIMIT %s OFFSET %s
             """
             cursor.execute(sql, params + [per_page, offset])
@@ -1445,7 +1960,9 @@ def admin_members():
                 page=page,
                 total_pages=total_pages,
                 keyword=keyword,
-                role=role
+                role=role,
+                sort=sort,
+                order=order
             )
     finally:
         conn.close()
@@ -1461,18 +1978,207 @@ def admin_member_detail(member_id):
     conn = Session.get_connection()
     try:
         with conn.cursor() as cursor:
-            sql = """
-                SELECT id, name, uid, role
+            # 1. 회원 기본 정보
+            member_sql = """
+                SELECT
+                    id,
+                    uid,
+                    name,
+                    role,
+                    active,
+                    manager_region,
+                    created_at
                 FROM members
                 WHERE id = %s
             """
-            cursor.execute(sql, (member_id,))
+            cursor.execute(member_sql, (member_id,))
             member = cursor.fetchone()
 
             if not member:
                 return "<script>alert('존재하지 않는 회원입니다.'); history.back();</script>"
 
-            return render_template('admin_member_detail.html', member=member)
+            # 2. 회원 신고 통계 (원본 신고 기준)
+            stats_sql = """
+                SELECT
+                    COUNT(*) AS total_reports,
+                    SUM(CASE WHEN status = '접수완료' THEN 1 ELSE 0 END) AS received_reports,
+                    SUM(CASE WHEN status = '처리중' THEN 1 ELSE 0 END) AS processing_reports,
+                    SUM(CASE WHEN status = '처리완료' THEN 1 ELSE 0 END) AS completed_reports,
+                    SUM(CASE WHEN status = '반려' THEN 1 ELSE 0 END) AS rejected_reports,
+                    SUM(CASE WHEN risk_score >= 70 THEN 1 ELSE 0 END) AS high_risk_reports,
+                    SUM(CASE WHEN risk_score >= 40 AND risk_score < 70 THEN 1 ELSE 0 END) AS medium_risk_reports,
+                    SUM(CASE WHEN risk_score < 40 THEN 1 ELSE 0 END) AS low_risk_reports,
+                    ROUND(AVG(risk_score), 1) AS avg_risk_score,
+                    MAX(first_created_at) AS last_report_at
+                FROM incidents
+                WHERE member_id = %s
+            """
+            cursor.execute(stats_sql, (member_id,))
+            member_stats = cursor.fetchone()
+
+            recent_30d_sql = """
+                SELECT COUNT(*) AS recent_30d_reports
+                FROM incidents
+                WHERE member_id = %s
+                  AND first_created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            """
+            cursor.execute(recent_30d_sql, (member_id,))
+            recent_30d_row = cursor.fetchone()
+
+            member_stats['recent_30d_reports'] = (recent_30d_row.get(
+                'recent_30d_reports') if recent_30d_row else 0) or 0
+
+            total_reports = member_stats.get('total_reports') or 0
+            completed_reports = member_stats.get('completed_reports') or 0
+            rejected_reports = member_stats.get('rejected_reports') or 0
+            grouped_reports = member_stats.get('grouped_reports') or 0
+
+            member_stats['approved_rate'] = round((completed_reports / total_reports) * 100,
+                                                  1) if total_reports > 0 else 0
+            member_stats['rejected_rate'] = round((rejected_reports / total_reports) * 100,
+                                                  1) if total_reports > 0 else 0
+            member_stats['duplicate_rate'] = round(((total_reports - grouped_reports) / total_reports) * 100,
+                                                   1) if total_reports > 0 else 0
+
+            recent_7d_sql = """
+                SELECT COUNT(*) AS recent_7d_reports
+                FROM incidents
+                WHERE member_id = %s
+                  AND first_created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            """
+            cursor.execute(recent_7d_sql, (member_id,))
+            recent_7d_row = cursor.fetchone()
+
+            member_stats['recent_7d_reports'] = (recent_7d_row.get('recent_7d_reports') if recent_7d_row else 0) or 0
+
+            operation_stats_sql = """
+                SELECT
+                    SUM(CASE WHEN status IN ('접수완료', '처리중') THEN 1 ELSE 0 END) AS pending_reports,
+                    SUM(CASE WHEN status IN ('접수완료', '처리중') AND risk_score >= 70 THEN 1 ELSE 0 END) AS high_risk_pending_reports,
+                    SUM(CASE WHEN status IN ('접수완료', '처리중')
+                             AND first_created_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                             THEN 1 ELSE 0 END) AS long_pending_reports
+                FROM incidents
+                WHERE member_id = %s
+            """
+            cursor.execute(operation_stats_sql, (member_id,))
+            operation_stats = cursor.fetchone()
+
+            member_stats['pending_reports'] = (operation_stats.get('pending_reports') if operation_stats else 0) or 0
+            member_stats['high_risk_pending_reports'] = (operation_stats.get(
+                'high_risk_pending_reports') if operation_stats else 0) or 0
+            member_stats['long_pending_reports'] = (operation_stats.get(
+                'long_pending_reports') if operation_stats else 0) or 0
+
+            # 3. 대표 사건 수 계산용 원본 incident 전체 조회
+            group_count_sql = """
+                SELECT
+                    id,
+                    member_id,
+                    title,
+                    location,
+                    region_name,
+                    latitude,
+                    longitude,
+                    image_path,
+                    status,
+                    reject_reason,
+                    risk_score,
+                    first_created_at,
+                    last_checked_at
+                FROM incidents
+                WHERE member_id = %s
+                ORDER BY first_created_at DESC
+            """
+            cursor.execute(group_count_sql, (member_id,))
+            raw_member_incidents = cursor.fetchall()
+
+            grouped_member_incidents = group_incidents(raw_member_incidents)
+            member_stats['grouped_reports'] = len(grouped_member_incidents)
+            member_stats['has_rejected_history'] = (member_stats.get('rejected_reports') or 0) > 0
+
+            # 4. 최근 신고 목록 (원본 신고 기준 4개 유지)
+            incidents_sql = """
+                SELECT
+                    id,
+                    title,
+                    location,
+                    region_name,
+                    status,
+                    risk_score,
+                    first_created_at,
+                    last_checked_at,
+                    reject_reason
+                FROM incidents
+                WHERE member_id = %s
+                ORDER BY first_created_at DESC
+                LIMIT 4
+            """
+            cursor.execute(incidents_sql, (member_id,))
+            member_incidents = cursor.fetchall()
+
+            return render_template(
+                'admin_member_detail.html',
+                member=member,
+                member_stats=member_stats,
+                member_incidents=member_incidents
+            )
+    finally:
+        conn.close()
+
+@app.route('/admin/members/update-status', methods=['POST'])
+def admin_member_update_status():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('alert_page'))
+
+    member_id = request.form.get('member_id', '').strip()
+    active = request.form.get('active', '').strip()
+
+    if not member_id or active not in ['0', '1']:
+        return "<script>alert('잘못된 요청입니다.'); history.back();</script>"
+
+    conn = Session.get_connection()
+    try:
+        with conn.cursor() as cursor:
+            sql = """
+                UPDATE members
+                SET active = %s
+                WHERE id = %s
+            """
+            cursor.execute(sql, (int(active), member_id))
+        conn.commit()
+        return redirect(url_for('admin_member_detail', member_id=member_id))
+    finally:
+        conn.close()
+
+@app.route('/admin/members/update-role', methods=['POST'])
+def admin_member_update_role():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('alert_page'))
+
+    member_id = request.form.get('member_id', '').strip()
+    role = request.form.get('role', '').strip()
+
+    if not member_id or role not in ['admin', 'manager', 'user']:
+        return "<script>alert('잘못된 요청입니다.'); history.back();</script>"
+
+    conn = Session.get_connection()
+    try:
+        with conn.cursor() as cursor:
+            sql = """
+                UPDATE members
+                SET role = %s
+                WHERE id = %s
+            """
+            cursor.execute(sql, (role, member_id))
+        conn.commit()
+        return redirect(url_for('admin_member_detail', member_id=member_id))
     finally:
         conn.close()
 
@@ -1484,7 +2190,277 @@ def admin_statistics():
     if session.get('user_role') != 'admin':
         return redirect(url_for('alert_page'))
 
-    return render_template('admin_statistics.html')
+    conn = Session.get_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id,
+                    region_name,
+                    location,
+                    status,
+                    risk_score,
+                    first_created_at
+                FROM incidents
+                ORDER BY first_created_at DESC
+            """)
+            raw_incidents = cursor.fetchall()
+
+            grouped_incidents = group_incidents(raw_incidents)
+
+            # 1. 전국 > 도/광역시 > 시/군/구 구조
+            region_tree = {}
+
+            for incident in grouped_incidents:
+                parsed = parse_region_hierarchy(
+                    incident.get('region_name'),
+                    incident.get('location')
+                )
+
+                level1 = parsed.get('level1') or '기타'
+                level2 = parsed.get('level2')
+                level3 = parsed.get('level3')
+
+                if level1 not in region_tree:
+                    region_tree[level1] = {}
+
+                # level2가 없으면 level1 바로 아래에 기타로 집계
+                if not level2:
+                    region_tree[level1]['기타'] = region_tree[level1].get('기타', 0) + 1
+                    continue
+
+                # level2가 있으면 dict 구조 보장
+                if level2 not in region_tree[level1]:
+                    region_tree[level1][level2] = {}
+
+                # level3가 있으면 3단계까지 집계
+                if level3:
+                    region_tree[level1][level2][level3] = (
+                            region_tree[level1][level2].get(level3, 0) + 1
+                    )
+                else:
+                    # level3가 없으면 level2 자체를 종료 노드로 만들기 위해
+                    # '__count__'로 임시 보관
+                    region_tree[level1][level2]['__count__'] = (
+                            region_tree[level1][level2].get('__count__', 0) + 1
+                    )
+
+            # level2 아래에 '__count__'만 있고 실제 하위 구가 없으면 숫자로 평탄화
+            normalized_region_tree = {}
+
+            for level1, level2_map in region_tree.items():
+                normalized_region_tree[level1] = {}
+
+                for level2, level3_map in level2_map.items():
+                    child_keys = [k for k in level3_map.keys() if k != '__count__']
+
+                    if child_keys:
+                        normalized_region_tree[level1][level2] = {
+                            k: v for k, v in level3_map.items() if k != '__count__'
+                        }
+
+                        if level3_map.get('__count__'):
+                            normalized_region_tree[level1][level2]['기타'] = (
+                                    normalized_region_tree[level1][level2].get('기타', 0)
+                                    + level3_map['__count__']
+                            )
+                    else:
+                        normalized_region_tree[level1][level2] = level3_map.get('__count__', 0)
+
+            region_data = {
+                '전국': normalized_region_tree
+            }
+
+            # 2. 요약 수치
+            now = datetime.now()
+            today = now.date()
+
+            statistics_summary = {
+                'totalReports': len(grouped_incidents),
+                'pendingReports': sum(1 for i in grouped_incidents if i.get('status') in ['접수완료', '처리중']),
+                'dangerReports': sum(
+                    1 for i in grouped_incidents
+                    if i.get('status') in ['접수완료', '처리중'] and float(i.get('risk_score') or 0) >= 70
+                ),
+                'delayedReports': sum(
+                    1 for i in grouped_incidents
+                    if i.get('status') == '접수완료'
+                    and i.get('first_created_at')
+                    and (now - i.get('first_created_at')).total_seconds() >= 86400
+                ),
+                'todayReports': sum(
+                    1 for i in grouped_incidents
+                    if i.get('first_created_at') and i.get('first_created_at').date() == today
+                )
+            }
+
+            # ===== 운영 인사이트 생성 =====
+            insights = []
+
+            # 1. 장기 지연 우선 경고
+            if statistics_summary['delayedReports'] >= 3:
+                insights.append(
+                    f"24시간 이상 지연된 신고가 {statistics_summary['delayedReports']}건 발생했습니다."
+                )
+
+            # 2. 고위험 미처리 경고
+            if statistics_summary['dangerReports'] > 0:
+                insights.append(
+                    f"고위험 미처리 신고 {statistics_summary['dangerReports']}건이 남아 있습니다."
+                )
+
+            # 3. 오늘 접수 증가 감지 (간단 기준)
+            avg_reports = statistics_summary['totalReports'] / 7 if statistics_summary['totalReports'] else 0
+
+            if statistics_summary['todayReports'] > avg_reports:
+                insights.append("오늘 접수량이 평소보다 많은 흐름을 보이고 있습니다.")
+
+            # 4. 이상 징후가 없을 때
+            if not insights:
+                insights.append("현재 확인된 주요 지연·고위험 이상 징후는 없습니다.")
+
+            # ===== 운영 인사이트 생성 =====
+            insights = []
+
+            if statistics_summary['dangerReports'] > 0:
+                insights.append(f"고위험 신고 {statistics_summary['dangerReports']}건이 아직 처리되지 않았습니다.")
+
+            if statistics_summary['delayedReports'] >= 3:
+                insights.append(f"24시간 이상 지연된 신고가 {statistics_summary['delayedReports']}건 발생했습니다.")
+
+            avg_reports = statistics_summary['totalReports'] / 7 if statistics_summary['totalReports'] else 0
+
+            if statistics_summary['todayReports'] > avg_reports:
+                insights.append("오늘 신고량이 최근 평균보다 증가했습니다.")
+
+            if not insights:
+                insights.append("현재 특별한 이상 징후는 없습니다.")
+
+            # ===== 운영 인사이트 생성 =====
+            insights = []
+
+            # 1. 고위험 미처리
+            if statistics_summary['dangerReports'] > 0:
+                insights.append(f"고위험 신고 {statistics_summary['dangerReports']}건이 아직 처리되지 않았습니다.")
+
+            # 2. 장기 지연
+            if statistics_summary['delayedReports'] >= 3:
+                insights.append(f"24시간 이상 지연된 신고가 {statistics_summary['delayedReports']}건 발생했습니다.")
+
+            # 3. 오늘 증가 감지 (간단 기준)
+            avg_reports = statistics_summary['totalReports'] / 7 if statistics_summary['totalReports'] else 0
+
+            if statistics_summary['todayReports'] > avg_reports:
+                insights.append("오늘 신고량이 최근 평균보다 증가했습니다.")
+
+            # 4. 아무 것도 없을 때
+            if not insights:
+                insights.append("현재 특별한 이상 징후는 없습니다.")
+
+            # 3. 추이 데이터
+
+            # 최근 7일: 일 단위 고정 7칸
+            cursor.execute("""
+                SELECT DATE(first_created_at) AS report_date, COUNT(*) AS count
+                FROM incidents
+                WHERE first_created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+                GROUP BY DATE(first_created_at)
+                ORDER BY report_date ASC
+            """)
+            rows_7d = cursor.fetchall()
+
+            row_7d_map = {
+                row['report_date'].strftime('%Y-%m-%d'): int(row['count'])
+                for row in rows_7d
+            }
+
+            labels_7d = []
+            values_7d = []
+
+            for i in range(6, -1, -1):
+                target_day = (datetime.now() - timedelta(days=i)).date()
+                key = target_day.strftime('%Y-%m-%d')
+                labels_7d.append(target_day.strftime('%m-%d'))
+                values_7d.append(row_7d_map.get(key, 0))
+
+            # 최근 30일: 주 단위 고정 5칸
+            cursor.execute("""
+                SELECT YEARWEEK(first_created_at, 1) AS yearweek, COUNT(*) AS count
+                FROM incidents
+                WHERE first_created_at >= DATE_SUB(CURDATE(), INTERVAL 34 DAY)
+                GROUP BY YEARWEEK(first_created_at, 1)
+                ORDER BY yearweek ASC
+            """)
+            rows_30d = cursor.fetchall()
+
+            row_30d_map = {
+                str(row['yearweek']): int(row['count'])
+                for row in rows_30d
+            }
+
+            labels_30d = []
+            values_30d = []
+
+            for i in range(4, -1, -1):
+                target_day = datetime.now() - timedelta(days=i * 7)
+                yearweek = target_day.strftime('%G%V')
+                labels_30d.append(f"{5 - i}주")
+                values_30d.append(row_30d_map.get(yearweek, 0))
+
+            # 전체: 최근 6개월 고정
+            cursor.execute("""
+                SELECT DATE_FORMAT(first_created_at, '%Y-%m') AS ym, COUNT(*) AS count
+                FROM incidents
+                GROUP BY DATE_FORMAT(first_created_at, '%Y-%m')
+                ORDER BY ym ASC
+            """)
+            rows_all = cursor.fetchall()
+
+            row_all_map = {
+                row['ym']: int(row['count'])
+                for row in rows_all
+            }
+
+            labels_all = []
+            values_all = []
+
+            now_dt = datetime.now()
+            for i in range(5, -1, -1):
+                year = now_dt.year
+                month = now_dt.month - i
+
+                while month <= 0:
+                    month += 12
+                    year -= 1
+
+                ym = f"{year}-{month:02d}"
+                labels_all.append(f"{month}월")
+                values_all.append(row_all_map.get(ym, 0))
+
+            trend_data = {
+                '7d': {
+                    'labels': labels_7d,
+                    'values': values_7d
+                },
+                '30d': {
+                    'labels': labels_30d,
+                    'values': values_30d
+                },
+                'all': {
+                    'labels': labels_all,
+                    'values': values_all
+                }
+            }
+
+            return render_template(
+                'admin_statistics.html',
+                region_data=region_data,
+                trend_data=trend_data,
+                statistics_summary=statistics_summary,
+                insights=insights
+            )
+    finally:
+        conn.close()
 
 @app.route('/incident/update-status', methods=['POST'])
 def incident_update_status():
@@ -1566,4 +2542,4 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(host='192.168.0.164', port=5001, debug=True)
+    app.run(host='localhost', port=5001, debug=True)
