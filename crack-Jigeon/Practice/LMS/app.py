@@ -27,13 +27,19 @@ from flask import (
 
 from common.Session import Session
 from domain import *
+from dotenv import load_dotenv
+from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent
+env_path = BASE_DIR / ".env"
 
+load_dotenv(env_path)
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key-change-me')
 
 KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")
 KAKAO_JS_KEY = os.getenv("KAKAO_JS_KEY")
+print("KAKAO_JS_KEY =", KAKAO_JS_KEY)
 DEFAULT_RADIUS_M = 500
 
 # 주소 검색 시 도시 입력만으로도 해당 행정구 목록을 제공하기 위한 지역 데이터 사전
@@ -1702,7 +1708,8 @@ def admin_incidents():
                 page=page,
                 total_pages=total_pages,
                 quick_filter=quick_filter,
-                current_query_string=request.query_string.decode('utf-8')
+                current_query_string=request.query_string.decode('utf-8'),
+                KAKAO_JS_KEY=KAKAO_JS_KEY
             )
     finally:
         conn.close()
@@ -2210,6 +2217,160 @@ def extract_fallback_subregion(level1, location):
 
     return None
 
+def filter_incidents_by_risk(incidents, risk_key):
+    if risk_key == 'high':
+        return [i for i in incidents if float(i.get('risk_score') or 0) >= 70]
+
+    if risk_key == 'medium':
+        return [i for i in incidents if 40 <= float(i.get('risk_score') or 0) < 70]
+
+    if risk_key == 'low':
+        return [i for i in incidents if float(i.get('risk_score') or 0) < 40]
+
+    return incidents
+
+def build_region_data_from_incidents(grouped_incidents):
+    region_tree = {}
+
+    for incident in grouped_incidents:
+        parsed = parse_region_hierarchy(
+            incident.get('region_name'),
+            incident.get('location')
+        )
+
+        level1 = parsed.get('level1') or '기타'
+        level2 = parsed.get('level2')
+        level3 = parsed.get('level3')
+
+        if level1 not in region_tree:
+            region_tree[level1] = {}
+
+        if not level2:
+            fallback_subregion = extract_fallback_subregion(level1, incident.get('location'))
+
+            if fallback_subregion:
+                level2 = fallback_subregion
+            else:
+                if '미분류' not in region_tree[level1]:
+                    region_tree[level1]['미분류'] = {}
+
+                region_tree[level1]['미분류']['상세없음'] = (
+                    region_tree[level1]['미분류'].get('상세없음', 0) + 1
+                )
+                continue
+
+        if level2 not in region_tree[level1]:
+            region_tree[level1][level2] = {}
+
+        if level3:
+            region_tree[level1][level2][level3] = (
+                region_tree[level1][level2].get(level3, 0) + 1
+            )
+        else:
+            region_tree[level1][level2]['__count__'] = (
+                region_tree[level1][level2].get('__count__', 0) + 1
+            )
+
+    normalized_region_tree = {}
+
+    for level1, level2_map in region_tree.items():
+        normalized_region_tree[level1] = {}
+
+        for level2, level3_map in level2_map.items():
+            if isinstance(level3_map, int):
+                normalized_region_tree[level1][level2] = level3_map
+                continue
+
+            child_keys = [k for k in level3_map.keys() if k != '__count__']
+
+            if child_keys:
+                normalized_region_tree[level1][level2] = {
+                    k: v for k, v in level3_map.items() if k != '__count__'
+                }
+
+                if level3_map.get('__count__'):
+                    normalized_region_tree[level1][level2]['미분류'] = {
+                        '상세없음': level3_map['__count__']
+                    }
+            else:
+                normalized_region_tree[level1][level2] = level3_map.get('__count__', 0)
+
+    return {
+        '전국': normalized_region_tree
+    }
+
+def build_trend_data_from_incidents(grouped_incidents):
+    now_dt = datetime.now()
+
+    # 7일
+    labels_7d = []
+    values_7d = []
+
+    for i in range(6, -1, -1):
+        target_day = (now_dt - timedelta(days=i)).date()
+        labels_7d.append(target_day.strftime('%m-%d'))
+
+        count = sum(
+            1 for incident in grouped_incidents
+            if incident.get('first_created_at')
+            and incident.get('first_created_at').date() == target_day
+        )
+        values_7d.append(count)
+
+    # 30일(주 단위 5칸)
+    labels_30d = []
+    values_30d = []
+
+    for i in range(4, -1, -1):
+        end_day = (now_dt - timedelta(days=i * 7)).date()
+        start_day = end_day - timedelta(days=6)
+
+        labels_30d.append(f"{5 - i}주")
+
+        count = sum(
+            1 for incident in grouped_incidents
+            if incident.get('first_created_at')
+            and start_day <= incident.get('first_created_at').date() <= end_day
+        )
+        values_30d.append(count)
+
+    # 전체(최근 6개월)
+    labels_all = []
+    values_all = []
+
+    for i in range(5, -1, -1):
+        year = now_dt.year
+        month = now_dt.month - i
+
+        while month <= 0:
+            month += 12
+            year -= 1
+
+        labels_all.append(f"{month}월")
+
+        count = sum(
+            1 for incident in grouped_incidents
+            if incident.get('first_created_at')
+            and incident.get('first_created_at').year == year
+            and incident.get('first_created_at').month == month
+        )
+        values_all.append(count)
+
+    return {
+        '7d': {
+            'labels': labels_7d,
+            'values': values_7d
+        },
+        '30d': {
+            'labels': labels_30d,
+            'values': values_30d
+        },
+        'all': {
+            'labels': labels_all,
+            'values': values_all
+        }
+    }
+
 @app.route('/admin/statistics')
 def admin_statistics():
     if 'user_id' not in session:
@@ -2236,92 +2397,40 @@ def admin_statistics():
 
             grouped_incidents = group_incidents(raw_incidents)
 
-            # 1. 전국 > 도/광역시 > 시/군/구 구조
-            region_tree = {}
+            # 위험도별 데이터 분리
+            risk_keys = ['all', 'high', 'medium', 'low']
 
-            for incident in grouped_incidents:
-                parsed = parse_region_hierarchy(
-                    incident.get('region_name'),
-                    incident.get('location')
-                )
-
-                level1 = parsed.get('level1') or '기타'
-                level2 = parsed.get('level2')
-                level3 = parsed.get('level3')
-
-                if level1 not in region_tree:
-                    region_tree[level1] = {}
-
-                # level2가 없으면 level1 바로 아래에 기타로 집계
-                if not level2:
-                    fallback_subregion = extract_fallback_subregion(level1, incident.get('location'))
-
-                    if fallback_subregion:
-                        level2 = fallback_subregion
-                    else:
-                        if '미분류' not in region_tree[level1]:
-                            region_tree[level1]['미분류'] = {}
-
-                        region_tree[level1]['미분류']['상세없음'] = (
-                                region_tree[level1]['미분류'].get('상세없음', 0) + 1
-                        )
-                        continue
-
-                # level2가 있으면 dict 구조 보장
-                if level2 not in region_tree[level1]:
-                    region_tree[level1][level2] = {}
-
-                # level3가 있으면 3단계까지 집계
-                if level3:
-                    region_tree[level1][level2][level3] = (
-                            region_tree[level1][level2].get(level3, 0) + 1
-                    )
-                else:
-                    # level3가 없으면 level2 자체를 종료 노드로 만들기 위해
-                    # '__count__'로 임시 보관
-                    region_tree[level1][level2]['__count__'] = (
-                            region_tree[level1][level2].get('__count__', 0) + 1
-                    )
-
-            # level2 아래에 '__count__'만 있고 실제 하위 구가 없으면 숫자로 평탄화
-            normalized_region_tree = {}
-
-            for level1, level2_map in region_tree.items():
-                normalized_region_tree[level1] = {}
-
-                for level2, level3_map in level2_map.items():
-                    if isinstance(level3_map, int):
-                        normalized_region_tree[level1][level2] = level3_map
-                        continue
-
-                    child_keys = [k for k in level3_map.keys() if k != '__count__']
-
-                    if child_keys:
-                        normalized_region_tree[level1][level2] = {
-                            k: v for k, v in level3_map.items() if k != '__count__'
-                        }
-
-                        if level3_map.get('__count__'):
-                            normalized_region_tree[level1][level2]['미분류'] = {
-                                '상세없음': level3_map['__count__']
-                            }
-                    else:
-                        normalized_region_tree[level1][level2] = level3_map.get('__count__', 0)
-
-            region_data = {
-                '전국': normalized_region_tree
+            grouped_incidents_map = {
+                risk_key: filter_incidents_by_risk(grouped_incidents, risk_key)
+                for risk_key in risk_keys
             }
 
-            # 2. 요약 수치
+            # 위험도별 지역 데이터
+            region_data_map = {
+                risk_key: build_region_data_from_incidents(grouped_incidents_map[risk_key])
+                for risk_key in risk_keys
+            }
+
+            # 위험도별 추이 데이터
+            trend_data_map = {
+                risk_key: build_trend_data_from_incidents(grouped_incidents_map[risk_key])
+                for risk_key in risk_keys
+            }
+
+            # 전체 기준 요약 수치
             now = datetime.now()
             today = now.date()
 
             statistics_summary = {
                 'totalReports': len(grouped_incidents),
-                'pendingReports': sum(1 for i in grouped_incidents if i.get('status') in ['접수완료', '처리중']),
+                'pendingReports': sum(
+                    1 for i in grouped_incidents
+                    if i.get('status') in ['접수완료', '처리중']
+                ),
                 'dangerReports': sum(
                     1 for i in grouped_incidents
-                    if i.get('status') in ['접수완료', '처리중'] and float(i.get('risk_score') or 0) >= 70
+                    if i.get('status') in ['접수완료', '처리중']
+                    and float(i.get('risk_score') or 0) >= 70
                 ),
                 'delayedReports': sum(
                     1 for i in grouped_incidents
@@ -2331,174 +2440,16 @@ def admin_statistics():
                 ),
                 'todayReports': sum(
                     1 for i in grouped_incidents
-                    if i.get('first_created_at') and i.get('first_created_at').date() == today
+                    if i.get('first_created_at')
+                    and i.get('first_created_at').date() == today
                 )
-            }
-
-            # ===== 운영 인사이트 생성 =====
-            insights = []
-
-            # 1. 장기 지연 우선 경고
-            if statistics_summary['delayedReports'] >= 3:
-                insights.append(
-                    f"24시간 이상 지연된 신고가 {statistics_summary['delayedReports']}건 발생했습니다."
-                )
-
-            # 2. 고위험 미처리 경고
-            if statistics_summary['dangerReports'] > 0:
-                insights.append(
-                    f"고위험 미처리 신고 {statistics_summary['dangerReports']}건이 남아 있습니다."
-                )
-
-            # 3. 오늘 접수 증가 감지 (간단 기준)
-            avg_reports = statistics_summary['totalReports'] / 7 if statistics_summary['totalReports'] else 0
-
-            if statistics_summary['todayReports'] > avg_reports:
-                insights.append("오늘 접수량이 평소보다 많은 흐름을 보이고 있습니다.")
-
-            # 4. 이상 징후가 없을 때
-            if not insights:
-                insights.append("현재 확인된 주요 지연·고위험 이상 징후는 없습니다.")
-
-            # ===== 운영 인사이트 생성 =====
-            insights = []
-
-            if statistics_summary['dangerReports'] > 0:
-                insights.append(f"고위험 신고 {statistics_summary['dangerReports']}건이 아직 처리되지 않았습니다.")
-
-            if statistics_summary['delayedReports'] >= 3:
-                insights.append(f"24시간 이상 지연된 신고가 {statistics_summary['delayedReports']}건 발생했습니다.")
-
-            avg_reports = statistics_summary['totalReports'] / 7 if statistics_summary['totalReports'] else 0
-
-            if statistics_summary['todayReports'] > avg_reports:
-                insights.append("오늘 신고량이 최근 평균보다 증가했습니다.")
-
-            if not insights:
-                insights.append("현재 특별한 이상 징후는 없습니다.")
-
-            # ===== 운영 인사이트 생성 =====
-            insights = []
-
-            # 1. 고위험 미처리
-            if statistics_summary['dangerReports'] > 0:
-                insights.append(f"고위험 신고 {statistics_summary['dangerReports']}건이 아직 처리되지 않았습니다.")
-
-            # 2. 장기 지연
-            if statistics_summary['delayedReports'] >= 3:
-                insights.append(f"24시간 이상 지연된 신고가 {statistics_summary['delayedReports']}건 발생했습니다.")
-
-            # 3. 오늘 증가 감지 (간단 기준)
-            avg_reports = statistics_summary['totalReports'] / 7 if statistics_summary['totalReports'] else 0
-
-            if statistics_summary['todayReports'] > avg_reports:
-                insights.append("오늘 신고량이 최근 평균보다 증가했습니다.")
-
-            # 4. 아무 것도 없을 때
-            if not insights:
-                insights.append("현재 특별한 이상 징후는 없습니다.")
-
-            # 3. 추이 데이터
-
-            # 최근 7일: 일 단위 고정 7칸
-            cursor.execute("""
-                SELECT DATE(first_created_at) AS report_date, COUNT(*) AS count
-                FROM incidents
-                WHERE first_created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-                GROUP BY DATE(first_created_at)
-                ORDER BY report_date ASC
-            """)
-            rows_7d = cursor.fetchall()
-
-            row_7d_map = {
-                row['report_date'].strftime('%Y-%m-%d'): int(row['count'])
-                for row in rows_7d
-            }
-
-            labels_7d = []
-            values_7d = []
-
-            for i in range(6, -1, -1):
-                target_day = (datetime.now() - timedelta(days=i)).date()
-                key = target_day.strftime('%Y-%m-%d')
-                labels_7d.append(target_day.strftime('%m-%d'))
-                values_7d.append(row_7d_map.get(key, 0))
-
-            # 최근 30일: 주 단위 고정 5칸
-            cursor.execute("""
-                SELECT YEARWEEK(first_created_at, 1) AS yearweek, COUNT(*) AS count
-                FROM incidents
-                WHERE first_created_at >= DATE_SUB(CURDATE(), INTERVAL 34 DAY)
-                GROUP BY YEARWEEK(first_created_at, 1)
-                ORDER BY yearweek ASC
-            """)
-            rows_30d = cursor.fetchall()
-
-            row_30d_map = {
-                str(row['yearweek']): int(row['count'])
-                for row in rows_30d
-            }
-
-            labels_30d = []
-            values_30d = []
-
-            for i in range(4, -1, -1):
-                target_day = datetime.now() - timedelta(days=i * 7)
-                yearweek = target_day.strftime('%G%V')
-                labels_30d.append(f"{5 - i}주")
-                values_30d.append(row_30d_map.get(yearweek, 0))
-
-            # 전체: 최근 6개월 고정
-            cursor.execute("""
-                SELECT DATE_FORMAT(first_created_at, '%Y-%m') AS ym, COUNT(*) AS count
-                FROM incidents
-                GROUP BY DATE_FORMAT(first_created_at, '%Y-%m')
-                ORDER BY ym ASC
-            """)
-            rows_all = cursor.fetchall()
-
-            row_all_map = {
-                row['ym']: int(row['count'])
-                for row in rows_all
-            }
-
-            labels_all = []
-            values_all = []
-
-            now_dt = datetime.now()
-            for i in range(5, -1, -1):
-                year = now_dt.year
-                month = now_dt.month - i
-
-                while month <= 0:
-                    month += 12
-                    year -= 1
-
-                ym = f"{year}-{month:02d}"
-                labels_all.append(f"{month}월")
-                values_all.append(row_all_map.get(ym, 0))
-
-            trend_data = {
-                '7d': {
-                    'labels': labels_7d,
-                    'values': values_7d
-                },
-                '30d': {
-                    'labels': labels_30d,
-                    'values': values_30d
-                },
-                'all': {
-                    'labels': labels_all,
-                    'values': values_all
-                }
             }
 
             return render_template(
                 'admin_statistics.html',
-                region_data=region_data,
-                trend_data=trend_data,
-                statistics_summary=statistics_summary,
-                insights=insights
+                region_data_map=region_data_map,
+                trend_data_map=trend_data_map,
+                statistics_summary=statistics_summary
             )
     finally:
         conn.close()

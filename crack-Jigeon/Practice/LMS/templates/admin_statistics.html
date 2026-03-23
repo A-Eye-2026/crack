@@ -217,38 +217,32 @@
       line-height: 1.5;
     }
 
-    .insight-bar {
-      margin-bottom: 14px;
-      padding: 10px 14px;
-      border-radius: 14px;
-      background: #f8fbff;
-      border: 1px solid #dbeafe;
-      box-shadow: none;
+    .page-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .page-title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .global-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
       flex-shrink: 0;
     }
 
-    .insight-label {
-      font-size: 11px;
-      font-weight: 800;
-      color: #2563eb;
-      letter-spacing: -0.1px;
-      margin-bottom: 4px;
-    }
-
-    .insight-text {
-      font-size: 12px;
-      font-weight: 600;
-      color: #475569;
-      line-height: 1.5;
-      letter-spacing: -0.1px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .insight-text strong {
-      color: #0f172a;
-      font-weight: 800;
+    .risk-filter-chip {
+      min-width: 56px;
+      padding: 0 14px;
+      white-space: nowrap;
     }
 
     .summary-grid {
@@ -559,6 +553,46 @@
       row-gap: 6px;
     }
 
+    .region-header-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+      min-width: 260px;
+      padding-top: 2px;
+    }
+
+    .region-back-btn {
+      width: 30px;
+      height: 30px;
+      border: 1px solid #d7dde5;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #475569;
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.18s ease;
+      flex-shrink: 0;
+    }
+
+    .region-back-btn:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #0f172a;
+      transform: translateY(-1px);
+    }
+
+    .region-back-btn.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
     .breadcrumb-item {
       display: inline-flex;
       align-items: center;
@@ -618,6 +652,13 @@
       padding: 12px;
       position: relative;
       overflow: visible;
+    }
+
+    .chart-back-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 5;
     }
 
     .region-chart-box canvas {
@@ -902,6 +943,15 @@
 }
 
 @media (max-width: 640px) {
+    .page-title-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .global-filter-bar {
+      justify-content: flex-start;
+    }
+
   .trend-filter-actions {
     justify-content: flex-start;
   }
@@ -953,18 +1003,20 @@
         </div>
 
         <div class="page-title-box">
-          <div class="page-title">통계 대시보드</div>
-          <div class="page-subtitle">
-            운영 현황, 위험 집중 신고, 처리 지연 상태를 한눈에 확인하는 관리자 통계 화면입니다.
-            우선 핵심 운영 지표와 상태 분포 중심으로 구성하고, 이후 차트와 실제 DB 집계값으로 확장합니다.
-          </div>
-        </div>
-        <div class="insight-bar">
-          <span class="insight-label">운영 인사이트</span>
-          <div class="insight-text">
-            {% for insight in insights %}
-              <div>• {{ insight }}</div>
-            {% endfor %}
+          <div class="page-title-row">
+            <div class="page-title-wrap">
+              <div class="page-title">통계</div>
+              <div class="page-subtitle">
+                지역별 신고 분포와 기간별 추이를 기준별로 확인합니다.
+              </div>
+            </div>
+
+            <div class="global-filter-bar">
+              <button type="button" class="mini-filter-chip risk-filter-chip active" data-risk="all">전체</button>
+              <button type="button" class="mini-filter-chip risk-filter-chip" data-risk="high">고위험</button>
+              <button type="button" class="mini-filter-chip risk-filter-chip" data-risk="medium">중위험</button>
+              <button type="button" class="mini-filter-chip risk-filter-chip" data-risk="low">저위험</button>
+            </div>
           </div>
         </div>
         <div class="content-grid">
@@ -985,6 +1037,10 @@
             <div class="region-chart-shell">
               <div class="region-chart-body">
                 <div class="region-chart-box">
+                  <button type="button" class="region-back-btn hidden chart-back-btn" id="regionBackBtn" aria-label="상위 지역으로 이동">
+                    ←
+                  </button>
+
                   <canvas id="regionDonutChart"></canvas>
                 </div>
 
@@ -1055,6 +1111,7 @@
     let trendLineChart = null;
     let currentTrendRange = "7d";
     let currentOtherItems = null;
+    let currentRiskFilter = "all";
 
     function runPageTransition(href) {
       if (!href || pageTransitionRunning) return;
@@ -1106,9 +1163,9 @@
     });
 
     // ===== 1. 더미 지역 데이터 (계층 구조) =====
-const regionData = {{ region_data | tojson }};
+const regionDataMap = {{ region_data_map | tojson }};
 
-const trendDataMap = {{ trend_data | tojson }};
+const trendDataMap = {{ trend_data_map | tojson }};
 
 const statisticsSummaryData = {{ statistics_summary | tojson }};
 
@@ -1117,7 +1174,7 @@ let currentPath = ["전국"];
 
 // ===== 3. 현재 노드 가져오기 =====
 function getCurrentNode() {
-  let node = regionData;
+  let node = regionDataMap[currentRiskFilter];
   for (let key of currentPath) {
     node = node[key];
   }
@@ -1289,6 +1346,13 @@ function animateRegionTransition(callback) {
 function renderRegion() {
   const { visibleItems: items, hiddenItems } = getCurrentItems();
 
+const backBtn = document.getElementById("regionBackBtn");
+const canGoBack = currentPath.length > 1 || currentOtherItems !== null;
+
+if (backBtn) {
+  backBtn.classList.toggle("hidden", !canGoBack);
+}
+
   // === breadcrumb ===
   const breadcrumbEl = document.querySelector(".region-breadcrumb");
   const breadcrumbParts = [...currentPath];
@@ -1311,15 +1375,27 @@ breadcrumbEl.innerHTML = breadcrumbParts
   .join('<span class="breadcrumb-separator">-</span>');
 
   breadcrumbEl.querySelectorAll(".breadcrumb-item.clickable").forEach(item => {
-    item.addEventListener("click", () => {
-      const index = Number(item.dataset.index);
+  item.addEventListener("click", () => {
+    const index = Number(item.dataset.index);
 
-      currentPath = currentPath.slice(0, Math.min(index + 1, currentPath.length));
-      currentOtherItems = null;
+    currentPath = currentPath.slice(0, Math.min(index + 1, currentPath.length));
+    currentOtherItems = null;
 
-      animateRegionTransition(renderRegion);
-    });
+    animateRegionTransition(renderRegion);
   });
+});
+
+if (backBtn) {
+  backBtn.onclick = () => {
+    if (currentOtherItems) {
+      currentOtherItems = null;
+    } else if (currentPath.length > 1) {
+      currentPath.pop();
+    }
+
+    animateRegionTransition(renderRegion);
+  };
+}
 
   // === 리스트 ===
   const listEl = document.querySelector(".region-detail-list");
@@ -1450,7 +1526,7 @@ breadcrumbEl.innerHTML = breadcrumbParts
 function renderTrendChart(range = currentTrendRange) {
   currentTrendRange = range;
 
-  const trend = trendDataMap[range];
+  const trend = trendDataMap[currentRiskFilter][range];
   if (!trend) return;
 
   console.log("range:", range);
@@ -1553,7 +1629,23 @@ document.querySelectorAll(".trend-filter-chip").forEach(btn => {
     renderTrendChart(range);
   });
 });
+document.querySelectorAll(".risk-filter-chip").forEach(btn => {
+  btn.addEventListener("click", () => {
+    currentRiskFilter = btn.dataset.risk;
 
+    document.querySelectorAll(".risk-filter-chip").forEach(chip => {
+      chip.classList.remove("active");
+    });
+
+    btn.classList.add("active");
+
+    currentPath = ["전국"];
+    currentOtherItems = null;
+
+    renderRegion();
+    renderTrendChart(currentTrendRange);
+  });
+});
 
 // ===== 8. 최초 실행 =====
 renderRegion();

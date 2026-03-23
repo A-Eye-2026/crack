@@ -523,6 +523,93 @@
       font-weight: 700;
     }
 
+.detail-map-inline-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detail-map-inline-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.detail-map-inline-btn:hover {
+  color: #334155;
+  transform: scale(1.05);
+}
+
+.detail-location-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.detail-location-row #dashboardDetailLocation {
+  flex: 1;
+  min-width: 0;
+}
+
+.map-modal-card {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid #dbe3ec;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.20);
+  overflow: hidden;
+}
+
+.map-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.map-modal-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.map-modal-close-x {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.map-modal-body {
+  padding: 16px;
+}
+
+.map-canvas {
+  width: 100%;
+  height: 320px;
+  border: 1px solid #d7dde5;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.map-modal-footer {
+  padding: 0 16px 16px;
+}
+
     /* 배지 */
     .badge {
       display: inline-flex;
@@ -665,15 +752,14 @@
       border-radius: 28px;
       overflow: hidden;
       box-shadow: 0 24px 60px rgba(0, 0, 0, 0.20);
-      border: 1px solid rgba(255, 255, 255, 0.65);
+      border: 1px solid #dbe3ec;
     }
 
     .detail-thumb-box {
       position: relative;
       width: 100%;
-      height: 430px;
-      background: #ececec;
-      overflow: hidden;
+      background: #ffffff;
+      padding: 16px 16px 8px;
     }
 
     .detail-thumb-img {
@@ -683,43 +769,30 @@
       display: none;
     }
 
+    .detail-photo-frame {
+      position: relative;
+      width: 100%;
+      height: 330px;
+      border: 1px solid #cfd8e3;
+      border-radius: 24px;
+      background: #f3f4f6;
+      overflow: hidden;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.72),
+        0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
     .detail-thumb-placeholder {
       width: 100%;
       height: 100%;
       display: none;
       align-items: center;
       justify-content: center;
+      text-align: center;
+      padding: 20px;
       font-size: 16px;
-      color: #666;
-      font-weight: 600;
-    }
-
-    .detail-map-btn {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      width: 40px;
-      height: 40px;
-      border: none;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(8px);
-      cursor: pointer;
-      font-size: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-    }
-
-    .detail-thumb-actions {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      z-index: 20;
+      color: #334155;
+      font-weight: 700;
     }
 
     .detail-content-title {
@@ -863,14 +936,8 @@
       align-items: center;
     }
 
-    .detail-time-risk-wrap {
-      min-width: 84px;
-    }
-
     .detail-divider {
-      height: 1px;
-      background: #f1f1f1;
-      margin: 0 0 16px 0;
+      display: none;
     }
 
     .detail-time-text {
@@ -915,7 +982,7 @@
     }
 
     .detail-content-box {
-      padding: 14px 16px 16px;
+      padding: 10px 16px 16px;
       background: #fff;
     }
 
@@ -1171,10 +1238,11 @@
 
     .detail-info-card {
       background: #fafafa;
-      border: 1px solid #f0f0f0;
+      border: 1px solid #eceff3;
       border-radius: 18px;
       padding: 14px 14px 12px;
       margin-bottom: 16px;
+      min-height: auto;
     }
 
     .summary-card.urgent {
@@ -1331,6 +1399,7 @@
 }
 
   </style>
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ KAKAO_JS_KEY }}"></script>
 </head>
 <body>
   <div class="layout">
@@ -1507,60 +1576,85 @@
 
         <div class="detail-modal-backdrop" id="dashboardDetailModal">
           <div class="detail-modal-card">
-                <div class="detail-thumb-box">
-                  <img id="dashboardDetailImage" class="detail-thumb-img" src="" alt="신고 이미지">
-                  <div id="dashboardDetailPlaceholder" class="detail-thumb-placeholder">사진이 없습니다.</div>
-
-                  <div class="detail-thumb-actions">
-                    <button class="detail-map-btn" type="button" onclick="openDashboardMap()" title="지도 보기">🌍</button>
-
-                  </div>
-                </div>
-
-                <div class="detail-content-box">
-                  <div class="detail-meta-row">
-                    <div class="detail-status-change-wrap">
-                      <div class="detail-inline-status-wrap" id="dashboardInlineStatusWrap">
-                        <button
-                          type="button"
-                          id="dashboardDetailStatus"
-                          class="detail-chip detail-chip-button"
-                          onclick="toggleInlineStatusMenu()"
-                        >
-                          접수완료
-                        </button>
-
-                        <div class="detail-inline-status-menu" id="dashboardInlineStatusMenu">
-                          <button type="button" class="detail-inline-status-option" onclick="selectInlineDashboardStatus('처리중')">처리중</button>
-                          <button type="button" class="detail-inline-status-option" onclick="selectInlineDashboardStatus('처리완료')">처리완료</button>
-                          <button type="button" class="detail-inline-status-option danger" onclick="selectInlineDashboardStatus('반려')">반려</button>
-                        </div>
-                      </div>
-
-                      <button class="detail-inline-apply-btn" type="button" onclick="applyInlineDashboardStatus()">
-                        변경
-                      </button>
-                    </div>
-
-                    <div class="detail-time-risk-wrap">
-                      <span id="dashboardDetailTime" class="detail-time-text">00-00 00:00</span>
-                      <span id="dashboardDetailRisk" class="detail-risk-badge">위험도 높음</span>
-                    </div>
-                  </div>
-
-                  <div class="detail-divider"></div>
-
-                  <div class="detail-info-card">
-                    <div id="dashboardDetailTitle" class="detail-content-title">신고 제목</div>
-                    <div id="dashboardDetailLocation" class="detail-content-text">위치 정보</div>
-                    <div id="dashboardDetailReporter" class="detail-content-text" style="margin-top:8px;">반복 제보 1건</div>
-                  </div>
-                  <div class="detail-close-wrap">
-                    <button class="detail-close-btn" type="button" onclick="closeDashboardDetailModal()">닫기</button>
-                  </div>
-                </div>
+            <div class="detail-thumb-box">
+              <div class="detail-photo-frame">
+                <img id="dashboardDetailImage" class="detail-thumb-img" src="" alt="신고 이미지">
+                <div id="dashboardDetailPlaceholder" class="detail-thumb-placeholder">사진</div>
               </div>
             </div>
+
+            <div class="detail-content-box">
+              <div class="detail-meta-row">
+                <div class="detail-status-change-wrap">
+                  <div class="detail-inline-status-wrap" id="dashboardInlineStatusWrap">
+                    <button
+                      type="button"
+                      id="dashboardDetailStatus"
+                      class="detail-chip detail-chip-button"
+                      onclick="toggleInlineStatusMenu()"
+                    >
+                      접수완료
+                    </button>
+
+                    <div class="detail-inline-status-menu" id="dashboardInlineStatusMenu">
+                      <button type="button" class="detail-inline-status-option" onclick="selectInlineDashboardStatus('처리중')">처리중</button>
+                      <button type="button" class="detail-inline-status-option" onclick="selectInlineDashboardStatus('처리완료')">처리완료</button>
+                      <button type="button" class="detail-inline-status-option danger" onclick="selectInlineDashboardStatus('반려')">반려</button>
+                    </div>
+                  </div>
+
+                  <button class="detail-inline-apply-btn" type="button" onclick="applyInlineDashboardStatus()">
+                    변경
+                  </button>
+                </div>
+
+                <div class="detail-time-risk-wrap">
+                  <span id="dashboardDetailTime" class="detail-time-text">00-00 00:00</span>
+                  <span id="dashboardDetailRisk" class="detail-risk-badge">위험도 높음</span>
+                </div>
+              </div>
+
+              <div class="detail-divider"></div>
+
+              <div class="detail-info-card">
+                <div id="dashboardDetailTitle" class="detail-content-title">신고 제목</div>
+
+                <div class="detail-location-row">
+                  <div id="dashboardDetailLocation" class="detail-content-text">위치 정보</div>
+                  <button
+                    class="detail-map-inline-btn"
+                    type="button"
+                    onclick="openDashboardMap()"
+                    title="지도 보기"
+                    aria-label="지도 보기"
+                  >
+                    <svg
+                      class="detail-map-inline-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M9 18L3.8 20.5C3.47 20.66 3.08 20.42 3.08 20.05V5.95C3.08 5.7 3.22 5.47 3.44 5.36L9 2.5M9 18L15 21.5M9 18V2.5M15 21.5L20.2 19C20.53 18.84 20.92 19.08 20.92 19.45V3.55C20.92 3.3 20.78 3.07 20.56 2.96L15 0.5M15 21.5V0.5M15 0.5L9 2.5"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                <div id="dashboardDetailReporter" class="detail-content-text" style="margin-top:8px;">반복 제보 1건</div>
+              </div>
+
+              <div class="detail-close-wrap">
+                <button class="detail-close-btn" type="button" onclick="closeDashboardDetailModal()">닫기</button>
+              </div>
+            </div>
+          </div>
+        </div>
     <div class="detail-modal-backdrop" id="dashboardRejectModal">
       <div class="detail-modal-card" style="max-width:420px;">
         <div class="detail-content-box">
@@ -1605,6 +1699,22 @@
     </div>
   </div>
 </div>
+<div class="detail-modal-backdrop" id="dashboardMapModal">
+  <div class="map-modal-card">
+    <div class="map-modal-header">
+      <div class="map-modal-title">신고 위치</div>
+      <button type="button" class="map-modal-close-x" onclick="closeDashboardMapModal()">✕</button>
+    </div>
+
+    <div class="map-modal-body">
+      <div id="dashboardMapCanvas" class="map-canvas"></div>
+    </div>
+
+    <div class="map-modal-footer">
+      <button type="button" class="detail-close-btn" onclick="closeDashboardMapModal()">닫기</button>
+    </div>
+  </div>
+</div>
 <div id="pageTransitionOverlay" class="page-transition-overlay"></div>
 <script>
 
@@ -1613,6 +1723,9 @@ let dashboardDetailLng = '';
 let dashboardDetailIncidentId = '';
 let dashboardSelectedStatus = '';
 let dashboardCurrentStatus = '';
+
+let dashboardMapInstance = null;
+let dashboardMapMarker = null;
 
 function getDashboardStatusClass(status) {
   if (status === '접수완료') return 'status-received';
@@ -1710,15 +1823,15 @@ statusEl.className = 'detail-chip detail-chip-button ' + getDashboardStatusClass
     imgEl.onerror = function () {
       imgEl.src = '';
       imgEl.style.display = 'none';
-      placeholderEl.textContent = '사진을 불러올 수 없습니다.';
+      placeholderEl.textContent = '이미지를 불러올 수 없습니다.';
       placeholderEl.style.display = 'flex';
     };
-      } else {
-    imgEl.src = '';
-    imgEl.style.display = 'none';
-    placeholderEl.textContent = '사진이 없습니다.';
-    placeholderEl.style.display = 'flex';
-  }
+    } else {
+      imgEl.src = '';
+      imgEl.style.display = 'none';
+      placeholderEl.textContent = '사진';
+      placeholderEl.style.display = 'flex';
+    }
 
   document.getElementById('dashboardDetailModal').classList.add('show');
 }
@@ -1743,8 +1856,59 @@ function openDashboardMap() {
     return;
   }
 
-  const mapUrl = `https://map.kakao.com/link/map/신고위치,${dashboardDetailLat},${dashboardDetailLng}`;
-  window.open(mapUrl, '_blank');
+  if (typeof kakao === 'undefined' || !kakao.maps) {
+    openCustomAlert('카카오 지도 스크립트가 로드되지 않았습니다. JavaScript 키를 확인해주세요.');
+    return;
+  }
+
+  const lat = Number(dashboardDetailLat);
+  const lng = Number(dashboardDetailLng);
+
+  if (Number.isNaN(lat) || Number.isNaN(lng)) {
+    openCustomAlert('좌표 값이 올바르지 않습니다.');
+    return;
+  }
+
+  const modal = document.getElementById('dashboardMapModal');
+  const container = document.getElementById('dashboardMapCanvas');
+
+  if (!modal || !container) {
+    openCustomAlert('지도 모달 요소를 찾을 수 없습니다.');
+    return;
+  }
+
+  modal.classList.add('show');
+
+  const position = new kakao.maps.LatLng(lat, lng);
+
+  setTimeout(() => {
+    if (!dashboardMapInstance) {
+      dashboardMapInstance = new kakao.maps.Map(container, {
+        center: position,
+        level: 3
+      });
+
+      dashboardMapMarker = new kakao.maps.Marker({
+        position: position
+      });
+
+      dashboardMapMarker.setMap(dashboardMapInstance);
+    } else {
+      dashboardMapInstance.relayout();
+      dashboardMapInstance.setCenter(position);
+
+      if (dashboardMapMarker) {
+        dashboardMapMarker.setPosition(position);
+      }
+    }
+
+    dashboardMapInstance.relayout();
+    dashboardMapInstance.setCenter(position);
+  }, 50);
+}
+
+function closeDashboardMapModal() {
+  document.getElementById('dashboardMapModal').classList.remove('show');
 }
 
 function submitDashboardStatus(newStatus) {
@@ -1803,6 +1967,12 @@ document.getElementById('customAlertModal').addEventListener('click', function(e
 document.getElementById('dashboardRejectModal').addEventListener('click', function(e) {
   if (e.target.id === 'dashboardRejectModal') {
     closeRejectReasonModal();
+  }
+});
+
+document.getElementById('dashboardMapModal').addEventListener('click', function(e) {
+  if (e.target.id === 'dashboardMapModal') {
+    closeDashboardMapModal();
   }
 });
 
