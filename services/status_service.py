@@ -82,9 +82,30 @@ def post_cracktalk():
             return jsonify({'success': False, 'message': '보유한 크래커가 부족합니다. (20 크래커 필요)'}), 400
         user.points -= 20
         db.session.add(PointLog(user_id=user_id, amount=-20, reason='크랙톡 채팅 작성 (포인트 소모)'))
+    else:
+        # 관리자도 내역 확인을 위해 0점 로그 추가
+        db.session.add(PointLog(user_id=user_id, amount=0, reason='크랙톡 채팅 작성 (관리자 무료)'))
         
     new_talk = CrackTalk(author_id=user_id, content=content)
     db.session.add(new_talk)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': '저장 중 오류가 발생했습니다.'}), 500
     
     return jsonify({'success': True})
+
+@status_bp.route('/api/cracktalk/delete/<int:talk_id>', methods=['DELETE'])
+def delete_cracktalk(talk_id):
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+        
+    talk = CrackTalk.query.get_or_404(talk_id)
+    try:
+        db.session.delete(talk)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': '삭제 중 오류가 발생했습니다.'}), 500

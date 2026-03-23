@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
 from database import db
-from models import Member, Report, UserSettings
+from models import Member, Report, UserSettings, PointLog
 from utils import check_profanity
 
 my_bp = Blueprint('my', __name__)
@@ -20,7 +20,7 @@ def mypage():
     completed_count = Report.query.filter_by(user_id=user_id, status='처리 완료').count()
     settings = UserSettings.query.filter_by(user_id=user_id).first()
     notification_enabled = settings.notification_enabled if settings else True
-    point_logs = member.point_logs
+    point_logs = PointLog.query.filter_by(user_id=user_id).order_by(PointLog.created_at.desc()).all()
             
     return render_template('mypage.html',
         my_report_count=my_report_count,

@@ -9,8 +9,8 @@ from utils import allowed_file, extract_gps_from_exif, haversine, reverse_geocod
 
 report_bp = Blueprint('report', __name__)
 
-# 허용된 확장자 (utils.py에서 가져오거나 여기서 정의)
-ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+# 허용된 확장자 (HEIC/HEIF 추가)
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'heic', 'heif'}
 ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'avi', 'm4v'}
 
 @report_bp.route('/report', methods=['GET'])
@@ -74,19 +74,57 @@ def submit_report():
 
         if allowed_file(filename, ALLOWED_IMAGE_EXTENSIONS):
             save_path = os.path.join(os.getcwd(), UPLOAD_IMAGE_DIR, filename)
-            file.save(save_path)
-            file_path = f'/uploads/images/{filename}'
+            
+            # [핵심] HEIC/HEIF 포맷이면 JPG로 변환하며 EXIF 보존
+            file_ext = filename.rsplit('.', 1)[1].lower()
+            if file_ext in ['heic', 'heif']:
+                try:
+                    from PIL import Image
+                    import pillow_heif
+                    pillow_heif.register_heif_opener()
+                    
+                    file.seek(0)
+                    image = Image.open(file)
+                    
+                    # [추가] 원본 EXIF 메타데이터 추출
+                    exif_data = image.info.get('exif')
+                    
+                    new_filename = filename.rsplit('.', 1)[0] + ".jpg"
+                    save_path = os.path.join(os.getcwd(), UPLOAD_IMAGE_DIR, new_filename)
+                    
+                    # RGB 변환 (알파 채널 제거) 후 EXIF 포함 저장
+                    image = image.convert('RGB')
+                    if exif_data:
+                        image.save(save_path, "JPEG", quality=90, exif=exif_data)
+                    else:
+                        image.save(save_path, "JPEG", quality=90)
+                        
+                    file_path = f'/uploads/images/{new_filename}'
+                except Exception as e:
+                    print(f"HEIC Conversion Error: {e}")
+                    file.seek(0)
+                    file.save(save_path)
+                    file_path = f'/uploads/images/{filename}'
+            else:
+                file.save(save_path)
+                file_path = f'/uploads/images/{filename}'
+            
             file_type = 'image'
         elif allowed_file(filename, ALLOWED_VIDEO_EXTENSIONS):
             save_path = os.path.join(os.getcwd(), UPLOAD_VIDEO_DIR, filename)
             file.save(save_path)
             file_path = f'/uploads/videos/{filename}'
             file_type = 'video'
+        else:
+            return jsonify({'success': False, 'message': '이미지 또는 영상 형식이 올바르지 않습니다.'}), 400
 
+    import math
     try:
         lat = float(latitude) if latitude else None
         lng = float(longitude) if longitude else None
-    except ValueError:
+        if lat is not None and math.isnan(lat): lat = None
+        if lng is not None and math.isnan(lng): lng = None
+    except (ValueError, TypeError):
         lat, lng = None, None
 
     if file_type == 'image' and file_path and (lat is None or lng is None):

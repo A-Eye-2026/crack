@@ -13,7 +13,7 @@
     <!-- 거리 필터 -->
     <div style="margin-bottom:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <p style="font-size:0.82rem;opacity:0.5;font-weight:600;margin:0;">📍 내 위치 기준 거리</p>
+            <p style="font-size:0.82rem;opacity:0.5;font-weight:600;margin:0;">내 위치 기준 거리</p>
             <span id="current-location-text"
                 style="font-size:0.75rem; color:var(--point-orange); font-weight:600; display:none;">위치 확인 중...</span>
         </div>
@@ -127,8 +127,8 @@
     style="position: sticky; top: 0; margin-top: -20px; margin-left: -20px; margin-right: -20px; padding: 12px 20px; z-index: 1000; background: var(--bg-main); border-bottom:1px solid rgba(0,0,0,0.05); margin-bottom: 16px;">
     <div style="display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:0; min-height: 42px;">
         <div id="alert-tabs" style="display:flex; gap:24px;">
-            <div onclick="switchAlertTab('reports')" id="tab-reports" class="alert-tab active">신고내역</div>
-            <div onclick="switchAlertTab('notices')" id="tab-notices" class="alert-tab">공지사항</div>
+            <div onclick="switchAlertTab('reports')" id="alert-tab-reports" class="alert-tab active">신고내역</div>
+            <div onclick="switchAlertTab('notices')" id="alert-tab-notices" class="alert-tab">공지사항</div>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
             <div id="active-filter-tags" style="display:none; gap:6px; flex-wrap:wrap; margin-right:12px;"></div>
@@ -153,7 +153,7 @@
 </style>
 
 <!-- 피드 컨테이너 -->
-<div id="feed-container-reports" class="tab-content active">
+<div id="alert-feed-container-reports" class="tab-content active">
     <div id="alert-feed" class="alert-feed">
         {% if alerts %}
         {% for alert in alerts %}
@@ -284,7 +284,7 @@
 {% endif %}
 
 <!-- 공지사항 컨테이너 -->
-<div id="feed-container-notices" class="tab-content" style="display: none; padding-top: 10px;">
+<div id="alert-feed-container-notices" class="tab-content" style="display: none; padding-top: 10px;">
 
 
     <div class="notice-list">
@@ -317,409 +317,354 @@
 </div>
 
 <script>
-    console.log('Kakao JS Key Loaded:', '{{ kakao_js_key }}' ? 'Yes' : 'No');
-    var activeDistKm = null;
-    var activeStatus = '';
-    var userLat = null, userLng = null;
+    (function () {
+        console.log('Kakao JS Key Loaded:', '{{ kakao_js_key }}' ? 'Yes' : 'No');
+        var alertActiveDistKm = null;
+        var alertActiveStatus = '';
+        var alertUserLat = null, alertUserLng = null;
 
-    function requestAndDisplayLocation() {
-        const locText = document.getElementById('current-location-text');
-        locText.style.display = 'block';
-        locText.innerText = '위치 확인 중...';
-        locText.style.color = 'var(--point-orange)';
+        function requestAndDisplayLocation() {
+            const locText = document.getElementById('current-location-text');
+            locText.style.display = 'block';
+            locText.innerText = '위치 확인 중...';
+            locText.style.color = 'var(--point-orange)';
 
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                pos => {
-                    userLat = pos.coords.latitude;
-                    userLng = pos.coords.longitude;
-                    if (window.kakao && kakao.maps) {
-                        const tryGeocode = (retryCount) => {
-                            kakao.maps.load(function () {
-                                if (kakao.maps.services && kakao.maps.services.Geocoder) {
-                                    const geocoder = new kakao.maps.services.Geocoder();
-                                    geocoder.coord2RegionCode(userLng, userLat, function (result, status) {
-                                        if (status === kakao.maps.services.Status.OK) {
-                                            let address = "";
-                                            for (let i = 0; i < result.length; i++) {
-                                                if (result[i].region_type === 'H') { // 행정동 기준
-                                                    address = result[i].region_2depth_name + ' ' + result[i].region_3depth_name;
-                                                    break;
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        alertUserLat = pos.coords.latitude;
+                        alertUserLng = pos.coords.longitude;
+                        if (window.kakao && kakao.maps) {
+                            const tryGeocode = (retryCount) => {
+                                kakao.maps.load(function () {
+                                    if (kakao.maps.services && kakao.maps.services.Geocoder) {
+                                        const geocoder = new kakao.maps.services.Geocoder();
+                                        geocoder.coord2RegionCode(alertUserLng, alertUserLat, function (result, status) {
+                                            if (status === kakao.maps.services.Status.OK) {
+                                                let address = "";
+                                                for (let i = 0; i < result.length; i++) {
+                                                    if (result[i].region_type === 'H') { // 행정동 기준
+                                                        address = result[i].region_2depth_name + ' ' + result[i].region_3depth_name;
+                                                        break;
+                                                    }
                                                 }
+                                                locText.innerText = '[ ' + address.trim() + ' ]';
+                                            } else {
+                                                locText.innerText = '위치 확인 완료 (주소조회 실패)';
                                             }
-                                            locText.innerText = '[ ' + address.trim() + ' ]';
-                                        } else {
-                                            locText.innerText = '위치 확인 완료 (주소조회 실패)';
-                                        }
-                                    });
-                                } else if (retryCount < 5) {
-                                    console.log('Waiting for Kakao Services library... count:', retryCount);
-                                    setTimeout(() => tryGeocode(retryCount + 1), 300);
-                                } else {
-                                    locText.innerText = '위치 확인 완료 (SDK서비스 로드대기)';
-                                }
-                            });
-                        };
-                        tryGeocode(0);
-                    } else {
-                        locText.innerText = '위치 확인 완료';
-                        console.error('Kakao SDK not found on page');
+                                        });
+                                    } else if (retryCount < 5) {
+                                        console.log('Waiting for Kakao Services library... count:', retryCount);
+                                        setTimeout(() => tryGeocode(retryCount + 1), 300);
+                                    } else {
+                                        locText.innerText = '위치 확인 완료 (SDK서비스 로드대기)';
+                                    }
+                                });
+                            };
+                            tryGeocode(0);
+                        } else {
+                            locText.innerText = '위치 확인 완료';
+                            console.error('Kakao SDK not found on page');
+                        }
+                    },
+                    err => {
+                        locText.innerText = '위치 알 수 없음 (접근 차단됨)';
+                        locText.style.color = '#FF4D4D';
+                        alertUserLat = null;
+                        alertUserLng = null;
                     }
-                },
-                err => {
-                    locText.innerText = '위치 알 수 없음 (접근 차단됨)';
-                    locText.style.color = '#FF4D4D';
-                    userLat = null;
-                    userLng = null;
-                }
-            );
-        } else {
-            locText.innerText = 'GPS 지원 불가 기기';
-            locText.style.color = '#FF4D4D';
-        }
-    }
-
-    window.openFilter = function () {
-        if (userLat === null && document.getElementById('current-location-text').innerText !== '위치 알 수 없음 (접근 차단됨)') {
-            requestAndDisplayLocation();
-        }
-
-        const panel = document.getElementById('filter-panel');
-        const backdrop = document.getElementById('filter-backdrop');
-        if (panel) {
-            panel.style.opacity = '1';
-            panel.style.pointerEvents = 'auto';
-            panel.style.transform = 'translateX(-50%) translateY(0)';
-        }
-        if (backdrop) backdrop.style.display = 'block';
-        const filterBtn = document.getElementById('filter-btn');
-        if (filterBtn) filterBtn.style.background = 'var(--accent-soft)';
-    }
-
-    window.closeFilter = function () {
-        const panel = document.getElementById('filter-panel');
-        const backdrop = document.getElementById('filter-backdrop');
-        const noticeModal = document.getElementById('notice-write-modal');
-
-        if (panel) {
-            panel.style.opacity = '0';
-            panel.style.pointerEvents = 'none';
-            panel.style.transform = 'translateX(-50%) translateY(120%)';
-        }
-        if (noticeModal) {
-            noticeModal.style.opacity = '0';
-            noticeModal.style.pointerEvents = 'none';
-            noticeModal.style.transform = 'translateX(-50%) translateY(120%)';
-        }
-        setTimeout(() => {
-            if (backdrop) backdrop.style.display = 'none';
-        }, 300);
-        const filterBtn = document.getElementById('filter-btn');
-        if (filterBtn) filterBtn.style.background = 'rgba(0,0,0,0.05)';
-        const noticeBtn = document.getElementById('notice-write-btn');
-        if (noticeBtn) noticeBtn.style.background = 'rgba(255,140,0,0.1)';
-    }
-
-    window.openNoticeModal = function () {
-        const modal = document.getElementById('notice-write-modal');
-        const backdrop = document.getElementById('filter-backdrop');
-        if (modal) {
-            modal.style.opacity = '1';
-            modal.style.pointerEvents = 'auto';
-            modal.style.transform = 'translateX(-50%) translateY(0)';
-        }
-        if (backdrop) backdrop.style.display = 'block';
-        const noticeWriteBtn = document.getElementById('notice-write-btn');
-        if (noticeWriteBtn) noticeWriteBtn.style.background = 'var(--accent-soft)';
-    }
-
-    window.switchAlertTab = function (tabId) {
-        console.log('Switching to tab:', tabId);
-
-        // 모든 탭 버튼 비활성화 (연한 회색 처리)
-        document.querySelectorAll('.alert-tab').forEach(t => {
-            t.classList.remove('active');
-            t.style.color = 'rgba(0,0,0,0.3)';
-            t.style.borderBottomColor = 'transparent';
-        });
-
-        // 모든 컨텐츠 숨기기
-        document.querySelectorAll('.tab-content').forEach(c => {
-            c.classList.remove('active');
-            c.style.display = 'none';
-        });
-
-        // 선택한 탭 활성화 (오렌지색)
-        const activeTab = document.getElementById('tab-' + tabId);
-        const activeContent = document.getElementById('feed-container-' + tabId);
-
-        if (activeTab) {
-            activeTab.classList.add('active');
-            activeTab.style.color = 'var(--point-orange)';
-            activeTab.style.borderBottomColor = 'var(--point-orange)';
-        }
-        if (activeContent) {
-            activeContent.classList.add('active');
-            activeContent.style.display = 'block';
-        }
-
-        // 필터 버튼 처리
-        const filterBtn = document.getElementById('filter-btn');
-        const noticeWriteBtn = document.getElementById('notice-write-btn');
-        if (filterBtn) {
-            if (tabId === 'notices') {
-                filterBtn.style.display = 'none';
-                if (noticeWriteBtn) noticeWriteBtn.style.display = 'flex';
+                );
             } else {
-                filterBtn.style.display = 'flex';
-                if (noticeWriteBtn) noticeWriteBtn.style.display = 'none';
+                locText.innerText = 'GPS 지원 불가 기기';
+                locText.style.color = '#FF4D4D';
             }
         }
 
-        // 상단 스티키 헤더 그림자 제어 등 추가 로직 가능
-
-        // [PPT 통신] iframe 안에서 작동 중이면 부모(PPT)에 탭 전환 알림
-        if (window.parent !== window) {
-            window.parent.postMessage({ type: 'PPT_STATE_CHANGE', page: 'alert', state: tabId }, '*');
-        }
-    }
-
-    window.openNoticeDetail = function (noticeId, title, content) {
-        // 전역 모달이나 토스트 대신, 간단한 상세 팝업을 띄우거나 이동할 수 있습니다.
-        // 여기서는 기존 모달 UI가 제거되었으므로, 간단한 알림창으로 내용을 보여줍니다.
-        alert(`[${title}]\n\n${content}`);
-    }
-
-    window.setDist = function (el, km) {
-        if (km !== '' && userLat === null) {
-            alert('위치 정보 제공에 동의해야 내 위치 기준 거리 필터를 사용할 수 있습니다.\n기기 또는 브라우저 설정에서 위치 권한을 허용해주세요.');
-            return;
-        }
-        activeDistKm = km === '' ? null : Number(km);
-        document.querySelectorAll('.filter-dist-btn').forEach(b => {
-            b.style.background = 'white';
-            b.style.color = 'inherit';
-            b.style.borderColor = 'rgba(0,0,0,0.1)';
-        });
-        el.style.background = 'var(--point-orange)';
-        el.style.color = 'white';
-        el.style.borderColor = 'var(--point-orange)';
-    }
-
-    window.setStatus = function (el, status) {
-        activeStatus = status;
-        document.querySelectorAll('.filter-status-btn').forEach(b => {
-            b.style.background = 'white';
-            b.style.color = 'inherit';
-            b.style.borderColor = 'rgba(0,0,0,0.1)';
-        });
-        el.style.background = 'var(--point-orange)';
-        el.style.color = 'white';
-        el.style.borderColor = 'var(--point-orange)';
-    }
-    // --- 하버사인 거리 계산 함수 복구 ---
-    function haversineKm(lat1, lng1, lat2, lng2) {
-        const R = 6371, toRad = d => d * Math.PI / 180;
-        const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
-        const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    }
-
-    // --- 레이지 로딩 (Progressive Reveal) ---
-    var itemsToShow = 20;
-    var increment = 20;
-    var observer = null;
-
-    function initLazyLoading() {
-        const items = document.querySelectorAll('.alert-item');
-        // 필터링된(보이는) 아이템만 대상으로 레이지 로딩 적용
-        const visibleItems = Array.from(items).filter(item => item.getAttribute('data-filtered-out') !== 'true');
-
-        visibleItems.forEach((item, index) => {
-            if (index >= itemsToShow) {
-                item.style.display = 'none';
-            } else {
-                // 원래 display 속성 복구 (필터링 로직 고려)
-                item.style.display = 'block';
+        window.openFilter = function () {
+            if (alertUserLat === null && document.getElementById('current-location-text').innerText !== '위치 알 수 없음 (접근 차단됨)') {
+                requestAndDisplayLocation();
             }
-        });
 
-        // 이미 로드된 아이템 수 업데이트
-        updateSentinel(visibleItems);
-    }
-
-    function updateSentinel(visibleItems) {
-        if (window.alertObserver) window.alertObserver.disconnect();
-
-        // 마지막에서 두 번째 아이템을 관찰 대상으로 설정 (부드러운 로딩)
-        const targetIndex = Math.min(itemsToShow - 2, visibleItems.length - 1);
-        if (targetIndex >= 0 && itemsToShow < visibleItems.length) {
-            window.alertObserver = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting) {
-                    itemsToShow += increment;
-                    initLazyLoading();
-                }
-            }, { threshold: 0.1 });
-            window.alertObserver.observe(visibleItems[targetIndex]);
+            const panel = document.getElementById('filter-panel');
+            const backdrop = document.getElementById('filter-backdrop');
+            if (panel) {
+                panel.style.opacity = '1';
+                panel.style.pointerEvents = 'auto';
+                panel.style.transform = 'translateX(-50%) translateY(0)';
+            }
+            if (backdrop) backdrop.style.display = 'block';
+            const filterBtn = document.getElementById('filter-btn');
+            if (filterBtn) filterBtn.style.background = 'var(--accent-soft)';
         }
-    }
 
-    // SPA 대응: 스크립트 로드 시 즉시 실행
-    initLazyLoading();
+        window.closeFilter = function () {
+            const panel = document.getElementById('filter-panel');
+            const backdrop = document.getElementById('filter-backdrop');
+            const noticeModal = document.getElementById('notice-write-modal');
 
-    // 필터 로직에 레이지 로딩 호환성 추가
-    const originalApplyFilter = window.applyFilter;
-    window.applyFilter = function () {
-        // 기존 필터 로직 수행
-        closeFilter();
-        const cards = document.querySelectorAll('.alert-item');
-        let visibleCount = 0;
-        cards.forEach(card => {
-            let showByFilter = true;
-            if (activeStatus && card.dataset.status !== activeStatus) showByFilter = false;
-            if (activeDistKm !== null && userLat !== null) {
-                const lat = parseFloat(card.dataset.lat);
-                const lng = parseFloat(card.dataset.lng);
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    const km = haversineKm(userLat, userLng, lat, lng);
-                    if (km > activeDistKm) showByFilter = false;
+            if (panel) {
+                panel.style.opacity = '0';
+                panel.style.pointerEvents = 'none';
+                panel.style.transform = 'translateX(-50%) translateY(120%)';
+            }
+            if (noticeModal) {
+                noticeModal.style.opacity = '0';
+                noticeModal.style.pointerEvents = 'none';
+                noticeModal.style.transform = 'translateX(-50%) translateY(120%)';
+            }
+            setTimeout(() => {
+                if (backdrop) backdrop.style.display = 'none';
+            }, 300);
+            const filterBtn = document.getElementById('filter-btn');
+            if (filterBtn) filterBtn.style.background = 'rgba(0,0,0,0.05)';
+            const noticeBtn = document.getElementById('notice-write-btn');
+            if (noticeBtn) noticeBtn.style.background = 'rgba(255,140,0,0.1)';
+        }
+
+        window.openNoticeModal = function () {
+            const modal = document.getElementById('notice-write-modal');
+            const backdrop = document.getElementById('filter-backdrop');
+            if (modal) {
+                modal.style.opacity = '1';
+                modal.style.pointerEvents = 'auto';
+                modal.style.transform = 'translateX(-50%) translateY(0)';
+            }
+            if (backdrop) backdrop.style.display = 'block';
+            const noticeWriteBtn = document.getElementById('notice-write-btn');
+            if (noticeWriteBtn) noticeWriteBtn.style.background = 'var(--accent-soft)';
+        }
+
+        window.switchAlertTab = function (tabId) {
+            console.log('Switching Alert tab to:', tabId);
+
+            document.querySelectorAll('.alert-tab').forEach(t => {
+                t.classList.remove('active');
+                t.style.color = 'rgba(0,0,0,0.3)';
+                t.style.borderBottomColor = 'transparent';
+            });
+
+            document.querySelectorAll('.tab-content').forEach(c => {
+                c.classList.remove('active');
+                c.style.display = 'none';
+            });
+
+            const activeTab = document.getElementById('alert-tab-' + tabId);
+            const activeContent = document.getElementById('alert-feed-container-' + tabId);
+
+            if (activeTab) {
+                activeTab.classList.add('active');
+                activeTab.style.color = 'var(--point-orange)';
+                activeTab.style.borderBottomColor = 'var(--point-orange)';
+            }
+            if (activeContent) {
+                activeContent.classList.add('active');
+                activeContent.style.display = 'block';
+            }
+
+            const filterBtn = document.getElementById('filter-btn');
+            const noticeWriteBtn = document.getElementById('notice-write-btn');
+            if (filterBtn) {
+                if (tabId === 'notices') {
+                    filterBtn.style.display = 'none';
+                    if (noticeWriteBtn) noticeWriteBtn.style.display = 'flex';
+                } else {
+                    filterBtn.style.display = 'flex';
+                    if (noticeWriteBtn) noticeWriteBtn.style.display = 'none';
                 }
             }
-            // 필터링 결과 저장 후 물리적으로 화면에서 보이지 않게 처리
-            card.setAttribute('data-filtered-out', showByFilter ? 'false' : 'true');
-            if (!showByFilter) {
-                card.style.display = 'none';
-            }
-            if (showByFilter) visibleCount++;
-        });
 
-        // 필터 적용 후 레이지 로딩 리셋
-        itemsToShow = 20;
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'PPT_STATE_CHANGE', page: 'alert', state: tabId }, '*');
+            }
+        }
+
+        window.openNoticeDetail = function (noticeId, title, content) {
+            showNoticeModal(`[${title}]\n\n${content}`);
+        }
+
+        window.setDist = function (el, km) {
+            if (km !== '' && alertUserLat === null) {
+                showNoticeModal('위치 정보 제공에 동의해야 내 위치 기준 거리 필터를 사용할 수 있습니다.\n기기 또는 브라우저 설정에서 위치 권한을 허용해주세요.');
+                return;
+            }
+            alertActiveDistKm = km === '' ? null : Number(km);
+            document.querySelectorAll('.filter-dist-btn').forEach(b => {
+                b.style.background = 'white';
+                b.style.color = 'inherit';
+                b.style.borderColor = 'rgba(0,0,0,0.1)';
+            });
+            el.style.background = 'var(--point-orange)';
+            el.style.color = 'white';
+            el.style.borderColor = 'var(--point-orange)';
+        }
+
+        window.setStatus = function (el, status) {
+            alertActiveStatus = status;
+            document.querySelectorAll('.filter-status-btn').forEach(b => {
+                b.style.background = 'white';
+                b.style.color = 'inherit';
+                b.style.borderColor = 'rgba(0,0,0,0.1)';
+            });
+            el.style.background = 'var(--point-orange)';
+            el.style.color = 'white';
+            el.style.borderColor = 'var(--point-orange)';
+        }
+
+        function haversineKm(lat1, lng1, lat2, lng2) {
+            const R = 6371, toRad = d => d * Math.PI / 180;
+            const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        var alertItemsToShow = 20;
+        var alertIncrement = 20;
+
+        function initLazyLoading() {
+            const items = document.querySelectorAll('.alert-item');
+            const visibleItems = Array.from(items).filter(item => item.getAttribute('data-filtered-out') !== 'true');
+
+            visibleItems.forEach((item, index) => {
+                if (index >= alertItemsToShow) item.style.display = 'none';
+                else item.style.display = 'block';
+            });
+            updateSentinel(visibleItems);
+        }
+
+        function updateSentinel(visibleItems) {
+            if (window.alertObserver) window.alertObserver.disconnect();
+            const targetIndex = Math.min(alertItemsToShow - 2, visibleItems.length - 1);
+            if (targetIndex >= 0 && alertItemsToShow < visibleItems.length) {
+                window.alertObserver = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting) {
+                        alertItemsToShow += alertIncrement;
+                        initLazyLoading();
+                    }
+                }, { threshold: 0.1 });
+                window.alertObserver.observe(visibleItems[targetIndex]);
+            }
+        }
+
         initLazyLoading();
 
-        // 상단 태그 및 버튼 스타일 업데이트 (기존 코드 유지)
-        const tagArea = document.getElementById('active-filter-tags');
-        const filterBtn = document.getElementById('filter-btn');
-        if (tagArea) {
-            tagArea.innerHTML = '';
-            const hasFilter = activeDistKm || activeStatus;
-            if (activeDistKm) tagArea.innerHTML += `<span style="padding:2px 8px; border-radius:12px; background:var(--point-orange); color:white; font-size:0.7rem; font-weight:700;">${activeDistKm}km</span>`;
-            if (activeStatus) tagArea.innerHTML += `<span style="padding:2px 8px; border-radius:12px; background:var(--point-orange); color:white; font-size:0.7rem; font-weight:700;">${activeStatus}</span>`;
-            tagArea.style.display = hasFilter ? 'flex' : 'none';
-            if (filterBtn) {
-                const hasFilterActive = (activeDistKm !== null && activeDistKm !== '') || (activeStatus !== null && activeStatus !== '');
-                if (hasFilterActive) {
-                    filterBtn.style.background = 'var(--point-orange)';
-                    const icon = filterBtn.querySelector('i');
-                    if (icon) icon.style.color = 'white';
-                } else {
-                    filterBtn.style.background = 'rgba(0,0,0,0.05)';
-                    const icon = filterBtn.querySelector('i');
-                    if (icon) icon.style.color = 'var(--text-asphalt)';
+        window.applyFilter = function () {
+            closeFilter();
+            const cards = document.querySelectorAll('.alert-item');
+            let visibleCount = 0;
+            cards.forEach(card => {
+                let showByFilter = true;
+                if (alertActiveStatus && card.dataset.status !== alertActiveStatus) showByFilter = false;
+                if (alertActiveDistKm !== null && alertUserLat !== null) {
+                    const lat = parseFloat(card.dataset.lat);
+                    const lng = parseFloat(card.dataset.lng);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        const km = haversineKm(alertUserLat, alertUserLng, lat, lng);
+                        if (km > alertActiveDistKm) showByFilter = false;
+                    }
+                }
+                card.setAttribute('data-filtered-out', showByFilter ? 'false' : 'true');
+                if (!showByFilter) card.style.display = 'none';
+                if (showByFilter) visibleCount++;
+            });
+
+            alertItemsToShow = 20;
+            initLazyLoading();
+
+            const tagArea = document.getElementById('active-filter-tags');
+            const filterBtn = document.getElementById('filter-btn');
+            if (tagArea) {
+                tagArea.innerHTML = '';
+                const hasFilter = alertActiveDistKm || alertActiveStatus;
+                if (alertActiveDistKm) tagArea.innerHTML += `<span style="padding:2px 8px; border-radius:12px; background:var(--point-orange); color:white; font-size:0.7rem; font-weight:700;">${alertActiveDistKm}km</span>`;
+                if (alertActiveStatus) tagArea.innerHTML += `<span style="padding:2px 8px; border-radius:12px; background:var(--point-orange); color:white; font-size:0.7rem; font-weight:700;">${alertActiveStatus}</span>`;
+                tagArea.style.display = hasFilter ? 'flex' : 'none';
+                if (filterBtn) {
+                    const hasFilterActive = (alertActiveDistKm !== null && alertActiveDistKm !== '') || (alertActiveStatus !== null && alertActiveStatus !== '');
+                    if (hasFilterActive) {
+                        filterBtn.style.background = 'var(--point-orange)';
+                        const icon = filterBtn.querySelector('i');
+                        if (icon) icon.style.color = 'white';
+                    } else {
+                        filterBtn.style.background = 'rgba(0,0,0,0.05)';
+                        const icon = filterBtn.querySelector('i');
+                        if (icon) icon.style.color = 'var(--text-asphalt)';
+                    }
                 }
             }
-        }
-        const empty = document.getElementById('empty-state');
-        if (empty) empty.style.display = visibleCount === 0 ? 'block' : 'none';
-    };
+            const empty = document.getElementById('empty-state');
+            if (empty) empty.style.display = visibleCount === 0 ? 'block' : 'none';
+        };
 
-    // --- 통일된 상태 업데이트 함수 (에러 수정) ---
-    window.updateStatus = async function (reportId, newStatus, e) {
-        if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        const payload = { status: newStatus };
-        if (newStatus === '반려' || newStatus === '삭제') {
-            const reason = prompt(newStatus + ' 사유를 입력해주세요:');
-            if (reason === null) return;
-            payload.reject_reason = reason;
-        }
-
-        // 즉시 로딩 인디케이터 표시
-        if (typeof showPremiumLoader === 'function') showPremiumLoader();
-
-        try {
-            const resp = await fetch('/api/admin/report/' + reportId + '/status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await resp.json();
-            if (data.success) {
-                // UI 상 즉시 반영 후 리로드
-                window.location.reload();
-            } else {
-                alert('변경 실패: ' + data.message);
+        window.updateStatus = async function (reportId, newStatus, e) {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            const payload = { status: newStatus };
+            if (newStatus === '반려' || newStatus === '삭제') {
+                const reason = prompt(newStatus + ' 사유를 입력해주세요:');
+                if (reason === null) return;
+                payload.reject_reason = reason;
             }
-        } catch (err) {
-            console.error(err);
-            alert('상태 업데이트 중 서버와 통신 오류가 발생했습니다.');
-        }
-    };
+            if (typeof showPremiumLoader === 'function') showPremiumLoader();
+            try {
+                const resp = await fetch('/api/admin/report/' + reportId + '/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await resp.json();
+                if (data.success) window.location.reload();
+                else showNoticeModal('변경 실패: ' + data.message);
+            } catch (err) {
+                console.error(err);
+                showNoticeModal('상태 업데이트 중 서버와 통신 오류가 발생했습니다.');
+            }
+        };
 
-    // --- 공지사항 등록 함수 ---
-    window.addNotice = async function () {
-        const title = document.getElementById('notice-title').value;
-        const content = document.getElementById('notice-content').value;
-        const category = document.getElementById('notice-category').value;
-
-        if (!title || !content) {
-            alert('제목과 내용을 모두 입력해주세요.');
-            return;
-        }
-
-        // 로딩 표시 (필요 시)
-        if (typeof showPremiumLoader === 'function') showPremiumLoader();
-
-        try {
-            const resp = await fetch('/api/admin/notice', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, content, category })
-            });
-            const data = await resp.json();
-            if (data.success) {
-                alert('공지사항이 작성되었습니다.');
-                closeFilter(); // 모달 닫기
-                window.location.reload();
-            } else {
-                alert('작성 실패: ' + data.message);
+        window.addNotice = async function () {
+            const title = document.getElementById('notice-title').value;
+            const content = document.getElementById('notice-content').value;
+            const category = document.getElementById('notice-category').value;
+            if (!title || !content) { showToast('제목과 내용을 모두 입력해주세요.'); return; }
+            if (typeof showPremiumLoader === 'function') showPremiumLoader();
+            try {
+                const resp = await fetch('/api/admin/notice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content, category })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    showToast('공지사항이 작성되었습니다.');
+                    closeFilter();
+                    window.location.reload();
+                } else {
+                    showNoticeModal('작성 실패: ' + data.message);
+                    if (typeof hidePremiumLoader === 'function') hidePremiumLoader();
+                }
+            } catch (err) {
+                console.error(err);
+                showNoticeModal('서버와 통신 중 오류가 발생했습니다.');
                 if (typeof hidePremiumLoader === 'function') hidePremiumLoader();
             }
-        } catch (err) {
-            console.error(err);
-            alert('서버와 통신 중 오류가 발생했습니다.');
-            if (typeof hidePremiumLoader === 'function') hidePremiumLoader();
-        }
-    };
+        };
 
-    // --- 관리자 전용: 상태 변경 메뉴 토글 ---
-    window.toggleAdminStatusMenu = function (id, e) {
-        if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        const menu = document.getElementById('admin-status-menu-' + id);
-        const card = document.getElementById('alert-card-' + id);
-        if (!menu) return;
+        window.toggleAdminStatusMenu = function (id, e) {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            const menu = document.getElementById('admin-status-menu-' + id);
+            const card = document.getElementById('alert-card-' + id);
+            if (!menu) return;
+            const isVisible = menu.style.display === 'block';
+            document.querySelectorAll('.admin-status-menu').forEach(m => m.style.display = 'none');
+            document.querySelectorAll('.alert-item').forEach(c => c.classList.remove('dropdown-open'));
+            if (!isVisible) {
+                menu.style.display = 'block';
+                if (card) card.classList.add('dropdown-open');
+            }
+        };
 
-        const isVisible = menu.style.display === 'block';
-
-        // 다른 모든 메뉴 닫기
-        document.querySelectorAll('.admin-status-menu').forEach(m => m.style.display = 'none');
-        document.querySelectorAll('.alert-item').forEach(c => c.classList.remove('dropdown-open'));
-
-        if (!isVisible) {
-            menu.style.display = 'block';
-            if (card) card.classList.add('dropdown-open');
-        }
-    };
-
-    // 문서 클릭 시 메뉴 닫기
-    document.addEventListener('click', () => {
-        document.querySelectorAll('.admin-status-menu').forEach(m => m.style.display = 'none');
-        document.querySelectorAll('.alert-item').forEach(c => c.classList.remove('dropdown-open'));
-    });
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.admin-status-menu').forEach(m => m.style.display = 'none');
+            document.querySelectorAll('.alert-item').forEach(c => c.classList.remove('dropdown-open'));
+        });
+    })();
 </script>
 {% endblock %}

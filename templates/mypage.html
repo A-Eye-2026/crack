@@ -35,8 +35,9 @@
 <div class="profile-section card" style="text-align: center; padding: 24px 20px 16px; margin-bottom: 12px;">
     <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 4px; color: #333;">{{ session.get('user_name',
         'Guest') }}</h2>
-    <p style="font-size: 0.82rem; opacity: 0.5; margin-bottom: 20px; font-weight: 500;">{{ '관리자 계정' if is_admin else '일반
-        유저' }}</p>
+    <p style="font-size: 0.9rem; color: #666; margin-bottom: 24px;">
+        {{ '관리자 계정' if is_admin else '일반 유저' }}
+    </p>
     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 25px;">
         <!-- 나의 신고 -->
         <div class="stat-highlight-card" onclick="location.href='/status'">
@@ -61,49 +62,52 @@
     </div>
 </div>
 
-<!-- 포인트 상세 내역 모달 -->
+<!-- 포인트 상세 내역 모달 (fixed로 수정하여 스크롤 대응) -->
 <div id="point-modal"
-    style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;">
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;">
     <div onclick="closePointModal()"
         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
     </div>
-    <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: white; border-radius: 30px 30px 0 0; padding: 24px 20px; max-height: 80%; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -10px 25px rgba(0,0,0,0.1);"
+    <div style="position: absolute; bottom: 0; left: 50%; width: 100%; max-width: 480px; background: white; border-radius: 30px 30px 0 0; display: flex; flex-direction: column; max-height: 85%; transform: translateX(-50%) translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -10px 25px rgba(0,0,0,0.1); overflow: hidden;"
         id="point-modal-content">
-        <div
-            style="width: 40px; height: 4px; background: rgba(0,0,0,0.1); border-radius: 2px; margin: -12px auto 20px;">
-        </div>
-        <h3
-            style="font-size: 1.1rem; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
-            <i class="bi bi-clock-history" style="color: var(--point-orange);"></i> 크래커 적립/사용 내역
-        </h3>
+        <!-- Body: Scrollable -->
+        <div style="flex: 1; overflow-y: auto; padding: 24px 20px 0;">
+            <h3
+                style="font-size: 1.1rem; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <i class="bi bi-clock-history" style="color: var(--point-orange);"></i> 크래커 적립/사용 내역
+            </h3>
 
-        {% if point_logs %}
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-            {% for log in point_logs %}
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid rgba(0,0,0,0.03);">
-                <div>
-                    <p style="font-size: 0.9rem; font-weight: 600; margin-bottom: 4px;">{{ log.reason }}</p>
-                    <span style="font-size: 0.75rem; opacity: 0.4;">{{ log.created_at.strftime('%Y.%m.%d %H:%M')
-                        }}</span>
+            {% if point_logs %}
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                {% for log in point_logs %}
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid rgba(0,0,0,0.03);">
+                    <div>
+                        <p style="font-size: 0.9rem; font-weight: 600; margin-bottom: 4px;">{{ log.reason }}</p>
+                        <span style="font-size: 0.75rem; opacity: 0.4;">{{ log.created_at.strftime('%Y.%m.%d %H:%M')
+                            }}</span>
+                    </div>
+                    <strong
+                        style="color: {% if log.amount > 0 %}var(--point-orange){% else %}#FF4D4D{% endif %}; font-size: 1rem;">
+                        {% if log.amount > 0 %}+{% endif %}{{ log.amount }}
+                    </strong>
                 </div>
-                <strong
-                    style="color: {% if log.amount > 0 %}var(--point-orange){% else %}#FF4D4D{% endif %}; font-size: 1rem;">
-                    {% if log.amount > 0 %}+{% endif %}{{ log.amount }}
-                </strong>
+                {% endfor %}
             </div>
-            {% endfor %}
+            {% else %}
+            <div style="text-align: center; padding: 40px 0;">
+                <i class="bi bi-lightning-charge-fill"
+                    style="font-size: 3rem; opacity: 0.1; display: block; margin-bottom: 12px;"></i>
+                <p style="font-size: 0.9rem; opacity: 0.3;">아직 적립된 크래커가 없습니다.</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div style="text-align: center; padding: 40px 0;">
-            <i class="bi bi-lightning-charge-fill"
-                style="font-size: 3rem; opacity: 0.1; display: block; margin-bottom: 12px;"></i>
-            <p style="font-size: 0.9rem; opacity: 0.3;">아직 적립된 크래커가 없습니다.</p>
-        </div>
-        {% endif %}
 
-        <button onclick="closePointModal()" class="auth-btn"
-            style="margin-top: 30px; background: var(--point-orange); color: white; border-radius: 16px; font-weight: 700; box-shadow: 0 6px 15px rgba(255, 140, 0, 0.2) !important;">닫기</button>
+        <!-- Footer: Fixed -->
+        <div style="padding: 10px 20px 24px; background: white; border-top: 1px solid rgba(0,0,0,0.02);">
+            <button onclick="closePointModal()" class="auth-btn"
+                style="margin: 0; background: var(--point-orange); color: white; border-radius: 16px; font-weight: 700; box-shadow: 0 6px 15px rgba(255, 140, 0, 0.2) !important;">닫기</button>
+        </div>
     </div>
 </div>
 
@@ -182,9 +186,9 @@
     </div>
 </div>
 
-<!-- 회원 탈퇴 확인 모달 -->
+<!-- 회원 탈퇴 확인 모달 (fixed로 수정) -->
 <div id="withdraw-modal"
-    style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;">
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;">
     <div onclick="closeWithdrawModal()"
         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
     </div>
@@ -207,73 +211,77 @@
     </div>
 </div>
 
-<!-- 앱 정보 모달 -->
+<!-- 앱 정보 모달 (fixed로 수정) -->
 <div id="app-info-modal"
-    style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;">
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;">
     <div onclick="closeAppInfoModal()"
         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
     </div>
-    <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: white; border-radius: 30px 30px 0 0; padding: 30px 24px; max-height: 85%; overflow-y: auto; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -10px 30px rgba(0,0,0,0.15);"
+    <div style="position: absolute; bottom: 0; left: 50%; width: 100%; max-width: 480px; background: white; border-radius: 30px 30px 0 0; display: flex; flex-direction: column; max-height: 85%; transform: translateX(-50%) translateY(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -10px 30px rgba(0,0,0,0.15); overflow: hidden;"
         id="app-info-modal-content">
-        <div
-            style="width: 40px; height: 4px; background: rgba(0,0,0,0.1); border-radius: 2px; margin: -10px auto 25px;">
-        </div>
-
-        <div style="text-align: center; margin-bottom: 25px;">
-            <div
-                style="width: 70px; height: 70px; background: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; transform: rotate(-3deg); box-shadow: 0 10px 25px rgba(255, 140, 0, 0.2); overflow: hidden; border: 1px solid rgba(0,0,0,0.03);">
-                <img src="/static/icons/icon-192.png" alt="Crack Icon"
-                    style="width: 100%; height: 100%; object-fit: cover;">
+        <!-- Body: Scrollable -->
+        <div style="flex: 1; overflow-y: auto; padding: 30px 24px 0;">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <div
+                    style="width: 70px; height: 70px; background: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; transform: rotate(-3deg); box-shadow: 0 10px 25px rgba(255, 140, 0, 0.2); overflow: hidden; border: 1px solid rgba(0,0,0,0.03);">
+                    <img src="/static/icons/icon-192.png" alt="Crack Icon"
+                        style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <h3 style="font-size: 1.4rem; font-weight: 800; color: #333;">CRACK <span
+                        style="font-size: 0.9rem; font-weight: 500; opacity: 0.4;">v1.4.7</span></h3>
+                <p style="font-size: 0.85rem; color: var(--point-orange); font-weight: 600; margin-top: 4px;">Smart Road
+                    Safety Platform (Latest Update)</p>
             </div>
-            <h3 style="font-size: 1.4rem; font-weight: 800; color: #333;">CRACK <span
-                    style="font-size: 0.9rem; font-weight: 500; opacity: 0.4;">v1.2.0</span></h3>
-            <p style="font-size: 0.85rem; color: var(--point-orange); font-weight: 600; margin-top: 4px;">Smart Road
-                Safety Platform</p>
-        </div>
 
-        <div style="display: flex; flex-direction: column; gap: 20px; color: #444; line-height: 1.6;">
-            <div>
-                <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: #222;">🚀 앱 소개</h4>
-                <p style="font-size: 0.9rem; opacity: 0.8;">
-                    CRACK은 인공지능 기술을 활용하여 시민들과 함께 안전한 도로 환경을 만들어가는 스마트 제보 플랫폼입니다. 시민의 눈으로 도로 위 위험 요소(포트홀 등)를 발견하고, AI의
-                    눈으로 정밀하게 분석하여 신속한 보수가 이루어질 수 있도록 돕습니다.
+            <div style="display: flex; flex-direction: column; gap: 20px; color: #444; line-height: 1.6;">
+                <div>
+                    <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: #222;">🚀 앱 소개</h4>
+                    <p style="font-size: 0.9rem; opacity: 0.8;">
+                        CRACK은 인공지능 기술을 활용하여 시민들과 함께 안전한 도로 환경을 만들어가는 스마트 제보 플랫폼입니다. 시민의 눈으로 도로 위 위험 요소(포트홀 등)를 발견하고,
+                        AI의 눈으로 정밀하게 분석하여 신속한 보수가 이루어질 수 있도록 돕습니다.
+                    </p>
+                </div>
+
+                <div
+                    style="background: #fcfcfc; border: 1px solid rgba(0,0,0,0.03); border-radius: 20px; padding: 18px;">
+                    <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: #222;">✨ 주요 기능</h4>
+                    <ul
+                        style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem;">
+                        <li style="display: flex; gap: 10px; align-items: flex-start;">
+                            <i class="bi bi-robot" style="color: var(--point-orange);"></i>
+                            <span><strong>AI 실시간 분석:</strong> 업로드된 사진을 딥러닝 모델이 즉시 분석하여 파손 여부와 심각도를 판별합니다.</span>
+                        </li>
+                        <li style="display: flex; gap: 10px; align-items: flex-start;">
+                            <i class="bi bi-geo-alt-fill" style="color: var(--point-orange);"></i>
+                            <span><strong>위치 기반 제보:</strong> 스마트폰의 GPS 기능을 활용하여 사고 지점을 정확하게 지도 위에 마킹합니다.</span>
+                        </li>
+                        <li style="display: flex; gap: 10px; align-items: flex-start;">
+                            <i class="bi bi-lightning-fill" style="color: var(--point-orange);"></i>
+                            <span><strong>크래커 리워드:</strong> 유효한 제보를 해주신 시민분들께 감사의 의미로 크래커 포인트를 지급합니다.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: #222;">🎯 우리의 목표</h4>
+                    <p style="font-size: 0.9rem; opacity: 0.8;">
+                        우리는 기술이 사회적 불편함을 해결할 때 가장 가치 있다고 믿습니다. CRACK은 지자체와 시민 사이의 투명한 소통 창구가 되어, 모두가 안심하고 걸을 수 있는 내일의
+                        도로를 꿈꿉니다.
+                    </p>
+                </div>
+
+                <p
+                    style="font-size: 0.75rem; text-align: center; opacity: 0.4; margin-top: 20px; padding-bottom: 20px;">
+                    © 2026 CRACK Team. All rights reserved.
                 </p>
             </div>
-
-            <div style="background: #fcfcfc; border: 1px solid rgba(0,0,0,0.03); border-radius: 20px; padding: 18px;">
-                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: #222;">✨ 주요 기능</h4>
-                <ul
-                    style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem;">
-                    <li style="display: flex; gap: 10px; align-items: flex-start;">
-                        <i class="bi bi-robot" style="color: var(--point-orange);"></i>
-                        <span><strong>AI 실시간 분석:</strong> 업로드된 사진을 딥러닝 모델이 즉시 분석하여 파손 여부와 심각도를 판별합니다.</span>
-                    </li>
-                    <li style="display: flex; gap: 10px; align-items: flex-start;">
-                        <i class="bi bi-geo-alt-fill" style="color: var(--point-orange);"></i>
-                        <span><strong>위치 기반 제보:</strong> 스마트폰의 GPS 기능을 활용하여 사고 지점을 정확하게 지도 위에 마킹합니다.</span>
-                    </li>
-                    <li style="display: flex; gap: 10px; align-items: flex-start;">
-                        <i class="bi bi-lightning-fill" style="color: var(--point-orange);"></i>
-                        <span><strong>크래커 리워드:</strong> 유효한 제보를 해주신 시민분들께 감사의 의미로 크래커 포인트를 지급합니다.</span>
-                    </li>
-                </ul>
-            </div>
-
-            <div>
-                <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: #222;">🎯 우리의 목표</h4>
-                <p style="font-size: 0.9rem; opacity: 0.8;">
-                    우리는 기술이 사회적 불편함을 해결할 때 가장 가치 있다고 믿습니다. CRACK은 지자체와 시민 사이의 투명한 소통 창구가 되어, 모두가 안심하고 걸을 수 있는 내일의 도로를
-                    꿈꿉니다.
-                </p>
-            </div>
-
-            <p style="font-size: 0.75rem; text-align: center; opacity: 0.4; margin-top: 20px;">
-                © 2026 CRACK Team. All rights reserved.
-            </p>
         </div>
 
-        <button onclick="closeAppInfoModal()" class="auth-btn"
-            style="margin-top: 30px; background: var(--point-orange); color: white; border-radius: 16px; font-weight: 700; box-shadow: 0 6px 15px rgba(255, 140, 0, 0.2) !important;">닫기</button>
+        <!-- Footer: Fixed -->
+        <div style="padding: 10px 24px 30px; background: white; border-top: 1px solid rgba(0,0,0,0.02);">
+            <button onclick="closeAppInfoModal()" class="auth-btn"
+                style="margin: 0; background: var(--point-orange); color: white; border-radius: 16px; font-weight: 700; box-shadow: 0 6px 15px rgba(255, 140, 0, 0.2) !important;">닫기</button>
+        </div>
     </div>
 </div>
 
@@ -284,6 +292,7 @@
         const content = document.getElementById('withdraw-modal-content');
         document.getElementById('withdraw-password').value = '';
         modal.style.display = 'block';
+        document.documentElement.classList.add('modal-active');
         setTimeout(() => {
             content.style.transform = 'translate(-50%, -50%) scale(1)';
         }, 10);
@@ -293,15 +302,17 @@
         const modal = document.getElementById('withdraw-modal');
         const content = document.getElementById('withdraw-modal-content');
         content.style.transform = 'translate(-50%, -50%) scale(0.9)';
+        document.documentElement.classList.remove('modal-active');
         setTimeout(() => {
             modal.style.display = 'none';
         }, 300);
     }
 
+    // 회원 탈퇴 처리
     async function processWithdraw() {
         const password_confirm = document.getElementById('withdraw-password').value;
         if (!password_confirm) {
-            alert("비밀번호를 입력해주세요.");
+            showToast("비밀번호를 입력해주세요.");
             return;
         }
 
@@ -316,13 +327,13 @@
             const data = await resp.json();
 
             if (data.success) {
-                alert(data.message);
-                location.href = '/';
+                showToast(data.message);
+                setTimeout(() => location.href = '/', 1500);
             } else {
-                alert(data.message);
+                showNoticeModal(data.message);
             }
         } catch (e) {
-            alert("처리 중 오류가 발생했습니다.");
+            showToast("처리 중 오류가 발생했습니다.");
         }
     }
     function toggleMenu(id) {
@@ -357,11 +368,9 @@
             msg.style.display = 'block';
             msg.style.color = data.success ? 'var(--point-orange)' : '#FF4D4D';
             msg.textContent = data.success ? '닉네임이 변경되었습니다.' : data.message;
-            if (data.success) {
-                setTimeout(() => location.reload(), 1000);
-            }
+            if (data.success) setTimeout(() => location.reload(), 1000);
         } catch (e) {
-            alert("처리 중 오류가 발생했습니다.");
+            showToast("처리 중 오류가 발생했습니다.");
         } finally {
             btn.textContent = originalText;
             btn.disabled = false;
@@ -372,7 +381,7 @@
         const current_password = document.getElementById('input-current-pw').value;
         const new_password = document.getElementById('input-new-pw').value;
         if (!current_password || !new_password) {
-            alert("현재 비밀번호와 새 비밀번호를 모두 입력해주세요.");
+            showToast("현재 비밀번호와 새 비밀번호를 모두 입력해주세요.");
             return;
         }
 
@@ -398,7 +407,7 @@
                 setTimeout(() => msg.style.display = 'none', 3000);
             }
         } catch (e) {
-            alert("처리 중 오류가 발생했습니다.");
+            showToast("처리 중 오류가 발생했습니다.");
         } finally {
             btn.textContent = originalText;
             btn.disabled = false;
@@ -422,15 +431,17 @@
         const modal = document.getElementById('point-modal');
         const content = document.getElementById('point-modal-content');
         modal.style.display = 'block';
+        document.documentElement.classList.add('modal-active');
         setTimeout(() => {
-            content.style.transform = 'translateY(0)';
+            content.style.transform = 'translateX(-50%) translateY(0)';
         }, 10);
     }
 
     function closePointModal() {
         const modal = document.getElementById('point-modal');
         const content = document.getElementById('point-modal-content');
-        content.style.transform = 'translateY(100%)';
+        content.style.transform = 'translateX(-50%) translateY(100%)';
+        document.documentElement.classList.remove('modal-active');
         setTimeout(() => {
             modal.style.display = 'none';
         }, 300);
@@ -441,15 +452,17 @@
         const modal = document.getElementById('app-info-modal');
         const content = document.getElementById('app-info-modal-content');
         modal.style.display = 'block';
+        document.documentElement.classList.add('modal-active');
         setTimeout(() => {
-            content.style.transform = 'translateY(0)';
+            content.style.transform = 'translateX(-50%) translateY(0)';
         }, 10);
     }
 
     function closeAppInfoModal() {
         const modal = document.getElementById('app-info-modal');
         const content = document.getElementById('app-info-modal-content');
-        content.style.transform = 'translateY(100%)';
+        content.style.transform = 'translateX(-50%) translateY(100%)';
+        document.documentElement.classList.remove('modal-active');
         setTimeout(() => {
             modal.style.display = 'none';
         }, 400);

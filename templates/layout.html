@@ -25,8 +25,8 @@
         onload="window.kakaoSdkLoaded = true" onerror="window.kakaoSdkLoaded = false"></script>
 
     <!-- PWA -->
-    <link rel="manifest" href="/manifest.json?v=15">
-    <meta name="theme-color" content="#F2F0EB">
+    <link rel="manifest" href="/manifest.json?v=1.3.0">
+    <meta name="theme-color" content="#FF8C00">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="CRACK">
@@ -36,6 +36,8 @@
     <!-- iOS는 매니페스트를 타지 않으므로 개별 태그로 지정하여 스플래시 화면의 이질감 최소화 -->
     <link rel="apple-touch-startup-image" href="/static/icons/icon-512.png?v=3">
 
+    <!-- exifr (GPS extraction) -->
+    <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.js"></script>
     <!-- [BRIDGE] Admin Transition State Check (Must be here to prevent flicker) -->
     <script>
         (function () {
@@ -242,6 +244,10 @@
             overscroll-behavior-y: none;
         }
 
+        body.modal-active {
+            overflow: hidden !important;
+        }
+
         /* [REMOVED] Duplicate .app-container definition that was overriding the grid layout */
 
         .card {
@@ -274,10 +280,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            color: var(--text-asphalt);
+            color: rgba(69, 75, 82, 0.35);
+            /* opacity 대신 투명한 색상을 사용하여 배지 선명도 유지 */
             text-decoration: none;
             font-size: 0.8rem;
-            opacity: 0.5;
             gap: 2px;
             transition: var(--transition);
         }
@@ -288,14 +294,15 @@
         }
 
         .nav-item.active {
-            opacity: 1;
-            color: var(--point-orange);
+            color: var(--point-orange) !important;
+        }
+
+        .nav-item.active i {
+            color: var(--point-orange) !important;
         }
 
         .nav-item.has-unread {
-            opacity: 1 !important;
-            font-weight: 700;
-            color: var(--text-asphalt);
+            /* 알림 배지만 노출하고 아이콘/텍스트 스타일은 다른 비활성 탭과 동일하게 유지 */
         }
 
         /* Admin Alert Badge */
@@ -307,7 +314,8 @@
             position: absolute;
             top: -2px;
             right: calc(50% - 22px);
-            background-color: #FF4D4D;
+            background-color: #FF3B30;
+            /* 더욱 선명한 레드 (iOS 스타일) */
             color: white;
             font-size: 0.65rem;
             font-weight: 700;
@@ -321,6 +329,8 @@
             box-shadow: 0 2px 5px rgba(255, 77, 77, 0.3);
             border: 1.5px solid white;
             z-index: 10;
+            opacity: 1 !important;
+            /* 탭 비활성 시에도 숫자는 선명하게 유지 */
         }
 
         .nav-item:hover {
@@ -511,7 +521,8 @@
 
         #custom-toast {
             position: fixed;
-            top: 24px;
+            top: 80px;
+            /* PWA 상단바/헤더에 가려지지 않도록 하향 조정 */
             left: 50%;
             transform: translate(-50%, -150%);
             background: #2D2D2D;
@@ -530,7 +541,10 @@
             width: auto;
             max-width: 90vw;
             min-width: 250px;
-            white-space: nowrap;
+            white-space: normal;
+            word-break: keep-all;
+            line-height: 1.4;
+            text-align: center;
         }
 
         #custom-toast.active {
@@ -703,6 +717,8 @@
         #premium-loader.fade-out {
             opacity: 0;
             visibility: hidden;
+            pointer-events: none;
+            /* 클릭 방해 금지 */
         }
 
         .loader-logo {
@@ -926,6 +942,12 @@
             transform: translateY(20px) !important;
             transition: all 0.5s ease !important;
         }
+
+        /* [FIX] 모달 활성 시 배경 스크롤 차단 */
+        .modal-active main {
+            overflow: hidden !important;
+            overscroll-behavior-y: contain !important;
+        }
     </style>
     {% block extra_style %}{% endblock %}
     <script>
@@ -953,6 +975,10 @@
             <div class="loader-bar-container">
                 <div class="loader-bar-progress"></div>
             </div>
+
+            <div
+                style="font-size: 0.75rem; color: var(--point-orange); margin-top: 5px; font-weight: 700; opacity: 0.8;">
+                Smart Road Safety Platform</div>
         </div>
 
         <header>
@@ -995,7 +1021,7 @@
         <main>{% block content %}{% endblock %}</main>
         <nav class="bottom-nav {{ 'admin-nav-hidden' if request.path == '/admin/dashboard' else '' }}">
             <a href="/alert"
-                class="nav-item {{ 'active' if request.path.startswith('/alert') else '' }} {{ 'has-unread' if admin_unread_count > 0 else '' }}">
+                class="nav-item {{ 'active' if request.path.startswith('/alert') or request.path.startswith('/alert_view') else '' }} {{ 'has-unread' if admin_unread_count > 0 else '' }}">
                 <i class="bi bi-bell-fill"></i>
                 {% if admin_unread_count > 0 %}
                 <span class="badge-count">{{ admin_unread_count if admin_unread_count < 100 else '99+' }}</span>
@@ -1025,17 +1051,113 @@
                 <div class="gmodal-item cancel" onclick="closeGlobalModal()">취소</div>
             </div>
         </div>
+
+        <!-- [전역] 커스텀 공지 모달 -->
+        <div id="notice-modal"
+            style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99999; align-items: center; justify-content: center; padding: 20px;">
+            <div
+                style="background: white; border-radius: 24px; width: 100%; max-width: 320px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.2);">
+                <!-- Body: Scrollable -->
+                <div style="flex: 1; overflow-y: auto; padding: 30px 24px 10px; text-align: center;">
+                    <div
+                        style="width: 50px; height: 50px; background: rgba(255,140,0,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                        <i class="bi bi-info-circle-fill" style="color: var(--point-orange); font-size: 1.5rem;"></i>
+                    </div>
+                    <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 12px; color: #333;">안내</h3>
+                    <p id="notice-modal-msg"
+                        style="font-size: 0.95rem; color: #666; line-height: 1.6; word-break: keep-all;">
+                    </p>
+                </div>
+                <!-- Footer: Fixed -->
+                <div style="padding: 10px 24px 30px;">
+                    <button type="button" onclick="hideNoticeModal()"
+                        style="width: 100%; background: var(--point-orange); color: white; border: none; padding: 14px; border-radius: 14px; font-size: 1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(255,140,0,0.2);">확인</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
+        // [중요] 최상단에서 상태 복구 함수 정의 (호이스팅 보장)
+        function hidePremiumLoader() {
+            const loader = document.getElementById('premium-loader');
+            const text = document.getElementById('loader-text');
+            if (loader) {
+                loader.classList.add('fade-out');
+                // 강제로 스타일 적용 (브라우저 최적화 방지)
+                loader.style.opacity = '0';
+                loader.style.visibility = 'hidden';
+                loader.style.pointerEvents = 'none';
+            }
+            setTimeout(() => { if (text) text.innerText = ""; }, 500);
+        }
+
+        function cancelAdminTransition() {
+            if (window.adminTransitionTimer) {
+                clearTimeout(window.adminTransitionTimer);
+                window.adminTransitionTimer = null;
+            }
+            sessionStorage.removeItem('admin_transition');
+            document.documentElement.classList.remove('admin-bridge-mode');
+
+            const appContainer = document.querySelector('.app-container');
+            if (appContainer) {
+                appContainer.classList.remove('admin-expanding');
+                // 만약 admin-page 에서 돌아오는 것이라면 reload가 이미 호출되었어야 함
+            }
+
+            const fallMain = document.querySelector('main');
+            const fallNav = document.querySelector('.bottom-nav');
+            if (fallMain) {
+                fallMain.classList.remove('fall-away');
+                fallMain.style.opacity = '1';
+                fallMain.style.transform = '';
+            }
+            if (fallNav) {
+                fallNav.classList.remove('fall-away');
+                fallNav.style.opacity = '1';
+                fallNav.style.transform = '';
+            }
+
+            hidePremiumLoader();
+        }
+
+        // [bfcache 대응] 페이지가 표시될 때마다 상태 초기화
+        window.addEventListener('pageshow', function (event) {
+            cancelAdminTransition();
+        });
+
         let modalOriginSource = null;
 
-        function showToast(msg) {
+        function showToast(msg, duration = 3500) {
             const toast = document.getElementById('custom-toast');
-            document.getElementById('toast-message').innerText = msg;
-            toast.classList.add('active');
-            setTimeout(() => toast.classList.remove('active'), 3000);
+            const msgElem = document.getElementById('toast-message');
+            if (msgElem) msgElem.innerText = msg;
+            if (toast) {
+                toast.classList.add('active');
+                // 기존 타이머가 있으면 제거 (연속 발생 대응)
+                if (window.toastTimer) clearTimeout(window.toastTimer);
+                window.toastTimer = setTimeout(() => toast.classList.remove('active'), duration);
+            }
         }
+
+        window.showNoticeModal = function (msg) {
+            const modal = document.getElementById('notice-modal');
+            const msgElem = document.getElementById('notice-modal-msg');
+            if (msgElem) msgElem.innerText = msg;
+            if (modal) {
+                modal.style.display = 'flex';
+                document.documentElement.classList.add('modal-active');
+            }
+        };
+
+        window.hideNoticeModal = function () {
+            const modal = document.getElementById('notice-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.documentElement.classList.remove('modal-active');
+            }
+        };
 
         function openGlobalUploadModal(source) {
             modalOriginSource = source;
@@ -1086,15 +1208,14 @@
             const loader = document.getElementById('premium-loader');
             const text = document.getElementById('loader-text');
             if (text) text.innerText = msg;
-            if (loader) loader.classList.remove('fade-out');
+            if (loader) {
+                loader.classList.remove('fade-out');
+                loader.style.opacity = '1';
+                loader.style.visibility = 'visible';
+                loader.style.pointerEvents = 'auto';
+            }
         }
 
-        function hidePremiumLoader() {
-            const loader = document.getElementById('premium-loader');
-            const text = document.getElementById('loader-text');
-            if (loader) loader.classList.add('fade-out');
-            setTimeout(() => { if (text) text.innerText = ""; }, 500);
-        }
         window.addEventListener('load', () => { setTimeout(hidePremiumLoader, 300); });
 
         (function () {
@@ -1133,15 +1254,7 @@
                 if (href.includes('logout') || href.includes('admin/dashboard') || window.location.pathname.includes('admin/dashboard')) return;
 
                 // [FIX] 만약 대시보드 진입 애니메이션 대기 중이라면 즉시 중단 및 초기화
-                if (window.adminTransitionTimer) {
-                    clearTimeout(window.adminTransitionTimer);
-                    window.adminTransitionTimer = null;
-                    sessionStorage.removeItem('admin_transition');
-                    const fallMain = document.querySelector('main');
-                    const fallNav = document.querySelector('.bottom-nav');
-                    if (fallMain) fallMain.classList.remove('fall-away');
-                    if (fallNav) fallNav.classList.remove('fall-away');
-                }
+                cancelAdminTransition();
 
                 e.preventDefault();
                 showPremiumLoader();
@@ -1205,6 +1318,9 @@
             window.addEventListener('popstate', async function (e) {
                 const href = window.location.pathname;
 
+                // [FIX] 뒤로가기 시 진행 중인 모든 애니메이션 및 로더 강제 종료
+                cancelAdminTransition();
+
                 // [FIX] 관리자 대시보드와 모바일 화면 간의 history 이동 시 강제 새로고침하여 레이아웃 리셋
                 const appContainer = document.querySelector('.app-container');
                 const isContainerAdmin = appContainer ? (appContainer.classList.contains('admin-page') || appContainer.classList.contains('admin-expanding')) : false;
@@ -1212,6 +1328,10 @@
                     window.location.reload();
                     return;
                 }
+
+                // [SPA] 뒤로가기 시 로더 다시 보여주고 데이터 가져오기 (사용자 경험 개선)
+                showPremiumLoader();
+
                 try {
                     const response = await fetch(href);
                     const html = await response.text();
@@ -1225,7 +1345,8 @@
                         initPullToRefresh(); // PTR 재설정
                         document.querySelectorAll('.bottom-nav .nav-item').forEach(nav => {
                             const navHref = nav.getAttribute('href');
-                            const isActive = (navHref === '/' && href === '/') || (navHref !== '/' && href.startsWith(navHref));
+                            const isActive = (navHref === '/' && href === '/') ||
+                                (navHref !== '/' && (href.startsWith(navHref) || (navHref === '/alert' && href.startsWith('/alert_view'))));
                             nav.classList.toggle('active', isActive);
                         });
                         const scripts = document.querySelector('main').querySelectorAll('script');
@@ -1236,6 +1357,7 @@
                             oldScript.parentNode.replaceChild(newScript, oldScript);
                         });
                     }
+                    setTimeout(hidePremiumLoader, 400);
                 } catch (err) {
                     window.location.reload();
                 }
@@ -1271,7 +1393,11 @@
                 main.dataset.ptrInitialized = 'true';
 
                 main.addEventListener('touchstart', e => {
-                    if (main.scrollTop === 0) {
+                    // [FIX] 신고(report) 탭에서는 PTR 작동 안함
+                    if (window.location.pathname.startsWith('/report')) return;
+
+                    // 모달 활성 시에도 PTR 작동 안함
+                    if (main.scrollTop === 0 && !document.documentElement.classList.contains('modal-active')) {
                         startY = e.touches[0].pageY;
                         currentY = startY; // Reset currentY to startY to prevent stale diffs
                         pulling = true;

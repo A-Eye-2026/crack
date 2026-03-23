@@ -48,14 +48,11 @@ def signup():
             return render_template('signup.html', error="이미 존재하는 아이디입니다.")
             
         hashed_pw = generate_password_hash(password)
-        new_user = Member(username=username, password_hash=hashed_pw, nickname=nickname, points=100)
+        new_user = Member(username=username, password_hash=hashed_pw, nickname=nickname, points=0)
         db.session.add(new_user)
         db.session.commit()
         
-        # 가입 축하 포인트 로그 추가
-        from models import PointLog
-        db.session.add(PointLog(user_id=new_user.id, amount=100, reason='신규 가입 축하 포인트'))
-        db.session.commit()
+        return redirect(url_for('auth.login'))
         
         return redirect(url_for('auth.login'))
         

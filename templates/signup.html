@@ -119,13 +119,13 @@
             document.getElementById('join-form').addEventListener('submit', function (e) {
                 if (!isIdChecked) {
                     e.preventDefault();
-                    alert("아이디 중복 확인을 해주세요.");
+                    showToast("아이디 중복 확인을 해주세요.");
                     document.getElementById('uid').focus();
                     return;
                 }
                 if (pwInput.value !== pwCheckInput.value) {
                     e.preventDefault();
-                    alert("비밀번호 재확인이 일치하지 않습니다.");
+                    showToast("비밀번호 재확인이 일치하지 않습니다.");
                     pwCheckInput.focus();
                 }
             });

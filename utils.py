@@ -62,9 +62,15 @@ def extract_gps_from_exif(image_path):
             return None, None
         
         def convert_to_degrees(value):
-            d = float(value[0])
-            m = float(value[1])
-            s = float(value[2])
+            # [보강] Pillow의 Rational 객체(numerator, denominator) 또는 float/int 모두 대응
+            def to_f(v):
+                if hasattr(v, 'numerator') and hasattr(v, 'denominator'):
+                    return float(v.numerator) / float(v.denominator)
+                return float(v)
+
+            d = to_f(value[0])
+            m = to_f(value[1])
+            s = to_f(value[2])
             return d + (m / 60.0) + (s / 3600.0)
         
         lat = convert_to_degrees(gps_info.get('GPSLatitude', (0, 0, 0)))
@@ -75,6 +81,9 @@ def extract_gps_from_exif(image_path):
         if gps_info.get('GPSLongitudeRef', 'E') == 'W':
             lng = -lng
         
+        if math.isnan(lat) or math.isnan(lng):
+            return None, None
+            
         if lat == 0 and lng == 0:
             return None, None
         

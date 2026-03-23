@@ -1,0 +1,72 @@
+{
+    "project_name": "Road Damage Segmentation v7",
+    "analysis_date": "2026-03-22",
+    "summary": {
+        "total_images": 215273,
+        "train_images": 193843,
+        "val_images": 21430,
+        "epochs_completed": 10,
+        "total_time_hours": 7.032,
+        "average_inference_speed_ms": 1.8
+    },
+    "metrics": {
+        "overall": {
+            "box_mAP50": 0.753,
+            "mask_mAP50": 0.699,
+            "mask_mAP50_95": 0.422
+        },
+        "per_class": {
+            "Pothole_Damage": {
+                "precision": 0.777,
+                "recall": 0.81,
+                "mAP50": 0.869,
+                "status": "Excellent"
+            },
+            "Major_Crack": {
+                "precision": 0.74,
+                "recall": 0.702,
+                "mAP50": 0.747,
+                "status": "Good"
+            },
+            "Minor_Crack": {
+                "precision": 0.518,
+                "recall": 0.233,
+                "mAP50": 0.27,
+                "status": "Poor - Needs Improvement"
+            },
+            "Road_Asset": {
+                "precision": 0.73,
+                "recall": 0.747,
+                "mAP50": 0.791,
+                "status": "Good"
+            },
+            "Sinkhole": {
+                "precision": 0.676,
+                "recall": 0.833,
+                "mAP50": 0.817,
+                "status": "Good (Small Sample Size: 12)"
+            }
+        }
+    },
+    "deep_analysis": {
+        "strengths": [
+            "Pothole damage detection is very stable and shows high accuracy.",
+            "Road asset identification (manhole, drains, etc.) is performing well.",
+            "Inference speed is very fast (1.8ms), suitable for real-time applications."
+        ],
+        "weaknesses": [
+            "Minor_Crack class has very low recall (23.3%), meaning many small cracks are being missed.",
+            "Sinkhole performance is high but based on only 12 instances, making it unreliable for general use."
+        ],
+        "recommendations": {
+            "additional_training": true,
+            "priority_class": "Minor_Crack",
+            "strategy": [
+                "Increase epochs to capture fine details of Minor_Crack.",
+                "Consider increasing image resolution (imgsz) to 800 or 1024 to detect thin cracks better.",
+                "Data augmentation specifically for small objects could be beneficial.",
+                "Collect more Sinkhole data to ensure robustness."
+            ]
+        }
+    }
+}

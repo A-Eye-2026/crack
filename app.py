@@ -109,6 +109,12 @@ def serve_uploads(filename):
 def index():
     if not session.get('user_id'):
         return redirect(url_for('auth.login'))
+    
+    # [보정] 세션 어드민 권한 동기화 (DB 상태와 세션 불일치 해결)
+    user = Member.query.get(session['user_id'])
+    if user:
+        session['is_admin'] = user.is_admin
+        
     return render_template('index.html')
 
 @app.route('/login_page')
@@ -152,8 +158,9 @@ def run_ai_analysis(report_id, file_path, file_type):
         
         annotated_path = None
         if (is_damaged or (len(results) > 0 and len(results[0].boxes) > 0)) and file_type == 'image':
-            name, ext = os.path.splitext(os.path.basename(abs_path))
-            annotated_filename = f"{name}_ai{ext}"
+            name = os.path.splitext(os.path.basename(abs_path))[0]
+            # [수정] 확장자를 항상 .jpg로 하여 OpenCV 호환성 확보 및 브라우저 지원 보장
+            annotated_filename = f"{name}_ai.jpg"
             annotated_abs = os.path.join(os.path.dirname(abs_path), annotated_filename)
             cv2.imwrite(annotated_abs, results[0].plot())
             annotated_path = f'/uploads/images/{annotated_filename}'
@@ -162,8 +169,8 @@ def run_ai_analysis(report_id, file_path, file_type):
             rpt = Report.query.get(report_id)
             if rpt:
                 db.session.add(AiResult(report_id=report_id, is_damaged=is_damaged, confidence=round(max_conf * 100, 1), damage_type=damage_type))
-                if annotated_path: rpt.file_path = annotated_path
-                rpt.file_path = annotated_path
+                if annotated_path:
+                    rpt.file_path = annotated_path
                 # AI 분석 승인 조건: 포트홀이 1개라도 있고(pothole_count > 0) 최대 신뢰도가 60% 이상인 경우
                 if pothole_count > 0 and pothole_max_conf >= 0.6:
                     rpt.status = '관리자 확인중'
@@ -191,4 +198,8 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     # 포트 8012 유지
+    print("\n" + "="*50)
+    print("🚀  CRACK SERVER v1.2.8  READY")
+    print("📈  Smart Road Safety Platform")
+    print("="*50 + "\n")
     app.run(host='0.0.0.0', port=8012, debug=True)
