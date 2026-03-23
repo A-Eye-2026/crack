@@ -82,7 +82,7 @@
 
     .member-main {
       display: grid;
-      grid-template-rows: 160px 1fr;
+      grid-template-rows: 170px 1fr;
       gap: 16px;
     }
 
@@ -95,7 +95,7 @@
 
     .member-side {
       display: grid;
-      grid-template-rows: auto 1fr;
+      grid-template-rows: 195px 1fr;
       gap: 16px;
     }
 
@@ -103,12 +103,12 @@
       background: #ffffff;
       border: 1px solid #e5ebf2;
       border-radius: 20px;
-      padding: 22px 24px;
+      padding: 22px 24px 16px;
       box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      gap: 14px;
+      justify-content: flex-start;
+      gap: 10px;
       position: relative;
       overflow: hidden;
     }
@@ -126,20 +126,30 @@
     .member-profile-top {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 10px;
       position: relative;
       z-index: 1;
+      width: 100%;
+      padding-top: 8px;
     }
 
     .member-profile-name-row {
       display: flex;
-      align-items: baseline;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .member-profile-identity {
+      display: flex;
+      align-items: center;
       gap: 14px;
       flex-wrap: wrap;
+      min-width: 0;
+      flex: 1;
     }
 
     .member-profile-name {
-      font-size: 36px;
+      font-size: 38px;
       font-weight: 900;
       color: #0f172a;
       letter-spacing: -1.2px;
@@ -150,12 +160,19 @@
       font-size: 18px;
       font-weight: 800;
       color: #64748b;
+      line-height: 1;
+    }
+
+    .role-badge,
+    .status-badge {
+      margin-top: 2px;
     }
 
     .member-profile-meta {
       display: flex;
       align-items: center;
       gap: 10px;
+      row-gap: 10px;
       flex-wrap: wrap;
     }
 
@@ -174,9 +191,94 @@
 
     .member-back-btn {
       position: absolute;
-      top: 14px;
+      top: 12px;
       right: 16px;
       z-index: 2;
+    }
+
+    .member-profile-edit-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 2px;
+      padding-top: 0;
+    }
+
+    .member-edit-btn,
+    .member-save-btn,
+    .member-cancel-btn,
+    .member-suspend-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid #d7dde5;
+      background: #fff;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .member-edit-btn:hover,
+    .member-save-btn:hover,
+    .member-cancel-btn:hover,
+    .member-suspend-btn:hover {
+      background: #f8fafc;
+      border-color: #c9d3df;
+      transform: translateY(-1px);
+    }
+
+    .member-suspend-btn.danger {
+      background: #fff7ed;
+      border-color: #fed7aa;
+      color: #c2410c;
+    }
+
+    .member-suspend-btn.danger:hover {
+      background: #ffedd5;
+      border-color: #fdba74;
+    }
+
+    .member-role-edit-form {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      max-width: 100%;
+    }
+
+    .member-role-select {
+      height: 32px;
+      min-width: 110px;
+      padding: 0 10px;
+      border: 1px solid #d7dde5;
+      border-radius: 10px;
+      background: #fff;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+      outline: none;
+    }
+
+    .member-role-select:focus {
+      border-color: #c9d3df;
+      box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.12);
+    }
+
+    .member-status-edit-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .member-inline-form {
+      margin: 0;
+      display: inline-flex;
+      align-items: center;
     }
 
     .header-brand {
@@ -324,11 +426,11 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 78px;
-      height: 30px;
-      padding: 0 12px;
+      min-width: 76px;
+      height: 28px;
+      padding: 0 11px;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 800;
       white-space: nowrap;
     }
@@ -352,11 +454,11 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 78px;
-      height: 30px;
-      padding: 0 12px;
+      min-width: 76px;
+      height: 28px;
+      padding: 0 11px;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 800;
       white-space: nowrap;
       background: #ecfdf5;
@@ -369,10 +471,10 @@
     }
 
     .activity-card {
-      background: #fff;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
       border: 1px solid #e5ebf2;
       border-radius: 18px;
-      padding: 14px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
       min-height: 0;
@@ -384,7 +486,7 @@
       background: #fff;
       border: 1px solid #e5ebf2;
       border-radius: 18px;
-      padding: 16px;
+      padding: 18px;
       display: flex;
       flex-direction: column;
       min-height: 0;
@@ -392,21 +494,29 @@
       box-shadow: 0 6px 18px rgba(15, 23, 42, 0.03);
     }
 
-        .risk-card {
-          background: #fff;
-          border: 1px solid #e5ebf2;
-          border-radius: 18px;
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          min-height: 0;
-          height: 100%;
-          box-shadow: 0 6px 18px rgba(15, 23, 42, 0.03);
-        }
+    .risk-card {
+      background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+      border: 1px solid #dfe7f0;
+      border-radius: 18px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+    }
 
         .risk-card-head {
           display: flex;
           align-items: center;
+          justify-content: flex-start;
+          margin-bottom: 12px;
+        }
+
+        .stats-card-head,
+        .section-card-head {
+          display: flex;
+          align-items: flex-start;
           justify-content: space-between;
           gap: 10px;
           margin-bottom: 12px;
@@ -440,14 +550,20 @@
           min-height: 0;
         }
 
+        .stats-item,
         .risk-item {
           border-radius: 16px;
           padding: 14px 14px 12px;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          min-height: 102px;
+          min-height: 104px;
           border: 1px solid #e2e8f0;
+        }
+
+        .stats-item {
+          position: relative;
+          overflow: hidden;
         }
 
         .risk-item.high {
@@ -470,6 +586,7 @@
           border-color: #dbe4ee;
         }
 
+        .stats-label,
         .risk-label {
           display: flex;
           align-items: center;
@@ -479,6 +596,7 @@
           color: #475569;
           letter-spacing: -0.2px;
           line-height: 1.2;
+          min-height: 16px;
         }
 
         .risk-dot {
@@ -504,11 +622,12 @@
           background: #64748b;
         }
 
+        .stats-value,
         .risk-value {
-          margin-top: 14px;
-          font-size: 34px;
+          margin-top: 10px;
+          font-size: 32px;
           font-weight: 900;
-          letter-spacing: -1px;
+          letter-spacing: -0.9px;
           line-height: 1;
         }
 
@@ -528,20 +647,21 @@
           color: #475569;
         }
 
+        .stats-sub,
         .risk-sub {
-          margin-top: 6px;
+          margin-top: 10px;
           font-size: 11px;
           font-weight: 700;
           color: #64748b;
           letter-spacing: -0.2px;
-          line-height: 1.3;
+          line-height: 1.4;
         }
 
     .summary-card {
       background: #fff;
       border: 1px solid #e5ebf2;
       border-radius: 18px;
-      padding: 10px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
       min-height: 0;
@@ -554,11 +674,11 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
     }
 
     .summary-card-title {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 900;
       color: #0f172a;
       letter-spacing: -0.3px;
@@ -568,9 +688,9 @@
       flex-shrink: 0;
       font-size: 10px;
       font-weight: 800;
-      color: #64748b;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
+      color: #475569;
+      background: #f1f5f9;
+      border: 1px solid #dbe4ee;
       border-radius: 999px;
       padding: 4px 8px;
       line-height: 1;
@@ -589,7 +709,7 @@
       border-radius: 12px;
       border: 1px solid #e2e8f0;
       background: #f8fafc;
-      padding: 8px 10px;
+      padding: 12px 12px;
       min-height: 0;
       display: flex;
       flex-direction: column;
@@ -601,14 +721,14 @@
       font-weight: 800;
       color: #64748b;
       letter-spacing: -0.2px;
-      line-height: 1.1;
+      line-height: 1.2;
     }
 
     .summary-value {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 900;
       color: #0f172a;
-      margin-top: 2px;
+      margin-top: 5px;
     }
 
     .summary-item.date {
@@ -642,14 +762,6 @@
       color: #dc2626;
     }
 
-    .stats-card-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
     .stats-card-title {
       font-size: 15px;
       font-weight: 900;
@@ -676,46 +788,6 @@
       gap: 10px;
       flex: 1;
       min-height: 0;
-    }
-
-    .stats-item {
-      border-radius: 16px;
-      padding: 14px 14px 12px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 102px;
-      border: 1px solid #e2e8f0;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .stats-label {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 13px;
-      font-weight: 800;
-      color: #475569;
-      letter-spacing: -0.2px;
-      line-height: 1.2;
-    }
-
-    .stats-value {
-      margin-top: 14px;
-      font-size: 34px;
-      font-weight: 900;
-      letter-spacing: -1px;
-      line-height: 1;
-    }
-
-    .stats-sub {
-      margin-top: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      color: #64748b;
-      letter-spacing: -0.2px;
-      line-height: 1.3;
     }
 
     .stats-dot {
@@ -778,7 +850,7 @@
     }
 
     .section-card-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 900;
       color: #0f172a;
       letter-spacing: -0.3px;
@@ -788,7 +860,7 @@
     .post-list {
       display: grid;
       grid-template-rows: repeat(4, minmax(0, 1fr));
-      gap: 8px;
+      gap: 10px;
       flex: 1;
       min-height: 0;
       overflow: hidden;
@@ -806,7 +878,7 @@
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 12px;
-      padding: 10px 12px;
+      padding: 12px 13px;
       transition: all 0.16s ease;
     }
 
@@ -826,9 +898,9 @@
     }
 
     .post-title {
-      font-size: 13px;
-      font-weight: 800;
-      color: #0f172a;
+      font-size: 14px;
+      font-weight: 900;
+      color: #111827;
       letter-spacing: -0.2px;
       line-height: 1.3;
       overflow: hidden;
@@ -851,17 +923,9 @@
       flex-wrap: wrap;
     }
 
-    .section-card-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-
     .section-card-count {
       flex-shrink: 0;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
       color: #64748b;
       background: #f8fafc;
@@ -929,8 +993,8 @@
 
     .post-location {
       font-size: 10px;
-      font-weight: 700;
-      color: #64748b;
+      font-weight: 600;
+      color: #94a3b8;
     }
 
     .section-card-footer {
@@ -992,7 +1056,112 @@
       transition: opacity 0.12s ease;
     }
 
+    .confirm-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.34);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+      z-index: 4000;
+    }
+
+    .confirm-modal-backdrop.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .confirm-modal {
+      width: 100%;
+      max-width: 360px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #e5ebf2;
+      border-radius: 20px;
+      box-shadow:
+        0 18px 40px rgba(15, 23, 42, 0.16),
+        0 4px 12px rgba(15, 23, 42, 0.06);
+      backdrop-filter: blur(8px);
+      padding: 22px 20px 18px;
+    }
+
+    .confirm-modal-head {
+      margin-bottom: 10px;
+    }
+
+    .confirm-modal-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.4px;
+    }
+
+    .confirm-modal-message {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #475569;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+
+    .confirm-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .confirm-modal-btn {
+      height: 38px;
+      min-width: 74px;
+      padding: 0 14px;
+      border-radius: 10px;
+      border: 1px solid #d7dde5;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .confirm-modal-btn.secondary {
+      background: #fff;
+      color: #334155;
+    }
+
+    .confirm-modal-btn.secondary:hover {
+      background: #f8fafc;
+      border-color: #c9d3df;
+    }
+
+    .confirm-modal-btn.primary {
+      background: #ff7a1a;
+      border-color: #ff7a1a;
+      color: #fff;
+    }
+
+    .confirm-modal-btn.primary:hover {
+      background: #ea6500;
+      border-color: #ea6500;
+    }
+
     @media (max-width: 900px) {
+    .member-profile-name-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .member-profile-identity {
+      gap: 10px;
+    }
+
+    .member-profile-edit-row {
+      justify-content: flex-start;
+      margin-top: 12px;
+    }
+
   .layout {
     padding: 16px;
   }
@@ -1083,22 +1252,65 @@
 
               <div class="member-profile-top">
                 <div class="member-profile-name-row">
-                  <div class="member-profile-name">{{ member.name }}</div>
-                  <div class="member-profile-id">@{{ member.uid }}</div>
+                  <div class="member-profile-identity">
+                    <div class="member-profile-name">{{ member.name }}</div>
+                    <div class="member-profile-id">@{{ member.uid }}</div>
 
-                  {% if member.role == 'admin' %}
-                    <span class="role-badge role-admin">관리자</span>
-                  {% elif member.role == 'manager' %}
-                    <span class="role-badge role-manager">매니저</span>
-                  {% else %}
-                    <span class="role-badge role-user">일반회원</span>
-                  {% endif %}
+                    {% if request.args.get('edit') == '1' %}
+                      <form method="post" action="/admin/members/{{ member.id }}/role" class="member-role-edit-form">
+                        <select name="role" class="member-role-select">
+                          <option value="user" {% if member.role == 'user' %}selected{% endif %}>일반회원</option>
+                          <option value="manager" {% if member.role == 'manager' %}selected{% endif %}>매니저</option>
+                          <option value="admin" {% if member.role == 'admin' %}selected{% endif %}>관리자</option>
+                        </select>
+                        <button
+                          type="submit"
+                          class="member-save-btn"
+                          data-confirm-message="역할을 변경하시겠습니까?"
+                        >
+                          저장
+                        </button>
+                      </form>
 
-                  {% if member.active %}
-                    <span class="status-badge">활성</span>
-                  {% else %}
-                    <span class="status-badge status-inactive">비활성</span>
-                  {% endif %}
+                      <div class="member-status-edit-wrap">
+                        {% if member.active %}
+                          <form method="post" action="/admin/members/{{ member.id }}/suspend" class="member-inline-form">
+                            <button
+                              type="submit"
+                              class="member-suspend-btn danger"
+                              data-confirm-message="이 회원을 정지하시겠습니까?"
+                            >
+                              정지
+                            </button>
+                          </form>
+                        {% else %}
+                          <form method="post" action="/admin/members/{{ member.id }}/unsuspend" class="member-inline-form">
+                            <button
+                              type="submit"
+                              class="member-suspend-btn"
+                              data-confirm-message="이 회원의 정지를 해제하시겠습니까?"
+                            >
+                              정지 해제
+                            </button>
+                          </form>
+                        {% endif %}
+                      </div>
+                    {% else %}
+                      {% if member.role == 'admin' %}
+                        <span class="role-badge role-admin">관리자</span>
+                      {% elif member.role == 'manager' %}
+                        <span class="role-badge role-manager">매니저</span>
+                      {% else %}
+                        <span class="role-badge role-user">일반회원</span>
+                      {% endif %}
+
+                      {% if member.active %}
+                        <span class="status-badge">활성</span>
+                      {% else %}
+                        <span class="status-badge status-inactive">정지</span>
+                      {% endif %}
+                    {% endif %}
+                  </div>
                 </div>
 
                 <div class="member-profile-meta">
@@ -1113,17 +1325,32 @@
                   {% endif %}
 
                   <span class="member-profile-chip">
-                    총 게시글 {{ member_stats.total_reports or 0 }}건
+                    누적 신고 {{ member_stats.total_reports or 0 }}건
                   </span>
+                </div>
+                <div class="member-profile-edit-row">
+                  {% if request.args.get('edit') == '1' %}
+                    <a
+                      href="/admin/members/{{ member.id }}?page={{ request.args.get('page', 1) }}&keyword={{ request.args.get('keyword', '') }}&role={{ request.args.get('role', '') }}&sort={{ request.args.get('sort', 'role') }}&order={{ request.args.get('order', 'asc') }}"
+                      class="member-cancel-btn js-page-transition-link"
+                    >
+                      편집 종료
+                    </a>
+                  {% else %}
+                    <a
+                      href="/admin/members/{{ member.id }}?edit=1&page={{ request.args.get('page', 1) }}&keyword={{ request.args.get('keyword', '') }}&role={{ request.args.get('role', '') }}&sort={{ request.args.get('sort', 'role') }}&order={{ request.args.get('order', 'asc') }}"
+                      class="member-edit-btn js-page-transition-link"
+                    >
+                      편집
+                    </a>
+                  {% endif %}
                 </div>
               </div>
             </div>
-
             <div class="member-info-grid">
               <div class="stats-card">
                 <div class="stats-card-head">
-                  <div class="stats-card-title">게시글 상태 통계</div>
-                  <div class="stats-card-total">전체 {{ member_stats.total_reports or 0 }}건</div>
+                  <div class="stats-card-title">신고 상태</div>
                 </div>
 
                 <div class="stats-grid">
@@ -1173,8 +1400,7 @@
 
               <div class="risk-card">
                 <div class="risk-card-head">
-                  <div class="risk-card-title">처리 현황</div>
-                  <div class="risk-card-total">최근 7일 {{ member_stats.recent_7d_reports or 0 }}건</div>
+                  <div class="risk-card-title">주의 현황</div>
                 </div>
 
                 <div class="risk-grid">
@@ -1221,7 +1447,7 @@
           <div class="member-side">
             <div class="summary-card">
               <div class="summary-card-head">
-                <div class="summary-card-title">운영 요약</div>
+                <div class="summary-card-title">활동 요약</div>
                 <div class="summary-card-badge">핵심 지표</div>
               </div>
 
@@ -1237,12 +1463,12 @@
                 </div>
 
                 <div class="summary-item grouped">
-                  <div class="summary-label">중복율</div>
+                  <div class="summary-label">중복 신고율</div>
                   <div class="summary-value">{{ member_stats.duplicate_rate or 0 }}%</div>
                 </div>
 
                 <div class="summary-item date">
-                  <div class="summary-label">최근 30일</div>
+                  <div class="summary-label">최근 30일 활동</div>
                   <div class="summary-value">{{ member_stats.recent_30d_reports or 0 }}건</div>
                 </div>
               </div>
@@ -1250,14 +1476,14 @@
 
             <div class="activity-card">
               <div class="section-card-head">
-                <div class="section-card-title">게시글</div>
-                <div class="section-card-count">총 게시글 {{ member_stats.total_reports or 0 }}건</div>
+                <div class="section-card-title">최근 신고</div>
+                <div class="section-card-count">누적 신고 {{ member_stats.total_reports or 0 }}건</div>
               </div>
 
               {% if member_incidents and member_incidents|length > 0 %}
                 <div class="post-list">
                   {% for post in member_incidents %}
-                  <a href="/admin/incidents/{{ post.id }}" class="post-item js-page-transition-link">
+                  <a href="/admin/incidents?member_id={{ member.id }}" class="post-item js-page-transition-link">
                     <div class="post-item-top">
                       <div class="post-title">
                         {{ post.title if post.title else '제목 없는 게시글' }}
@@ -1318,9 +1544,25 @@
   </div>
 
   <div id="pageTransitionOverlay" class="page-transition-overlay"></div>
+  <div id="confirmModal" class="confirm-modal-backdrop">
+    <div class="confirm-modal">
+      <div class="confirm-modal-head">
+        <div class="confirm-modal-title">한 번 더 확인해주세요</div>
+      </div>
 
+      <div id="confirmModalMessage" class="confirm-modal-message">
+        정말 진행하시겠습니까?
+      </div>
+
+      <div class="confirm-modal-actions">
+        <button type="button" id="confirmCancelBtn" class="confirm-modal-btn secondary">취소</button>
+        <button type="button" id="confirmOkBtn" class="confirm-modal-btn primary">확인</button>
+      </div>
+    </div>
+  </div>
   <script>
     let pageTransitionRunning = false;
+    let pendingConfirmForm = null;
 
     function runPageTransition(href) {
       if (!href || pageTransitionRunning) return;
@@ -1369,6 +1611,55 @@
 
       e.preventDefault();
       runPageTransition(href);
+    });
+
+
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmModalMessage = document.getElementById('confirmModalMessage');
+    const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+    const confirmOkBtn = document.getElementById('confirmOkBtn');
+
+    function openConfirmModal(message, form) {
+      pendingConfirmForm = form;
+      confirmModalMessage.textContent = message;
+      confirmModal.classList.add('show');
+    }
+
+    function closeConfirmModal() {
+      confirmModal.classList.remove('show');
+      pendingConfirmForm = null;
+    }
+
+    document.addEventListener('submit', function (e) {
+      const form = e.target;
+      if (!form) return;
+
+      const submitButton = document.activeElement;
+      if (!submitButton) return;
+
+      const message = submitButton.getAttribute('data-confirm-message');
+      if (!message) return;
+
+      e.preventDefault();
+      openConfirmModal(message, form);
+    });
+
+    confirmCancelBtn.addEventListener('click', function () {
+      closeConfirmModal();
+    });
+
+    confirmOkBtn.addEventListener('click', function () {
+      if (!pendingConfirmForm) return;
+
+      const formToSubmit = pendingConfirmForm;
+      closeConfirmModal();
+      formToSubmit.submit();
+    });
+
+    confirmModal.addEventListener('click', function (e) {
+      if (e.target === confirmModal) {
+        closeConfirmModal();
+      }
     });
   </script>
 </body>

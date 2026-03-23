@@ -209,7 +209,7 @@
       background: rgba(255, 255, 255, 0.94);
       border: 1px solid var(--border);
       border-radius: 18px;
-      padding: 16px;
+      padding: 14px;
       box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
     }
 
@@ -242,17 +242,69 @@
 
     .filter-form {
       display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 6px;
       margin-bottom: 12px;
-      padding: 12px;
+      padding: 10px 12px;
       border: 1px solid #e9eef5;
       border-radius: 16px;
       background: #f8fafc;
     }
 
+    .filter-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-row-top {
+      align-items: center;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .filter-group-right {
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .filter-result-chip {
+      display: inline-flex;
+      align-items: center;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid #dbe3ec;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .sort-state-chip {
+      display: inline-flex;
+      align-items: center;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid #d7dde5;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
     .filter-control {
-      height: 36px;
+      height: 34px;
       padding: 0 11px;
       border: 1px solid #d7dde5;
       border-radius: 10px;
@@ -262,13 +314,39 @@
     }
 
     .filter-input-keyword {
-      width: 220px;
+      width: 240px;
     }
 
     .bulk-action-row {
       display: flex;
-      gap: 6px;
+      align-items: center;
+      gap: 8px;
       flex-wrap: wrap;
+    }
+
+    .bulk-selection-chip {
+      display: inline-flex;
+      align-items: center;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid #dbe3ec;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .bulk-btn-danger {
+      background: #fff1f2;
+      border-color: #fecaca;
+      color: #dc2626;
+    }
+
+    .bulk-btn-danger:hover {
+      background: #ffe4e6;
+      border-color: #fda4af;
     }
 
     .table-shell {
@@ -303,10 +381,26 @@
     thead th[data-sort] {
       cursor: pointer;
       user-select: none;
+      transition: all 0.16s ease;
     }
 
     thead th[data-sort]:hover {
-      background: #f1f5f9;
+      background: #eef4fa;
+      color: #0f172a;
+    }
+
+    thead th.sort-active {
+      background: #eaf2fb;
+      color: #0f172a;
+    }
+
+    .sort-indicator {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 4px;
+      font-size: 11px;
+      font-weight: 900;
+      color: #2563eb;
     }
 
     thead th:first-child,
@@ -596,33 +690,31 @@
       display: none;
     }
 
-    .detail-map-btn {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
-  cursor: pointer;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-}
+    .detail-map-inline-btn {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      color: #64748b;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-.detail-thumb-actions {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  z-index: 20;
-}
+    .detail-map-inline-icon {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+
+    .detail-map-inline-btn:hover {
+      color: #334155;
+      transform: scale(1.05);
+    }
 
 .detail-chip {
   display: inline-flex;
@@ -760,22 +852,27 @@
   border-radius: 28px;
   overflow: hidden;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.20);
-  border: 1px solid rgba(255, 255, 255, 0.65);
+  border: 1px solid #dbe3ec;
 }
 
 .detail-thumb-box {
   position: relative;
   width: 100%;
-  height: 430px;
-  background: #ececec;
-  overflow: hidden;
+  background: #ffffff;
+  padding: 16px 16px 8px;
 }
 
-.detail-thumb-img {
+.detail-photo-frame {
+  position: relative;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: none;
+  height: 330px;
+  border: 1px solid #cfd8e3;
+  border-radius: 24px;
+  background: #f3f4f6;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .detail-thumb-placeholder {
@@ -784,41 +881,15 @@
   display: none;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  padding: 20px;
   font-size: 16px;
-  color: #666;
-  font-weight: 600;
-}
-
-.detail-thumb-actions {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  z-index: 20;
-}
-
-.detail-map-btn {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
-  cursor: pointer;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  color: #334155;
+  font-weight: 700;
 }
 
 .detail-content-box {
-  padding: 14px 16px 16px;
+  padding: 10px 16px 16px;
   background: #fff;
 }
 
@@ -835,10 +906,6 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-}
-
-.detail-inline-status-wrap {
-  position: relative;
 }
 
 .detail-chip {
@@ -885,20 +952,6 @@
   opacity: 0.92;
 }
 
-.detail-inline-status-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  min-width: 120px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
-  padding: 6px;
-  display: none;
-  z-index: 30;
-}
-
 .detail-inline-status-wrap.open .detail-inline-status-menu {
   display: block;
 }
@@ -930,20 +983,6 @@
   background: #fff1f2;
 }
 
-.detail-inline-apply-btn {
-  height: 34px;
-  padding: 0 14px;
-  border: 1px solid #d7dde5;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #334155;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
-  transition: all 0.18s ease;
-}
-
 .detail-inline-apply-btn:hover {
   transform: translateY(-1px);
   background: #f8fafc;
@@ -954,7 +993,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 3px;
 }
 
 .detail-time-text {
@@ -982,17 +1021,16 @@
 }
 
 .detail-divider {
-  height: 1px;
-  background: #f1f1f1;
-  margin: 0 0 16px 0;
+  display: none;
 }
 
 .detail-info-card {
   background: #fafafa;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #eceff3;
   border-radius: 18px;
   padding: 14px 14px 12px;
   margin-bottom: 16px;
+  min-height: auto;
 }
 
 .detail-content-title {
@@ -1010,10 +1048,6 @@
   line-height: 1.5;
   margin-bottom: 0;
   white-space: pre-line;
-}
-
-.detail-close-wrap {
-  margin-top: 0;
 }
 
 .detail-close-btn {
@@ -1073,7 +1107,7 @@
 }
 
 .incidents-section-header {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
     .reject-reason-text {
@@ -1092,15 +1126,40 @@
       font-size: 12px;
     }
 
+    .priority-urgent {
+      background: #fff1f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+
+    .priority-warning {
+      background: #fff7ed;
+      color: #ea580c;
+      border: 1px solid #fed7aa;
+    }
+
+    .priority-normal {
+      background: #f8fafc;
+      color: #64748b;
+      border: 1px solid #dbe4ee;
+    }
+
     .urgent-reason-text {
-      display: inline-block;
-      max-width: 140px;
+      display: inline-flex;
+      align-items: center;
+      max-width: 165px;
+      height: 24px;
+      padding: 0 9px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       vertical-align: middle;
-      color: #b45309;
-      font-weight: 700;
+      border-radius: 999px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #c2410c;
+      font-size: 10.5px;
+      font-weight: 900;
     }
 
     .pagination-row {
@@ -1124,19 +1183,16 @@
       justify-content: flex-start;
     }
 
-    .priority-urgent {
-      background: #fff1f2;
-      color: #dc2626;
+    .detail-location-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
     }
 
-    .priority-warning {
-      background: #fff7ed;
-      color: #ea580c;
-    }
-
-    .priority-normal {
-      background: #f8fafc;
-      color: #64748b;
+    .detail-location-row #incidentDetailLocation {
+      flex: 1;
+      min-width: 0;
     }
 
     .dashboard-shell {
@@ -1316,6 +1372,55 @@
   transform: translateY(-1px);
 }
 
+.map-modal-card {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid #dbe3ec;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.20);
+  overflow: hidden;
+}
+
+.map-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.map-modal-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.map-modal-close-x {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.map-modal-body {
+  padding: 16px;
+}
+
+.map-canvas {
+  width: 100%;
+  height: 320px;
+  border: 1px solid #d7dde5;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.map-modal-footer {
+  padding: 0 16px 16px;
+}
+
 .page-transition-overlay {
   position: fixed;
   inset: 0;
@@ -1335,6 +1440,7 @@
   transition: opacity 0.16s ease;
 }
   </style>
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ KAKAO_JS_KEY }}"></script>
 </head>
 <body>
   <div class="layout">
@@ -1377,7 +1483,10 @@
           <form method="GET" action="/admin/incidents" class="filter-form">
             <input type="hidden" name="quick_filter" value="{{ quick_filter }}">
             <input type="hidden" name="member_id" value="{{ request.args.get('member_id', '') }}">
-              <select name="status" class="filter-control">
+
+            <div class="filter-row filter-row-top">
+              <div class="filter-group">
+                <select name="status" class="filter-control">
                   <option value="">전체 상태</option>
                   <option value="접수완료" {{ 'selected' if selected_status == '접수완료' else '' }}>접수완료</option>
                   <option value="처리중" {{ 'selected' if selected_status == '처리중' else '' }}>처리중</option>
@@ -1392,7 +1501,7 @@
                   <option value="low" {{ 'selected' if selected_risk == 'low' else '' }}>낮음</option>
                 </select>
 
-              <select name="region" class="filter-control">
+                <select name="region" class="filter-control">
                   <option value="">전체 지역</option>
                   {% for region in region_options %}
                     <option value="{{ region }}" {{ 'selected' if selected_region == region else '' }}>{{ region }}</option>
@@ -1407,22 +1516,31 @@
                   <option value="pending" {{ 'selected' if sort_by == 'pending' else '' }}>미처리 우선</option>
                 </select>
 
-              <input
-                type="text"
-                name="keyword"
-                value="{{ keyword or '' }}"
-                placeholder="제목 또는 위치 검색"
-                class="filter-control filter-input-keyword"
-              >
+                <input
+                  type="text"
+                  name="keyword"
+                  value="{{ keyword or '' }}"
+                  placeholder="제목 또는 위치 검색"
+                  class="filter-control filter-input-keyword"
+                >
 
-              <button type="submit" class="btn">필터 적용</button>
+                <button type="submit" class="btn">필터 적용</button>
+                <a href="/admin/incidents?member_id={{ request.args.get('member_id', '') }}" class="btn">초기화</a>
+              </div>
 
-              {% if quick_filter %}
+              <div class="filter-group filter-group-right">
+                <span class="filter-result-chip">현재 결과 {{ total_count }}건</span>
+              </div>
+            </div>
+
+            {% if quick_filter %}
+            <div class="filter-row">
+              <div class="filter-group">
                 <a href="/admin/incidents?member_id={{ request.args.get('member_id', '') }}" class="btn">빠른 필터 해제</a>
-              {% endif %}
-
-              <a href="/admin/incidents?member_id={{ request.args.get('member_id', '') }}" class="btn">초기화</a>
-            </form>
+              </div>
+            </div>
+            {% endif %}
+          </form>
           <form id="bulkStatusForm" method="POST" action="/admin/incidents/bulk-update">
             <input type="hidden" name="new_status" id="bulkNewStatusInput">
             <input type="hidden" name="reject_reason" id="bulkRejectReasonInput" value="">
@@ -1440,7 +1558,7 @@
                   <th data-sort="risk">위험도</th>
                   <th data-sort="priority">우선순위</th>
                   <th>긴급 사유</th>
-                  <th data-sort="status">상태</th>
+                  <th data-sort="status">처리 상태</th>
                   <th>반려 사유</th>
                   <th data-sort="latest">접수시간</th>
                   <th data-sort="reports">반복 제보</th>
@@ -1565,9 +1683,10 @@
         </div>
         <div class="table-bottom-bar">
           <div class="bulk-action-row bottom-actions">
-            <button type="button" class="btn bulk-btn" onclick="submitBulkStatus('처리중')">선택 처리중</button>
-            <button type="button" class="btn bulk-btn" onclick="submitBulkStatus('처리완료')">선택 처리완료</button>
-            <button type="button" class="btn bulk-btn" onclick="openBulkRejectModal()">선택 반려</button>
+            <span class="bulk-selection-chip" id="bulkSelectionCount">선택 항목 0건</span>
+            <button type="button" class="btn bulk-btn" onclick="submitBulkStatus('처리중')">처리중 변경</button>
+            <button type="button" class="btn bulk-btn" onclick="submitBulkStatus('처리완료')">처리완료 변경</button>
+            <button type="button" class="btn bulk-btn bulk-btn-danger" onclick="openBulkRejectModal()">반려 처리</button>
           </div>
 
           {% if total_pages > 1 %}
@@ -1606,11 +1725,9 @@
     <div class="detail-modal-backdrop" id="incidentDetailModal">
       <div class="detail-modal-card">
         <div class="detail-thumb-box">
-          <img id="incidentDetailImage" class="detail-thumb-img" src="" alt="신고 이미지">
-          <div id="incidentDetailPlaceholder" class="detail-thumb-placeholder">사진이 없습니다.</div>
-
-          <div class="detail-thumb-actions">
-            <button class="detail-map-btn" type="button" onclick="openIncidentMap()" title="지도 보기">🌍</button>
+          <div class="detail-photo-frame">
+            <img id="incidentDetailImage" class="detail-thumb-img" src="" alt="신고 이미지">
+            <div id="incidentDetailPlaceholder" class="detail-thumb-placeholder">사진</div>
           </div>
         </div>
 
@@ -1649,8 +1766,34 @@
 
           <div class="detail-info-card">
             <div id="incidentDetailTitle" class="detail-content-title">신고 제목</div>
-            <div id="incidentDetailLocation" class="detail-content-text">위치 정보</div>
+            <div class="detail-location-row">
+              <div id="incidentDetailLocation" class="detail-content-text">위치 정보</div>
+              <button
+                class="detail-map-inline-btn"
+                type="button"
+                onclick="openIncidentMap()"
+                title="지도 보기"
+                aria-label="지도 보기"
+              >
+                <svg
+                  class="detail-map-inline-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M9 18L3.8 20.5C3.47 20.66 3.08 20.42 3.08 20.05V5.95C3.08 5.7 3.22 5.47 3.44 5.36L9 2.5M9 18L15 21.5M9 18V2.5M15 21.5L20.2 19C20.53 18.84 20.92 19.08 20.92 19.45V3.55C20.92 3.3 20.78 3.07 20.56 2.96L15 0.5M15 21.5V0.5M15 0.5L9 2.5"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
             <div id="incidentDetailReporter" class="detail-content-text" style="margin-top:8px;">반복 제보 1건</div>
+            <div id="incidentDetailSummary" class="detail-content-text" style="margin-top:6px; color:#64748b;">현재 접수완료</div>
           </div>
 
           <div class="detail-close-wrap">
@@ -1738,11 +1881,11 @@
         선택한 신고의 상태를 변경하시겠습니까?
       </div>
       <div class="confirm-modal-actions">
-        <button type="button" class="confirm-btn-cancel" onclick="closeConfirmActionModal()">
-          취소
-        </button>
         <button type="button" class="confirm-btn-submit" onclick="confirmBulkStatusSubmit()">
           확인
+        </button>
+        <button type="button" class="confirm-btn-cancel" onclick="closeConfirmActionModal()">
+          취소
         </button>
       </div>
     </div>
@@ -1786,6 +1929,22 @@
     </div>
   </div>
 </div>
+<div class="detail-modal-backdrop" id="incidentMapModal">
+  <div class="map-modal-card">
+    <div class="map-modal-header">
+      <div class="map-modal-title">신고 위치</div>
+      <button type="button" class="map-modal-close-x" onclick="closeIncidentMapModal()">✕</button>
+    </div>
+
+    <div class="map-modal-body">
+      <div id="incidentMapCanvas" class="map-canvas"></div>
+    </div>
+
+    <div class="map-modal-footer">
+      <button type="button" class="detail-close-btn" onclick="closeIncidentMapModal()">닫기</button>
+    </div>
+  </div>
+</div>
 <div id="pageTransitionOverlay" class="page-transition-overlay"></div>
   <script>
 
@@ -1796,6 +1955,8 @@ let incidentDetailId = '';
 let incidentSelectedStatus = '';
 let incidentCurrentStatus = '';
 let pendingBulkStatus = '';
+let incidentMapInstance = null;
+let incidentMapMarker = null;
 
 function getIncidentStatusClass(status) {
   if (status === '접수완료') return 'status-received';
@@ -1912,6 +2073,24 @@ function closeConfirmActionModal() {
   document.getElementById('confirmActionModal').classList.remove('show');
 }
 
+function updateBulkSelectionCount() {
+  const checkedCount = getCheckedIncidentCount();
+  const countEl = document.getElementById('bulkSelectionCount');
+  if (!countEl) return;
+
+  countEl.textContent = `선택 항목 ${checkedCount}건`;
+}
+
+document.addEventListener('change', function (e) {
+  if (e.target.matches('.incident-check') || e.target.id === 'checkAllIncidents') {
+    updateBulkSelectionCount();
+    syncCheckAllState();
+  }
+});
+
+updateBulkSelectionCount();
+syncCheckAllState();
+
 function confirmBulkStatusSubmit() {
   if (!pendingBulkStatus) {
     closeConfirmActionModal();
@@ -1920,6 +2099,7 @@ function confirmBulkStatusSubmit() {
 
   document.getElementById('bulkNewStatusInput').value = pendingBulkStatus;
   document.getElementById('bulkRejectReasonInput').value = '';
+  closeConfirmActionModal();
   document.getElementById('bulkStatusForm').submit();
 }
 
@@ -1934,6 +2114,9 @@ function selectInlineIncidentStatus(value) {
   const statusEl = document.getElementById('incidentDetailStatus');
   statusEl.textContent = value;
   statusEl.className = 'detail-chip detail-chip-button ' + getIncidentStatusClass(value);
+
+  const riskText = document.getElementById('incidentDetailRisk').textContent || '위험도 정보 없음';
+  document.getElementById('incidentDetailSummary').textContent = `${riskText} · 현재 ${value}`;
 
   document.getElementById('incidentInlineStatusWrap').classList.remove('open');
 }
@@ -1993,7 +2176,15 @@ function applyInlineIncidentStatus() {
       riskEl.textContent = '위험도 낮음';
       riskEl.className = 'detail-risk-badge detail-risk-low';
     }
+    let riskLabel = '위험도 낮음';
+    if (score >= 80) {
+      riskLabel = '위험도 높음';
+    } else if (score >= 50) {
+      riskLabel = '위험도 중간';
+    }
 
+    document.getElementById('incidentDetailSummary').textContent =
+      `${riskLabel} · 현재 ${status || '상태 없음'}`;
         const imgEl = document.getElementById('incidentDetailImage');
         const placeholderEl = document.getElementById('incidentDetailPlaceholder');
 
@@ -2011,13 +2202,13 @@ function applyInlineIncidentStatus() {
           imgEl.onerror = function () {
             imgEl.src = '';
             imgEl.style.display = 'none';
-            placeholderEl.textContent = '사진을 불러올 수 없습니다.';
+            placeholderEl.textContent = '이미지를 불러올 수 없습니다.';
             placeholderEl.style.display = 'flex';
           };
         } else {
           imgEl.src = '';
           imgEl.style.display = 'none';
-          placeholderEl.textContent = '사진이 없습니다.';
+          placeholderEl.textContent = '사진';
           placeholderEl.style.display = 'flex';
         }
 
@@ -2029,14 +2220,65 @@ function applyInlineIncidentStatus() {
   }
 
   function openIncidentMap() {
-    if (!incidentDetailLat || !incidentDetailLng) {
-      openCustomAlert('지도에 표시할 좌표 정보가 없습니다.');
-      return;
+  if (!incidentDetailLat || !incidentDetailLng) {
+    openCustomAlert('지도에 표시할 좌표 정보가 없습니다.');
+    return;
+  }
+
+  if (typeof kakao === 'undefined' || !kakao.maps) {
+    openCustomAlert('카카오 지도 스크립트가 로드되지 않았습니다. JavaScript 키를 확인해주세요.');
+    return;
+  }
+
+  const lat = Number(incidentDetailLat);
+  const lng = Number(incidentDetailLng);
+
+  if (Number.isNaN(lat) || Number.isNaN(lng)) {
+    openCustomAlert('좌표 값이 올바르지 않습니다.');
+    return;
+  }
+
+  const modal = document.getElementById('incidentMapModal');
+  const container = document.getElementById('incidentMapCanvas');
+
+  if (!modal || !container) {
+    openCustomAlert('지도 모달 요소를 찾을 수 없습니다.');
+    return;
+  }
+
+  modal.classList.add('show');
+
+  const position = new kakao.maps.LatLng(lat, lng);
+
+  setTimeout(() => {
+    if (!incidentMapInstance) {
+      incidentMapInstance = new kakao.maps.Map(container, {
+        center: position,
+        level: 3
+      });
+
+      incidentMapMarker = new kakao.maps.Marker({
+        position: position
+      });
+
+      incidentMapMarker.setMap(incidentMapInstance);
+    } else {
+      incidentMapInstance.relayout();
+      incidentMapInstance.setCenter(position);
+
+      if (incidentMapMarker) {
+        incidentMapMarker.setPosition(position);
+      }
     }
 
-    const mapUrl = `https://map.kakao.com/link/map/신고위치,${incidentDetailLat},${incidentDetailLng}`;
-    window.open(mapUrl, '_blank');
-  }
+    incidentMapInstance.relayout();
+    incidentMapInstance.setCenter(position);
+  }, 50);
+}
+
+function closeIncidentMapModal() {
+  document.getElementById('incidentMapModal').classList.remove('show');
+}
 
   function submitIncidentStatus(newStatus) {
     if (!incidentDetailId) {
@@ -2084,7 +2326,34 @@ function applyInlineIncidentStatus() {
     checks.forEach(function(check) {
       check.checked = source.checked;
     });
+    updateBulkSelectionCount();
+    syncCheckAllState();
   }
+
+  function syncCheckAllState() {
+  const allChecks = document.querySelectorAll('.incident-check');
+  const checkedChecks = document.querySelectorAll('.incident-check:checked');
+  const checkAll = document.getElementById('checkAllIncidents');
+
+  if (!checkAll) return;
+
+  if (allChecks.length === 0) {
+    checkAll.checked = false;
+    checkAll.indeterminate = false;
+    return;
+  }
+
+  if (checkedChecks.length === 0) {
+    checkAll.checked = false;
+    checkAll.indeterminate = false;
+  } else if (checkedChecks.length === allChecks.length) {
+    checkAll.checked = true;
+    checkAll.indeterminate = false;
+  } else {
+    checkAll.checked = false;
+    checkAll.indeterminate = true;
+  }
+}
 
   function getCheckedIncidentCount() {
     return document.querySelectorAll('.incident-check:checked').length;
@@ -2143,6 +2412,12 @@ function applyInlineIncidentStatus() {
       closeIncidentDetailModal();
     }
   });
+
+document.getElementById('incidentMapModal').addEventListener('click', function(e) {
+  if (e.target.id === 'incidentMapModal') {
+    closeIncidentMapModal();
+  }
+});
 
   document.getElementById('incidentRejectModal').addEventListener('click', function(e) {
     if (e.target.id === 'incidentRejectModal') {
@@ -2252,9 +2527,26 @@ document.querySelectorAll('th[data-sort]').forEach(th => {
     params.set('order', nextOrder);
     params.set('page', '1');
 
-    window.location.href = `/admin/incidents?${params.toString()}`;
+    runPageTransition(`/admin/incidents?${params.toString()}`);
   });
 });
+
+(function applyActiveSortState() {
+  const params = new URLSearchParams(window.location.search);
+  const currentSort = params.get('sort') || '{{ sort_by }}';
+  const currentOrder = params.get('order') || '{{ sort_order }}';
+
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    if (th.dataset.sort === currentSort) {
+      th.classList.add('sort-active');
+
+      const indicator = document.createElement('span');
+      indicator.className = 'sort-indicator';
+      indicator.textContent = currentOrder === 'asc' ? '▲' : '▼';
+      th.appendChild(indicator);
+    }
+  });
+})();
 </script>
 </body>
 </html>
