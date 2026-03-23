@@ -2655,4 +2655,4 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(host='192.168.0.164', port=5001, debug=True)
+    app.run(host='localhost', port=5001, debug=True)
