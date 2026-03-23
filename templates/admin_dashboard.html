@@ -1,20 +1,1149 @@
 {% extends 'layout.html' %}
 
-{% block title %}Admin Dashboard - Crack{% endblock %}
+{% block title %}CRACK - 관리자 대시보드{% endblock %}
 
 {% block extra_style %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
+    :root {
+        --accent: #ff7a1a;
+        --accent-dark: #ea6500;
+        --text: #0f172a;
+        --text-sub: #64748b;
+        --border: #e5e7eb;
+        --surface-soft: #f8fafc;
+    }
+
+    body {
+        background: #f4f6f8;
+    }
+
     .dashboard-container {
-        padding: 40px;
-        min-height: calc(100vh - var(--header-h));
+        max-width: 1320px;
+        margin: 30px auto;
+        padding: 28px;
         background: #FFFFFF;
-        /* 완전한 흰 도화지 배경 */
+        border-radius: 30px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+        min-height: calc(100vh - 150px);
+    }
+
+    /* [추가] PPT 모드 최적화: 헤더 숨김 및 여백 조정 */
+    body.ppt-mode header,
+    body.ppt-mode nav,
+    body.ppt-mode .page-header,
+    body.ppt-mode .admin-pc-btn,
+    body.ppt-mode .bottom-nav,
+    body.ppt-mode footer,
+    html.ppt-mode-active body header,
+    html.ppt-mode-active body nav,
+    html.ppt-mode-active body .page-header,
+    html.ppt-mode-active body .admin-pc-btn,
+    html.ppt-mode-active body .bottom-nav,
+    html.ppt-mode-active body footer {
+        display: none !important;
+    }
+
+    body.ppt-mode {
+        background: #fff !important;
+        overflow: hidden !important;
+        height: 100vh !important;
+        position: fixed !important;
+        width: 100vw !important;
+        overscroll-behavior: none !important;
+        /* [추가] 브라우저 바운스 및 흔들림 방지 */
+    }
+
+    body.ppt-mode .dashboard-container {
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        max-width: none !important;
+        height: 100vh !important;
+        padding: 5px 15px !important;
+        /* 여백 최소화 */
+        border-radius: 0 !important;
+        overflow: hidden !important;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    body.ppt-mode .summary-grid {
+        margin-bottom: 12px !important;
+        gap: 12px !important;
+        grid-template-columns: repeat(6, 1fr) !important;
+        /* 6개 카드 한 줄에 배치 */
+        flex-shrink: 0;
+    }
+
+    body.ppt-mode .summary-card {
+        padding: 15px 10px !important;
+        height: auto !important;
+    }
+
+    body.ppt-mode .summary-value {
+        font-size: 20px !important;
+    }
+
+    body.ppt-mode .summary-value strong {
+        font-size: 24px !important;
+    }
+
+    body.ppt-mode .main-split {
+        flex: 1;
+        min-height: 0;
+        gap: 20px !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        /* 지도와 리스트 1:1 비율 */
+        overflow: hidden !important;
+    }
+
+    body.ppt-mode .map-panel {
+        height: 100% !important;
+        overflow: hidden !important;
+    }
+
+    body.ppt-mode #kakaoMap {
+        height: 100% !important;
+    }
+
+    body.ppt-mode .list-panel {
+        height: 100% !important;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden !important;
+    }
+
+    body.ppt-mode .card-list {
+        max-height: none !important;
+        flex: 1;
+        overflow-y: auto !important;
+        /* 리스트가 너무 길면 내부 스크롤 허용 (하지만 컨테이너 자체는 고정) */
+        padding-right: 5px;
+    }
+
+    body.ppt-mode .page-header,
+    body.ppt-mode .breadcrumb {
+        display: none !important;
+    }
+
+    /* 요약 카드 */
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+
+    .summary-card {
+        background: #fff;
+        padding: 16px;
+        border-radius: 18px;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid var(--border);
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .summary-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: #eee;
+    }
+
+    .summary-card.urgent::before {
+        background: #ef4444;
+    }
+
+    .summary-card.today::before {
+        background: #f97316;
+    }
+
+    .summary-card.pending-strong::before {
+        background: #64748b;
+    }
+
+    .summary-card.processing::before {
+        background: #3b82f6;
+    }
+
+    .summary-card.long-pending::before {
+        background: #8b5cf6;
+    }
+
+    .summary-card.rejected::before {
+        background: #ef4444;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        border-color: var(--accent);
+    }
+
+    .summary-card.active {
+        border-color: var(--accent);
+        background: #fffaf5;
+        box-shadow: 0 8px 18px rgba(255, 122, 26, 0.08);
+    }
+
+    .summary-label {
+        font-size: 12px;
+        color: var(--text-sub);
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .summary-value {
+        font-size: 22px;
+        font-weight: 900;
+        color: var(--text);
+    }
+
+    .summary-value strong {
+        font-size: 26px;
+    }
+
+    .summary-meta {
+        font-size: 10px;
+        color: var(--text-sub);
+        margin-top: 3px;
+    }
+
+    /* 메인 레이아웃: 지도 + 리스트 */
+    .main-split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    /* 카카오 지도 */
+    .map-panel {
+        border-radius: 22px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        position: relative;
+        min-height: 520px;
+        background: #e8edf3;
+    }
+
+    .map-panel #kakaoMap {
+        width: 100%;
+        height: 100%;
+        min-height: 520px;
+    }
+
+    .map-legend {
+        position: absolute;
+        bottom: 16px;
+        right: 16px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(8px);
+        border-radius: 14px;
+        padding: 12px 16px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-sub);
+    }
+
+    .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    /* 리스트 섹션 */
+    .list-panel {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .section-header {
+        margin-bottom: 16px;
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 900;
+        color: var(--text);
+    }
+
+    .section-subtitle {
+        font-size: 12px;
+        color: var(--text-sub);
+        margin-top: 4px;
+        font-weight: 500;
+    }
+
+    .card-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        overflow-y: auto;
+        max-height: 480px;
+        padding-right: 5px;
+    }
+
+    .card-list::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .card-list::-webkit-scrollbar-thumb {
+        background: #ddd;
+        border-radius: 10px;
+    }
+
+    .report-card {
+        background: var(--surface-soft);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+        transition: all 0.2s;
+    }
+
+    .report-card:hover {
+        border-color: var(--accent);
+        background: #fff;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    .card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+
+    .card-addr {
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--text);
+        line-height: 1.4;
+        flex: 1;
+        margin-right: 10px;
+    }
+
+    .badge {
+        padding: 4px 10px;
+        border-radius: 99px;
+        font-size: 10px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .status-received {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .status-processing {
+        background: #fff7ed;
+        color: #f97316;
+    }
+
+    .status-active {
+        background: #eff6ff;
+        color: #3b82f6;
+    }
+
+    .status-done {
+        background: #f0fdf4;
+        color: #16a34a;
+    }
+
+    .status-rejected {
+        background: #fef2f2;
+        color: #ef4444;
+    }
+
+    .risk-high {
+        background: #fef2f2;
+        color: #ef4444;
+    }
+
+    .card-reason {
+        font-size: 12px;
+        color: #ef4444;
+        font-weight: 700;
+        margin-bottom: 8px;
+        min-height: 16px;
+    }
+
+    .card-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid #eef2f6;
+    }
+
+    .card-time {
+        font-size: 12px;
+        color: var(--text-sub);
+        font-weight: 600;
+    }
+
+    /* 인라인 드롭다운 */
+    .inline-status-wrap {
+        position: relative;
+        display: inline-block;
+    }
+
+    .status-dropdown-btn {
+        padding: 6px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #fff;
+        font-weight: 800;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .status-dropdown-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .status-dropdown-menu {
+        position: absolute;
+        right: 0;
+        bottom: calc(100% + 8px);
+        background: #fff;
+        border: 1px solid #eee;
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        padding: 6px;
+        display: none;
+        min-width: 150px;
+        z-index: 100;
+    }
+
+    .inline-status-wrap.open .status-dropdown-menu {
+        display: block;
+    }
+
+    .status-opt {
+        display: block;
+        width: 100%;
+        padding: 8px 12px;
+        border: none;
+        background: none;
+        text-align: left;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 12px;
+        border-radius: 8px;
+        transition: background 0.15s;
+    }
+
+    .status-opt:hover {
+        background: #f8fafc;
+        color: var(--accent);
+    }
+
+    .status-opt.danger {
+        color: #ef4444;
+    }
+
+    .status-opt.danger:hover {
+        background: #fef2f2;
+    }
+
+    .mini-btn {
+        padding: 6px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #fff;
+        font-weight: 800;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .mini-btn:hover {
+        background: var(--text);
+        color: #fff;
+        border-color: var(--text);
+    }
+
+    /* 상세 모달 */
+    .detail-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        backdrop-filter: blur(4px);
+    }
+
+    .detail-modal-backdrop.show {
+        display: flex;
+    }
+
+    .detail-modal-card {
+        width: 420px;
+        background: #fff;
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    .detail-thumb-box {
+        height: 280px;
+        background: #eee;
+        position: relative;
+    }
+
+    .detail-thumb-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .detail-content-box {
+        padding: 25px;
+    }
+
+    .detail-close-btn {
+        width: 100%;
+        padding: 12px;
+        border-radius: 14px;
+        border: none;
+        background: var(--text);
+        color: #fff;
+        font-weight: 800;
+        cursor: pointer;
+        margin-top: 18px;
+    }
+
+    .detail-close-btn:hover {
+        opacity: 0.9;
+    }
+
+    /* 반려 모달 */
+    .reject-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2100;
+        backdrop-filter: blur(4px);
+    }
+
+    .reject-modal-backdrop.show {
+        display: flex;
+    }
+
+    .reject-modal-card {
+        width: 400px;
+        background: #fff;
+        border-radius: 28px;
+        padding: 28px;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    #rejectReasonText {
+        width: 100%;
+        height: 90px;
+        padding: 14px;
+        border-radius: 14px;
+        border: 1px solid #eef2f6;
+        margin: 12px 0;
+        font-size: 13px;
+        resize: none;
+        background: #f8fafc;
+    }
+
+    #rejectReasonText:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: #fff;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 0;
+        color: #94a3b8;
+        font-weight: 800;
+        border: 2px dashed #edf2f7;
+        border-radius: 18px;
+    }
+
+    @media (max-width: 1100px) {
+        .summary-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .main-split {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* 대시보드 로딩 오버레이 */
+    .dash-loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: var(--bg-main, #F2F0EB);
+        z-index: 99998;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.5s ease;
+    }
+
+    .dash-loading-overlay.fade-out {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .dash-loader-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.8rem;
+        font-weight: 900;
+        color: #333;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .dash-loader-title i {
+        color: var(--accent);
+    }
+
+    .dash-progress-track {
+        width: 180px;
+        height: 4px;
+        background: rgba(0, 0, 0, 0.06);
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .dash-progress-fill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 60%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        animation: dashProgressSlide 1.2s infinite linear;
+    }
+
+    @keyframes dashProgressSlide {
+        0% {
+            transform: translateX(-100%);
+        }
+
+        100% {
+            transform: translateX(200%);
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-container">
-    <!-- 본문 영역이 비어있는 도화지 상태입니다. -->
+<!-- 대시보드 로딩 오버레이 -->
+<div class="dash-loading-overlay" id="dashLoadingOverlay" style="display: none;">
+    <div class="dash-loader-title"><i class="bi bi-shield-check"></i> 대시보드 로딩 중</div>
+    <div class="dash-progress-track">
+        <div class="dash-progress-fill"></div>
+    </div>
 </div>
+
+<script>
+    // 최초 진입시에만 로딩 화면 표시
+    (function () {
+        if (!sessionStorage.getItem('dash_loader_shown')) {
+            document.getElementById('dashLoadingOverlay').style.display = 'flex';
+        }
+    })();
+
+    // [PPT 모드] 물리적 스크롤 차단 - wheel 이벤트 레벨에서 차단
+    (function () {
+        if (!document.body.classList.contains('ppt-mode')) return;
+
+        // 1. 탭 링크에 ppt=1 파라미터 자동 유지
+        document.querySelectorAll('.summary-card').forEach(function (card) {
+            if (card.tagName === 'A' && card.href) {
+                var url = new URL(card.href, window.location.origin);
+                url.searchParams.set('ppt', '1');
+                card.href = url.toString();
+            }
+        });
+
+        // 2. 전체 페이지 wheel 이벤트 차단 (card-list, kakaoMap 내부 제외)
+        document.addEventListener('wheel', function (e) {
+            var target = e.target;
+            // card-list 내부이거나 kakaoMap 내부이면 허용
+            if (target.closest && (target.closest('.card-list') || target.closest('#kakaoMap'))) {
+                // card-list 내부 스크롤이 끝에 도달해도 부모로 전파 안 되도록 차단
+                var cardList = target.closest('.card-list');
+                if (cardList) {
+                    var atTop = cardList.scrollTop <= 0 && e.deltaY < 0;
+                    var atBottom = cardList.scrollTop + cardList.clientHeight >= cardList.scrollHeight - 1 && e.deltaY > 0;
+                    if (atTop || atBottom) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                }
+                return;
+            }
+            // 그 외 모든 영역에서는 스크롤 절대 차단
+            e.preventDefault();
+            e.stopPropagation();
+        }, { passive: false });
+
+        // 3. touchmove도 차단 (모바일/터치패드 대비)
+        document.addEventListener('touchmove', function (e) {
+            if (e.target.closest && (e.target.closest('.card-list') || e.target.closest('#kakaoMap'))) return;
+            e.preventDefault();
+        }, { passive: false });
+
+        // 4. 스크롤 인디케이터 강제 숨김
+        var indicator = document.getElementById('scroll-indicator');
+        if (indicator) indicator.style.display = 'none';
+
+        // 5. body scrollTop 강제 고정
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+        window.scrollTo(0, 0);
+    })();
+</script>
+
+<div class="dashboard-container" id="dashMainContainer" style="opacity: 0; transition: opacity 0.5s ease;">
+    <!-- 상단 요약 카드 -->
+    <div class="summary-grid">
+        <a href="/admin/dashboard?tab=pending"
+            class="summary-card pending-strong {{ 'active' if selected_tab == 'pending' else '' }}">
+            <div class="summary-label">⏳ 검토 대기</div>
+            <div class="summary-value"><strong>{{ summary.pending_count }}</strong>건</div>
+            <div class="summary-meta">관리자 수동 확인</div>
+        </a>
+        <a href="/admin/dashboard?tab=urgent"
+            class="summary-card urgent {{ 'active' if selected_tab == 'urgent' else '' }}">
+            <div class="summary-label">🚨 긴급 관리</div>
+            <div class="summary-value"><strong>{{ summary.urgent_count }}</strong>건</div>
+            <div class="summary-meta">우선 조치 가이드</div>
+        </a>
+        <a href="/admin/dashboard?tab=today"
+            class="summary-card today {{ 'active' if selected_tab == 'today' else '' }}">
+            <div class="summary-label">📅 오늘 접수</div>
+            <div class="summary-value"><strong>{{ summary.today_count }}</strong>건</div>
+            <div class="summary-meta">신규 위험 탐지</div>
+        </a>
+        <a href="/admin/dashboard?tab=processing"
+            class="summary-card processing {{ 'active' if selected_tab == 'processing' else '' }}">
+            <div class="summary-label">🛠️ 처리 중</div>
+            <div class="summary-value"><strong>{{ summary.processing_count }}</strong>건</div>
+            <div class="summary-meta">보수 및 조치 진행</div>
+        </a>
+        <a href="/admin/dashboard?tab=long_pending"
+            class="summary-card long-pending {{ 'active' if selected_tab == 'long_pending' else '' }}">
+            <div class="summary-label">⚠️ 지연 건수</div>
+            <div class="summary-value"><strong>{{ summary.long_pending_count }}</strong>건</div>
+            <div class="summary-meta">24시간 초과</div>
+        </a>
+        <a href="/admin/dashboard?tab=rejected"
+            class="summary-card rejected {{ 'active' if selected_tab == 'rejected' else '' }}">
+            <div class="summary-label">🚫 반려 내역</div>
+            <div class="summary-value"><strong>{{ summary.rejected_count }}</strong>건</div>
+            <div class="summary-meta">중복/부적합 판정</div>
+        </a>
+    </div>
+
+    <!-- 메인 영역: 지도 + 리스트 -->
+    <div class="main-split">
+        <!-- 좌측: 카카오 지도 -->
+        <div class="map-panel">
+            <div id="kakaoMap"></div>
+            <div class="map-legend">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#64748b;"></div>확인중
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#f97316;"></div>접수완료
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#3b82f6;"></div>처리중
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#16a34a;"></div>완료
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#ef4444;"></div>반려
+                </div>
+            </div>
+        </div>
+
+        <!-- 우측: 리스트 -->
+        <div class="list-panel">
+            <div class="section-header">
+                <div class="section-title">{{ dashboard_section_title }}</div>
+                <div class="section-subtitle">{{ dashboard_section_subtitle }}</div>
+            </div>
+
+            <div class="card-list">
+                {% for report in dashboard_items %}
+                <div class="report-card">
+                    <div class="card-top">
+                        <div class="card-addr">{{ report.address or 'None' }}</div>
+                        <div style="display:flex; gap:5px; align-items:center; flex-shrink:0;">
+                            <span
+                                class="badge {{ 'status-received' if report.status == '관리자 확인중' else 'status-processing' if report.status == '접수완료' else 'status-active' if report.status == '처리중' else 'status-done' if report.status == '처리완료' else 'status-rejected' }}">
+                                {{ report.status }}
+                            </span>
+                            {% if (report.ai_result.confidence if report.ai_result else 0) >= 80 %}
+                            <span class="badge risk-high">긴급</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-reason">
+                        {% if report.urgent_reason %}{{ report.urgent_reason }}{% endif %}
+                    </div>
+                    <div class="card-bottom">
+                        <div class="card-time"><i class="bi bi-clock"></i> {{ report.created_at.strftime('%m-%d %H:%M')
+                            }}</div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            {% if report.group_reporter_count > 1 %}
+                            <span
+                                style="font-size:10px; color:var(--accent); font-weight:800; background:#fffaf5; padding:2px 7px; border-radius:5px; border:1px solid #ffe8d6;">중복
+                                {{ report.group_reporter_count }}건</span>
+                            {% endif %}
+                            <!-- 인라인 드롭다운 상태 변경 -->
+                            <div class="inline-status-wrap">
+                                <button class="status-dropdown-btn" onclick="toggleDropdown(this)">
+                                    <i class="bi bi-pencil-square"></i> 상태변경
+                                </button>
+                                <div class="status-dropdown-menu">
+                                    <button class="status-opt" style="color: #64748b;"
+                                        onclick="quickChangeStatus('{{ report.id }}', '관리자 확인중', this)">📋 관리자
+                                        확인중</button>
+                                    <button class="status-opt" style="color: #f97316;"
+                                        onclick="quickChangeStatus('{{ report.id }}', '접수완료', this)">✅ 접수완료</button>
+                                    <button class="status-opt" style="color: #3b82f6;"
+                                        onclick="quickChangeStatus('{{ report.id }}', '처리중', this)">🔧 처리중</button>
+                                    <button class="status-opt" style="color: #16a34a;"
+                                        onclick="quickChangeStatus('{{ report.id }}', '처리완료', this)">🎉 처리완료</button>
+                                    <button class="status-opt danger" style="color: #ef4444;"
+                                        onclick="openRejectModal('{{ report.id }}')">🚫 반려
+                                        판정</button>
+                                </div>
+                            </div>
+                            <button class="mini-btn" data-id="{{ report.id }}" data-address="{{ report.address }}"
+                                data-status="{{ report.status }}"
+                                data-filepath="{{ (report.file_path.replace('\\', '/') if report.file_path else '') }}"
+                                data-lat="{{ report.latitude }}" data-lng="{{ report.longitude }}"
+                                data-confidence="{{ (report.ai_result.confidence if report.ai_result else 0) }}"
+                                onclick="openDetailModal(this)">상세보기</button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not dashboard_items %}
+                <div class="empty-state">
+                    <i class="bi bi-folder-x" style="font-size: 36px; display: block; margin-bottom: 8px;"></i>
+                    표시할 제보 내역이 없습니다.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 상세 모달 -->
+<div class="detail-modal-backdrop" id="detailModal">
+    <div class="detail-modal-card">
+        <div class="detail-thumb-box">
+            <img id="modalImg" class="detail-thumb-img" src="">
+            <button onclick="window.open('https://map.kakao.com/link/map/신고위치,' + currentLat + ',' + currentLng)"
+                style="position:absolute; top:16px; right:16px; border:none; border-radius:50%; width:40px; height:40px; background:#fff; cursor:pointer; box-shadow:0 6px 14px rgba(0,0,0,0.1); display:flex; align-items:center; justify-content:center;">
+                <i class="bi bi-geo-alt-fill" style="color:var(--accent); font-size: 18px;"></i>
+            </button>
+        </div>
+        <div class="detail-content-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <span class="badge" id="modalStatusBadge" style="font-size:12px; padding:6px 14px;">-</span>
+                <div id="modalRisk" style="font-weight:900; font-size:13px; color:var(--accent);">신뢰도: --%</div>
+            </div>
+            <div style="font-weight:900; font-size:18px; margin-bottom:6px;" id="modalAddr">위치 정보 로딩..</div>
+            <div style="font-size:13px; color:var(--text-sub); margin-bottom:20px;">AI 분석 결과에 따른 처리를 진행해 주세요.</div>
+            <button class="detail-close-btn" onclick="closeDetailModal()">닫기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 반려 사유 모달 -->
+<div class="reject-modal-backdrop" id="rejectModal">
+    <div class="reject-modal-card">
+        <h3 style="font-weight:900; margin-bottom:6px; font-size:18px;">반려 사유 입력</h3>
+        <div style="font-size:13px; color:var(--text-sub); margin-bottom:10px;">신고자가 납득할 수 있는 사유를 남겨주세요.</div>
+        <textarea id="rejectReasonText" placeholder="예: 이미 처리 완료된 구간 / 도로 파손이 아닌 것으로 판정됨"></textarea>
+        <div style="display:flex; gap:10px;">
+            <button class="mini-btn" style="flex:1; padding:10px;" onclick="closeRejectModal()">취소</button>
+            <button class="mini-btn"
+                style="flex:1; padding:10px; background:var(--text); color:#fff; border-color:var(--text);"
+                onclick="submitReject()">최종 반려</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // === 인라인 드롭다운 ===
+    let activeDropdown = null;
+    function toggleDropdown(btn) {
+        const wrap = btn.closest('.inline-status-wrap');
+        if (activeDropdown && activeDropdown !== wrap) activeDropdown.classList.remove('open');
+        wrap.classList.toggle('open');
+        activeDropdown = wrap.classList.contains('open') ? wrap : null;
+    }
+    document.addEventListener('click', function (e) {
+        if (activeDropdown && !activeDropdown.contains(e.target)) {
+            activeDropdown.classList.remove('open');
+            activeDropdown = null;
+        }
+    });
+
+    function quickChangeStatus(reportId, newStatus, btn) {
+        const formData = new FormData();
+        formData.append('report_id', reportId);
+        formData.append('status', newStatus);
+        formData.append('sync_group', 'true');
+        fetch('/admin/report/update-status', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(d => { if (d.success) location.reload(); else alert('오류: ' + d.message); })
+            .catch(e => { alert('네트워크 또는 서버 오류가 발생했습니다.'); console.error(e); });
+    }
+
+    // === 반려 모달 ===
+    let rejectTargetId = '';
+    function openRejectModal(reportId) {
+        rejectTargetId = reportId;
+        if (activeDropdown) { activeDropdown.classList.remove('open'); activeDropdown = null; }
+        document.getElementById('rejectModal').classList.add('show');
+    }
+    function closeRejectModal() { document.getElementById('rejectModal').classList.remove('show'); }
+    function submitReject() {
+        const reason = document.getElementById('rejectReasonText').value;
+        if (!reason) { alert('반려 사유를 입력해주세요.'); return; }
+        const formData = new FormData();
+        formData.append('report_id', rejectTargetId);
+        formData.append('status', '반려');
+        formData.append('reject_reason', reason);
+        formData.append('sync_group', 'true');
+        fetch('/admin/report/update-status', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(d => { if (d.success) location.reload(); else alert('오류: ' + d.message); })
+            .catch(e => { alert('반려 처리 중 서버 오류가 발생했습니다.'); console.error(e); });
+    }
+
+    // === 상세 모달 ===
+    let currentLat = '', currentLng = '';
+    function openDetailModal(btn) {
+        currentLat = btn.dataset.lat;
+        currentLng = btn.dataset.lng;
+        document.getElementById('modalImg').src = btn.dataset.filepath || '/static/no-image.png';
+        const badge = document.getElementById('modalStatusBadge');
+        badge.textContent = btn.dataset.status;
+        const st = btn.dataset.status;
+        badge.className = 'badge ' + (st === '관리자 확인중' ? 'status-received' : st === '접수완료' ? 'status-processing' : st === '처리중' ? 'status-active' : st === '처리완료' ? 'status-done' : 'status-rejected');
+        document.getElementById('modalAddr').textContent = btn.dataset.address;
+        document.getElementById('modalRisk').textContent = '신뢰도: ' + btn.dataset.confidence + '%';
+        document.getElementById('detailModal').classList.add('show');
+    }
+    function closeDetailModal() { document.getElementById('detailModal').classList.remove('show'); }
+
+    // === 카카오 지도 ===
+    const mapPinsData = {{ map_pins | tojson }};
+
+    function initDashboardMap() {
+        // [강화] SDK가 아직 로딩 중일 수 있으므로 재시도 로직 추가
+        if (typeof kakao === 'undefined' || !kakao.maps) {
+            console.log("[DASH] Kakao SDK not ready, retrying in 500ms...");
+            setTimeout(initDashboardMap, 500);
+            return;
+        }
+
+        kakao.maps.load(function () {
+            const container = document.getElementById('kakaoMap');
+            if (!container) return;
+
+            const map = new kakao.maps.Map(container, {
+                center: new kakao.maps.LatLng(36.5, 127.0),
+                level: 13
+            });
+            window.dashMap = map; // 전역 참조 허용 (relayout 용)
+            map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+
+            const statusColors = {
+                '관리자 확인중': '#64748b',
+                '접수완료': '#f97316',
+                '처리중': '#3b82f6',
+                '처리완료': '#16a34a',
+                '반려': '#ef4444'
+            };
+
+            function createMarkerImage(color) {
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
+                    <path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="${color}"/>
+                    <circle cx="14" cy="14" r="6" fill="white"/>
+                </svg>`;
+                return new kakao.maps.MarkerImage(
+                    'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg),
+                    new kakao.maps.Size(28, 40),
+                    { offset: new kakao.maps.Point(14, 40) }
+                );
+            }
+
+            mapPinsData.forEach(function (pin) {
+                const color = statusColors[pin.status] || '#f97316';
+                const marker = new kakao.maps.Marker({
+                    position: new kakao.maps.LatLng(pin.lat, pin.lng),
+                    map: map,
+                    image: createMarkerImage(color),
+                    title: pin.address
+                });
+
+                const infoContent = `<div style="padding:10px 14px; font-size:12px; font-weight:700; border-radius:10px; max-width:200px; line-height:1.5;">
+                    <div style="font-size:14px; font-weight:900; margin-bottom:4px;">${pin.address}</div>
+                    <div style="color:${color}; margin-bottom:2px;">상태: ${pin.status}</div>
+                    <div style="color:#666;">신뢰도: ${pin.confidence.toFixed(0)}%</div>
+                </div>`;
+                const infowindow = new kakao.maps.InfoWindow({ content: infoContent, removable: true });
+
+                kakao.maps.event.addListener(marker, 'click', function () {
+                    infowindow.open(map, marker);
+                });
+            });
+
+            // 초기 렌더링 후 릴레이아웃 (iframe 대응)
+            setTimeout(() => { map.relayout(); map.setCenter(new kakao.maps.LatLng(36.5, 127.0)); }, 100);
+        });
+    }
+
+    // PPT 슬라이드 전환 시 외부에서 호출할 수 있는 relayout API
+    window.addEventListener('message', function (e) {
+        if (e.data === 'ppt_relayout' && window.dashMap) {
+            console.log("[DASH] Received PPT relayout request");
+            window.dashMap.relayout();
+            window.dashMap.setCenter(new kakao.maps.LatLng(36.5, 127.0));
+        }
+    });
+
+    // 윈도우 리사이즈 시에도 대응
+    window.addEventListener('resize', function () {
+        if (window.dashMap) window.dashMap.relayout();
+    });
+
+    // layout.html에서 SDK autoload=false 이므로 load 후 초기화
+    function startMapAndHideLoader() {
+        initDashboardMap();
+
+        const overlay = document.getElementById('dashLoadingOverlay');
+        const isPPT = document.body.classList.contains('ppt-mode');
+
+        if (isPPT) {
+            // [PPT 모드] 즉시 노출 및 강력한 릴레이아웃
+            if (overlay) overlay.style.display = 'none';
+            const doRelayout = () => {
+                if (window.dashMap) {
+                    window.dashMap.relayout();
+                    window.dashMap.setCenter(new kakao.maps.LatLng(36.5, 127.0));
+                }
+            };
+            doRelayout();
+            setTimeout(doRelayout, 300);
+            setTimeout(doRelayout, 1000);
+            return;
+        }
+
+        const isFirstTime = !sessionStorage.getItem('dash_loader_shown');
+        if (isFirstTime && overlay) {
+            // 최초 진입 시 로딩 시퀀스
+            setTimeout(function () {
+                overlay.classList.add('fade-out');
+                // 지도가 짤리는 현상 방지를 위한 relayout
+                if (window.dashMap) {
+                    window.dashMap.relayout();
+                    window.dashMap.setCenter(new kakao.maps.LatLng(36.5, 127.0));
+                }
+                setTimeout(function () {
+                    overlay.style.display = 'none';
+                    sessionStorage.setItem('dash_loader_shown', 'true');
+                }, 600);
+            }, 1800);
+        } else {
+            // 이미 로딩을 본 경우 즉시 지도 정렬만 수행
+            if (overlay) overlay.style.display = 'none';
+            setTimeout(function () {
+                if (window.dashMap) {
+                    window.dashMap.relayout();
+                    window.dashMap.setCenter(new kakao.maps.LatLng(36.5, 127.0));
+                }
+            }, 500);
+        }
+    }
+
+    // === 지연 로딩 제어 ===
+    function revealDashboard() {
+        const container = document.getElementById('dashMainContainer');
+        if (container) container.style.opacity = '1';
+        startMapAndHideLoader();
+    }
+
+    // 초기 실행 로직 분기
+    if (typeof kakao !== 'undefined' && kakao.maps) {
+        kakao.maps.load(function () {
+            // 브릿지 애니메이션이 진행 중인 경우 이벤트 대기
+            if (sessionStorage.getItem('admin_transition') === 'active') {
+                console.log("[DASH] Waiting for expansion...");
+                window.addEventListener('admin_transition_done', revealDashboard, { once: true });
+                // 세이프티 폴백 (이벤트 누락 대비)
+                setTimeout(revealDashboard, 3000);
+            } else {
+                // 직접 접속 시 즉시 로딩
+                revealDashboard();
+            }
+        });
+    } else {
+        window.addEventListener('load', function () {
+            setTimeout(revealDashboard, 500);
+        });
+    }
+</script>
+<script>
+    // [PPT] PPT 모드 탐지 및 클래스 부여
+    if (window.location.search.includes('ppt=1')) {
+        document.body.classList.add('ppt-mode');
+    }
+</script>
 {% endblock %}

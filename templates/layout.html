@@ -955,10 +955,81 @@
         if (sessionStorage.getItem('admin_transition') === 'active') {
             document.documentElement.classList.add('admin-bridge-mode');
         }
+
+        // [PPT Mode Persistence] URL에 ppt=1이 있거나 관리자 대시보드 진입 시에만 제한적으로 활성
+        const urlParams = new URLSearchParams(window.location.search);
+        const isPptParam = urlParams.get('ppt') === '1';
+        const isAdminDash = window.location.pathname.includes('/admin/dashboard');
+
+        if (isPptParam) {
+            sessionStorage.setItem('ppt_mode', 'active');
+        }
+
+        // ppt_mode가 활성 상태이더라도, ppt=1 파라미터가 없거나 관리자 대시보드가 아니면 일반 앱으로 간주하여 해제 (메인 앱 복구용)
+        if (sessionStorage.getItem('ppt_mode') === 'active') {
+            if (isPptParam || isAdminDash) {
+                document.documentElement.classList.add('ppt-mode-active');
+            } else {
+                sessionStorage.removeItem('ppt_mode');
+                document.documentElement.classList.remove('ppt-mode-active');
+            }
+        }
     </script>
 </head>
 
-<body>
+<style>
+    /* PPT Mode Style Override: Persistent Class & Original Query Param both handled */
+    html.ppt-mode-active,
+    html.ppt-mode-active body,
+    body.ppt-mode {
+        overflow: hidden !important;
+        /* height/fixed 제거하여 일반 슬라이드(17-20)에서는 스크롤 가능하게 함 */
+    }
+
+    /* 관리자 대시보드에서만 스크롤 물리적 완전 차단 - 모든 래퍼 포함 */
+    html.ppt-mode-active body.admin-mode-active,
+    body.ppt-mode.admin-mode-active {
+        overflow: hidden !important;
+        height: 100vh !important;
+        width: 100vw !important;
+        position: fixed !important;
+        inset: 0 !important;
+        overscroll-behavior: none !important;
+    }
+
+    /* [핵심] 중간 래퍼(.app-container, main)도 절대 고정 */
+    body.ppt-mode.admin-mode-active .app-container,
+    body.ppt-mode.admin-mode-active main,
+    html.ppt-mode-active body.admin-mode-active .app-container,
+    html.ppt-mode-active body.admin-mode-active main {
+        overflow: hidden !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+    }
+
+    /* 스크롤 인디케이터(주황색 프로그레시브 바) 숨김 */
+    body.ppt-mode.admin-mode-active #scroll-indicator,
+    html.ppt-mode-active body.admin-mode-active #scroll-indicator {
+        display: none !important;
+    }
+
+    /* 공통: 발표 시 상단 헤더 숨김 */
+    body.ppt-mode header,
+    html.ppt-mode-active body header,
+    body.ppt-mode .admin-pc-btn,
+    html.ppt-mode-active body .admin-pc-btn {
+        display: none !important;
+    }
+
+    /* 오직 관리자 대시보드에서만 하단바 숨김 (사용자 요청: 17~20페이지 하단바 복구) */
+    body.ppt-mode.admin-dashboard-page .bottom-nav,
+    html.ppt-mode-active body.admin-dashboard-page .bottom-nav {
+        display: none !important;
+    }
+</style>
+
+<body
+    class="{{ 'ppt-mode' if request.args.get('ppt') == '1' else '' }} {{ 'admin-dashboard-page' if request.path == '/admin/dashboard' else '' }} {{ 'admin-mode-active' if request.path == '/admin/dashboard' and request.args.get('ppt') == '1' else '' }}">
     <div class="app-container {{ 'admin-page' if request.path == '/admin/dashboard' else '' }}">
         <!-- Pull to Refresh Indicator -->
         <div class="ptr-indicator" id="ptr-indicator">
@@ -1568,10 +1639,12 @@
                     document.documentElement.classList.remove('admin-bridge-mode');
                     if (container) container.classList.add('admin-expanding');
 
-                    // 확장 완료 후 로더 제거
+                    // 확장 완료 후 로더 제거 및 이벤트 발행
                     setTimeout(function () {
                         hidePremiumLoader();
                         sessionStorage.removeItem('admin_transition');
+                        // [EVENT] 대시보드 지연 로딩을 위한 신호 발행
+                        window.dispatchEvent(new CustomEvent('admin_transition_done'));
                     }, 1300);
                 }, 600);
             }

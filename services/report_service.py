@@ -29,8 +29,25 @@ def upload_file():
     if file.filename == '':
         return jsonify({'success': False, 'message': '선택된 파일이 없습니다.'}), 400
     
-    filename = secure_filename(file.filename)
-    filename = f"{int(time.time())}_{filename}"
+    original_name = file.filename
+    print(f"[UPLOAD] Original filename: '{original_name}'")
+    
+    # [핵심 수정] secure_filename()은 한글 문자를 전부 제거하여 빈 문자열을 만들 수 있음.
+    # 예: "안성스타필드.heic" → "" (확장자까지 소멸)
+    # 따라서 원본 파일명에서 확장자를 먼저 추출한 뒤, 안전한 이름을 생성합니다.
+    import uuid
+    original_ext = ''
+    if '.' in original_name:
+        original_ext = original_name.rsplit('.', 1)[1].lower()
+    
+    safe_name = secure_filename(original_name)
+    
+    # secure_filename 결과가 비어있거나 확장자가 없는 경우 UUID 기반 이름 생성
+    if not safe_name or '.' not in safe_name:
+        safe_name = f"{uuid.uuid4().hex[:12]}.{original_ext}" if original_ext else safe_name
+    
+    filename = f"{int(time.time())}_{safe_name}"
+    print(f"[UPLOAD] Safe filename: '{filename}', Extension: '{original_ext}'")
     
     # 디렉토리 경로 (app.py의 환경설정에 맞춰야 함. 여기선 상대 경로 기준)
     UPLOAD_IMAGE_DIR = os.path.join('uploads', 'images')
@@ -38,16 +55,45 @@ def upload_file():
 
     if allowed_file(filename, ALLOWED_IMAGE_EXTENSIONS):
         save_path = os.path.join(os.getcwd(), UPLOAD_IMAGE_DIR, filename)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
         file.save(save_path)
-        return jsonify({'success': True, 'message': '이미지 업로드 성공', 'path': f'/uploads/images/{filename}'})
+        print(f"[UPLOAD] Image saved to: {save_path} (size: {os.path.getsize(save_path)} bytes)")
+        
+        # [수정] 업로드 즉시 GPS 메타데이터 추출 (프론트 유실 또는 HEIC 대비 서버 직접 추출)
+        lat, lng = extract_gps_from_exif(save_path)
+        print(f"[UPLOAD] GPS extraction result: lat={lat}, lng={lng}")
+        
+        # [NaN 방어] Pillow가 NaN을 반환할 경우 JSON 직렬화 오류 방지
+        import math
+        if lat is not None and (math.isnan(lat) or math.isinf(lat)):
+            lat = None
+        if lng is not None and (math.isnan(lng) or math.isinf(lng)):
+            lng = None
+        
+        # GPS가 유효하면 즉시 역지오코딩하여 주소도 반환
+        address = None
+        if lat and lng:
+            from utils import reverse_geocode
+            address = reverse_geocode(lat, lng)
+            print(f"[UPLOAD] Reverse geocoded address: {address}")
+        
+        return jsonify({
+            'success': True,
+            'message': '이미지 업로드 성공 (GPS 추출 시도)',
+            'path': f'/uploads/images/{filename}',
+            'gps': {'lat': lat, 'lng': lng} if lat and lng else None,
+            'address': address
+        })
     
     elif allowed_file(filename, ALLOWED_VIDEO_EXTENSIONS):
         save_path = os.path.join(os.getcwd(), UPLOAD_VIDEO_DIR, filename)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
         file.save(save_path)
         return jsonify({'success': True, 'message': '동영상 업로드 성공', 'path': f'/uploads/videos/{filename}'})
     
     else:
-        return jsonify({'success': False, 'message': '허용되지 않는 파일 형식입니다.'}), 400
+        print(f"[UPLOAD] REJECTED: filename='{filename}', ext='{original_ext}' not in allowed list")
+        return jsonify({'success': False, 'message': f'허용되지 않는 파일 형식입니다. (감지된 확장자: {original_ext})'}), 400
 
 @report_bp.route('/api/report', methods=['POST'])
 def submit_report():
@@ -66,8 +112,15 @@ def submit_report():
 
     if 'file' in request.files and request.files['file'].filename != '':
         file = request.files['file']
-        filename = secure_filename(file.filename)
-        filename = f"{int(time.time())}_{filename}"
+        import uuid
+        original_name = file.filename
+        original_ext = ''
+        if '.' in original_name:
+            original_ext = original_name.rsplit('.', 1)[1].lower()
+        safe_name = secure_filename(original_name)
+        if not safe_name or '.' not in safe_name:
+            safe_name = f"{uuid.uuid4().hex[:12]}.{original_ext}" if original_ext else safe_name
+        filename = f"{int(time.time())}_{safe_name}"
         
         UPLOAD_IMAGE_DIR = os.path.join('uploads', 'images')
         UPLOAD_VIDEO_DIR = os.path.join('uploads', 'videos')
@@ -75,38 +128,46 @@ def submit_report():
         if allowed_file(filename, ALLOWED_IMAGE_EXTENSIONS):
             save_path = os.path.join(os.getcwd(), UPLOAD_IMAGE_DIR, filename)
             
-            # [핵심] HEIC/HEIF 포맷이면 JPG로 변환하며 EXIF 보존
-            file_ext = filename.rsplit('.', 1)[1].lower()
-            if file_ext in ['heic', 'heif']:
-                try:
-                    from PIL import Image
-                    import pillow_heif
-                    pillow_heif.register_heif_opener()
-                    
-                    file.seek(0)
-                    image = Image.open(file)
-                    
-                    # [추가] 원본 EXIF 메타데이터 추출
-                    exif_data = image.info.get('exif')
-                    
+            # [수정] 원본 이미지를 우선 저장하여 메타데이터 보존 후 정보 추출
+            file.save(save_path)
+            
+            # 프론트엔드에서 GPS 좌표를 올리지 못한 경우 백엔드에서 다시금 EXIF 추출 시도
+            if not latitude or not longitude:
+                from utils import extract_gps_from_exif
+                exif_lat, exif_lng = extract_gps_from_exif(save_path)
+                if exif_lat and exif_lng:
+                    latitude = exif_lat
+                    longitude = exif_lng
+            
+            # [개인정보 보호] 모든 이미지의 EXIF 메타데이터를 파기하고 재저장
+            try:
+                from PIL import Image
+                import pillow_heif
+                pillow_heif.register_heif_opener()
+                
+                image = Image.open(save_path)
+                
+                # 파일 확장자 확인
+                file_ext = filename.rsplit('.', 1)[1].lower()
+                
+                # HEIC/HEIF는 JPG로 변환, 나머지는 유지하되 EXIF 제거
+                if file_ext in ['heic', 'heif']:
                     new_filename = filename.rsplit('.', 1)[0] + ".jpg"
-                    save_path = os.path.join(os.getcwd(), UPLOAD_IMAGE_DIR, new_filename)
-                    
-                    # RGB 변환 (알파 채널 제거) 후 EXIF 포함 저장
-                    image = image.convert('RGB')
-                    if exif_data:
-                        image.save(save_path, "JPEG", quality=90, exif=exif_data)
-                    else:
-                        image.save(save_path, "JPEG", quality=90)
-                        
+                    new_save_path = os.path.join(os.getcwd(), UPLOAD_IMAGE_DIR, new_filename)
+                    if image.mode in ("RGBA", "P"):
+                        image = image.convert("RGB")
+                    image.save(new_save_path, "JPEG", quality=85)
+                    os.remove(save_path)
+                    save_path = new_save_path
                     file_path = f'/uploads/images/{new_filename}'
-                except Exception as e:
-                    print(f"HEIC Conversion Error: {e}")
-                    file.seek(0)
-                    file.save(save_path)
+                else:
+                    if image.mode in ("RGBA", "P"):
+                        image = image.convert("RGB")
+                    image.save(save_path, "JPEG", quality=85)
                     file_path = f'/uploads/images/{filename}'
-            else:
-                file.save(save_path)
+                
+            except Exception as e:
+                print(f"Image processing (EXIF Strip) Error: {e}")
                 file_path = f'/uploads/images/{filename}'
             
             file_type = 'image'
@@ -126,12 +187,6 @@ def submit_report():
         if lng is not None and math.isnan(lng): lng = None
     except (ValueError, TypeError):
         lat, lng = None, None
-
-    if file_type == 'image' and file_path and (lat is None or lng is None):
-        abs_img = os.path.join(os.getcwd(), file_path.lstrip('/'))
-        exif_lat, exif_lng = extract_gps_from_exif(abs_img)
-        if exif_lat and exif_lng:
-            lat, lng = exif_lat, exif_lng
 
     if lat and lng and not address:
         address = reverse_geocode(lat, lng)

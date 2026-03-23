@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRACK Mobile Layout</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Pretendard", "Noto Sans KR", Arial, sans-serif;
+    }
+
+    .risk-text {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+      white-space: nowrap;
+    }
+
+    .risk-high {
+      color: #e74c3c;
+    }
+
+    .risk-medium {
+      color: #f39c12;
+    }
+
+    .risk-low {
+      color: #27ae60;
+    }
+
+    body {
+      background: #f3f3f3;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .phone {
+      width: 390px;
+      height: 844px;
+      background: #efede9;
+      border-radius: 36px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #ddd;
+      position: relative;
+    }
+
+    .topbar {
+      height: 78px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid #efefef;
+    }
+
+    .brand {
+      font-size: 23px;
+      font-weight: 800;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .top-actions button {
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid #ddd;
+      border-radius: 16px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .content {
+      flex: 1;
+      padding: 16px 18px 12px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .content::-webkit-scrollbar {
+      display: none;
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: #9a9a9a;
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+
+    .location-bar {
+      margin-bottom: 10px;
+    }
+
+    .address-open-btn {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #ccc;
+      border-radius: 16px;
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      text-align: left;
+    }
+
+    .location-icon {
+      font-size: 18px;
+      color: #ff8c00;
+    }
+
+    .alert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .alert-card {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 10px 12px;
+      border-left: 5px solid transparent;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    .alert-card.status-received {
+      border-left-color: #ff8c00;
+    }
+
+    .alert-card.status-processing {
+      border-left-color: #3498db;
+    }
+
+    .alert-card.status-done {
+      border-left-color: #27ae60;
+    }
+
+    .alert-status {
+      font-size: 12px;
+      font-weight: 700;
+      color: #444;
+    }
+
+    .alert-time {
+      font-size: 12px;
+      color: #222;
+      white-space: nowrap;
+    }
+
+    .alert-title {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 4px;
+      line-height: 1.25;
+      letter-spacing: -0.3px;
+      color: #111;
+    }
+
+    .distance-text {
+      font-size: 11px;
+      color: #888;
+    }
+
+    .report-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eef6ff;
+      color: #2f6fdd;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1;
+      border: 1px solid #cfe2ff;
+    }
+
+    .alert-card.multi-report {
+      background: #fffaf5;
+      box-shadow: 0 8px 18px rgba(255, 140, 0, 0.08);
+    }
+
+    .multi-report-label {
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #fff1df;
+      color: #e67e00;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .multi-report-label.danger {
+      background: #ffe3e3;
+      color: #d64545;
+    }
+
+    .alert-card.multi-report.danger {
+      background: #fff7f7;
+      box-shadow: 0 8px 18px rgba(214, 69, 69, 0.08);
+    }
+
+    .check-btn {
+      background: #ff8c00;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: none;
+    }
+
+    .check-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .bottom-nav {
+      height: 74px;
+      background: #fff;
+      border-top: 1px solid #ececec;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: center;
+      text-align: center;
+    }
+
+    .nav-item {
+      text-decoration: none;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .empty-message {
+      background: #fff;
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+      color: #888;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 20px;
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 340px;
+      background: #fff;
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .search-row input {
+      flex: 1;
+      height: 44px;
+      border: 1px solid #ddd;
+      border-radius: 14px;
+      padding: 0 12px;
+      outline: none;
+    }
+
+    .search-row button {
+      height: 44px;
+      padding: 0 14px;
+      border: none;
+      border-radius: 14px;
+      background: #ff8c00;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .result-list {
+      max-height: 260px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .result-item {
+      border: 1px solid #eee;
+      border-radius: 14px;
+      padding: 12px;
+      cursor: pointer;
+      background: #fff;
+    }
+
+    .result-item:hover {
+      border-color: #ffb15a;
+      background: #fff8f0;
+    }
+
+    .result-main {
+      font-size: 14px;
+      font-weight: 600;
+      color: #222;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .modal-close-btn {
+      height: 40px;
+      padding: 0 14px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .loading-text,
+    .empty-result-text {
+      padding: 14px 4px;
+      color: #888;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    @media (max-width: 430px) {
+      body {
+        padding: 0;
+      }
+
+      .phone {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+      }
+    }
+
+    .detail-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 120;
+      padding: 18px;
+    }
+
+    .detail-modal-backdrop.show {
+      display: flex;
+    }
+
+    .detail-modal-card {
+      width: 100%;
+      max-width: 360px;
+      background: #ffffff;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.20);
+      border: 1px solid rgba(255, 255, 255, 0.65);
+    }
+
+    .detail-thumb-box {
+      position: relative;
+      width: 100%;
+      height: 360px;
+      background: #ececec;
+      overflow: hidden;
+    }
+
+    .detail-thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .detail-thumb-placeholder {
+      font-size: 16px;
+      color: #666;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .detail-map-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .detail-content-box {
+      padding: 14px 16px 16px;
+      background: #fff;
+    }
+
+    .detail-content-title {
+      font-size: 22px;
+      font-weight: 900;
+      color: #111;
+      margin-bottom: 8px;
+      line-height: 1.3;
+      letter-spacing: -0.4px;
+    }
+
+    .detail-content-text {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .detail-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .detail-time-risk-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .detail-time-text {
+      font-size: 13px;
+      color: #777;
+      white-space: nowrap;
+    }
+
+    .detail-risk-badge {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+    }
+
+    .detail-risk-high {
+      color: #e74c3c;
+    }
+
+    .detail-risk-medium {
+      color: #f39c12;
+    }
+
+    .detail-risk-low {
+      color: #27ae60;
+    }
+
+    .detail-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #fff3e8;
+      color: #ff7a00;
+      box-shadow: inset 0 0 0 1px rgba(255, 122, 0, 0.10);
+    }
+
+    .detail-close-wrap {
+      margin-top: 0;
+    }
+
+    .detail-close-btn {
+      width: 100%;
+      height: 44px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #1f1f22, #2c2c30);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(34, 34, 34, 0.18);
+    }
+
+    .status-filter-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin-bottom: 10px;
+      padding-bottom: 2px;
+    }
+
+    .status-filter-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .status-filter-btn {
+      flex: 0 0 auto;
+      height: 36px;
+      padding: 0 14px;
+      border: 1px solid #d9d9d9;
+      border-radius: 999px;
+      background: #fff;
+      color: #555;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .status-filter-btn.active {
+      background: #ff8c00;
+      color: #fff;
+      border-color: #ff8c00;
+    }
+
+    #detailStaticMap {
+      width: 100%;
+      height: 100%;
+    }
+
+    .detail-thumb-box .wrap_btn_zoom {
+      margin-top: 12px;
+      margin-left: 12px;
+      transform: scale(0.78);
+      transform-origin: top left;
+    }
+
+    .detail-thumb-box .wrap_btn_zoom button,
+    .detail-thumb-box .wrap_btn_zoom a {
+      width: 36px !important;
+      height: 36px !important;
+    }
+
+    .detail-divider {
+      height: 1px;
+      background: #f1f1f1;
+      margin: 0 0 16px 0;
+    }
+
+    .detail-info-card {
+      background: #fafafa;
+      border: 1px solid #f0f0f0;
+      border-radius: 18px;
+      padding: 14px 14px 12px;
+      margin-bottom: 16px;
+    }
+
+    .custom-zoom-controls {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 20;
+    }
+
+    .zoom-btn {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.95);
+      color: #222;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .compact-card {
+      padding: 8px 10px;
+      border-radius: 16px;
+    }
+
+    .compact-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .compact-main-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .compact-left {
+      flex: 1;
+      min-width: 0;
+      padding-top: 1px;
+    }
+
+    .compact-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+      min-width: 96px;
+      padding-top: 1px;
+    }
+
+    .compact-title {
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin: 5px 0 3px;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .compact-location {
+      font-size: 13px;
+      color: #222;
+      font-weight: 500;
+      line-height: 1.25;
+      margin-top: 1px;
+    }
+
+    .compact-bottom-row {
+      margin-top: 6px;
+    }
+
+    .compact-btn {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .list-status-text {
+      padding: 14px 0 6px;
+      text-align: center;
+      font-size: 13px;
+      color: #888;
+    }
+
+    .load-fade-up {
+      opacity: 0;
+      transform: translateY(18px);
+      animation: fadeUpIn 0.45s ease forwards;
+    }
+
+    @keyframes fadeUpIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+
+  <script
+    defer
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_js_key }}&autoload=false"
+    onload="window.kakaoSdkLoaded = true"
+    onerror="window.kakaoSdkLoaded = false"
+  ></script>
+</head>
+<body>
+  <div class="phone">
+    <header class="topbar">
+      <div class="brand">CRACK</div>
+      <div class="top-actions">
+        <button type="button">메뉴</button>
+        <button type="button" onclick="location.href='/logout'">로그아웃</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <h1 class="page-title">Smart Alerts</h1>
+      <p class="page-subtitle">AI가 탐지한 고위험 포트홀 알림</p>
+
+      <div class="location-bar">
+        <button class="address-open-btn" type="button" onclick="openAddressModal()">
+          <span class="location-icon">🟠</span>
+          <span id="selectedAddressText">
+            {{ selected_address if selected_address else '주소 검색' }}
+          </span>
+        </button>
+      </div>
+
+      <div class="status-filter-bar">
+        <button
+          type="button"
+          class="status-filter-btn {% if not selected_status %}active{% endif %}"
+          onclick="applyStatusFilter('')"
+        >
+          전체
+        </button>
+        <button
+          type="button"
+          class="status-filter-btn {% if selected_status == '접수완료' %}active{% endif %}"
+          onclick="applyStatusFilter('접수완료')"
+        >
+          접수완료
+        </button>
+        <button
+          type="button"
+          class="status-filter-btn {% if selected_status == '처리중' %}active{% endif %}"
+          onclick="applyStatusFilter('처리중')"
+        >
+          처리중
+        </button>
+        <button
+          type="button"
+          class="status-filter-btn {% if selected_status == '처리완료' %}active{% endif %}"
+          onclick="applyStatusFilter('처리완료')"
+        >
+          처리완료
+        </button>
+      </div>
+
+      <section class="alert-list" id="alertList">
+        {% for incident in incidents %}
+        <article
+          class="alert-card compact-card
+            {% if incident.status == '접수완료' %}status-received{% elif incident.status == '처리중' %}status-processing{% elif incident.status == '처리완료' %}status-done{% endif %}
+            {% if incident.group_reporter_count and incident.group_reporter_count >= 5 %}multi-report danger{% elif incident.group_reporter_count and incident.group_reporter_count >= 3 %}multi-report{% endif %}"
+        >
+          {% set score = incident.risk_score|float %}
+
+          <div class="compact-main-row">
+            <div class="compact-left">
+              {% if incident.group_reporter_count and incident.group_reporter_count >= 5 %}
+                <div class="multi-report-label danger">집중 위험</div>
+              {% elif incident.group_reporter_count and incident.group_reporter_count >= 3 %}
+                <div class="multi-report-label">반복 제보</div>
+              {% endif %}
+
+              <span class="alert-status">{{ incident.status }}</span>
+              <h2 class="alert-title compact-title">{{ incident.title }}</h2>
+              <div class="compact-location">{{ incident.location }}</div>
+
+              {% if incident.distance_m is not none %}
+                <div class="distance-text">선택 위치에서 약 {{ incident.distance_m }}m</div>
+              {% endif %}
+
+              {% if incident.group_reporter_count and incident.group_reporter_count >= 3 %}
+                <div class="report-badge">동일 위치 제보 {{ incident.group_reporter_count }}건</div>
+              {% endif %}
+            </div>
+
+            <div class="compact-right">
+              <span class="alert-time">{{ incident.first_created_at.strftime('%m-%d %H:%M') }}</span>
+
+              {% if score >= 80 %}
+                <span class="risk-text risk-high">위험도 높음</span>
+              {% elif score >= 50 %}
+                <span class="risk-text risk-medium">위험도 중간</span>
+              {% else %}
+                <span class="risk-text risk-low">위험도 낮음</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="compact-row compact-bottom-row">
+            <div></div>
+            <button
+              class="check-btn compact-btn"
+              type="button"
+              onclick="openDetailModal(
+                '{{ incident.title|e }}',
+                '{{ incident.location|e }}',
+                '{{ incident.status|e }}',
+                '{{ incident.first_created_at.strftime('%m-%d %H:%M') }}',
+                '{{ incident.risk_score|default(0) }}',
+                '{{ incident.latitude|default('', true) }}',
+                '{{ incident.longitude|default('', true) }}'
+              )"
+            >
+              현장 확인
+            </button>
+          </div>
+        </article>
+        {% endfor %}
+
+        {% if incidents|length == 0 %}
+        <div class="empty-message">
+          현재 표시할 알림이 없습니다.
+        </div>
+        {% endif %}
+      </section>
+
+      <div id="listStatusText" class="list-status-text">
+        {% if has_next %}
+          아래로 스크롤하면 더 불러옵니다.
+        {% else %}
+          마지막 알림입니다.
+        {% endif %}
+      </div>
+
+      <div id="scrollSentinel" style="height: 1px;"></div>
+    </main>
+
+    <nav class="bottom-nav">
+      <a href="/alerts" class="nav-item">Alert</a>
+      <a href="#" class="nav-item">Report</a>
+      <a href="#" class="nav-item">Status</a>
+      <a href="/mypage" class="nav-item">My</a>
+    </nav>
+
+    <div class="modal-backdrop" id="addressModal">
+      <div class="modal">
+        <div class="modal-title">주소 검색</div>
+
+        <div class="search-row">
+          <input type="text" id="addressKeyword" placeholder="예: 용인시 기흥구 서천동" />
+          <button type="button" onclick="searchAddress()">검색</button>
+        </div>
+
+        <div class="result-list" id="addressResultList">
+          <div class="empty-result-text">주소를 입력하고 검색해주세요.</div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="modal-close-btn" type="button" onclick="closeAddressModal()">닫기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-modal-backdrop" id="detailModal">
+      <div class="detail-modal-card">
+        <div class="detail-thumb-box">
+          <div id="detailStaticMap" style="width:100%; height:100%;"></div>
+          <div id="detailPlaceholder" class="detail-thumb-placeholder" style="display:none;">
+            좌표 정보가 없습니다.
+          </div>
+
+          <div class="custom-zoom-controls">
+            <button type="button" class="zoom-btn" onclick="zoomInDetailMap()">＋</button>
+            <button type="button" class="zoom-btn" onclick="zoomOutDetailMap()">－</button>
+          </div>
+
+          <button class="detail-map-btn" type="button" onclick="openMapFromDetail()" title="지도 보기">
+            🌍
+          </button>
+        </div>
+
+        <div class="detail-content-box">
+          <div class="detail-meta-row">
+            <span id="detailStatus" class="detail-chip">접수완료</span>
+
+            <div class="detail-time-risk-wrap">
+              <span id="detailTime" class="detail-time-text">03-16 09:42</span>
+              <span id="detailRiskBadge" class="detail-risk-badge">위험도 높음</span>
+            </div>
+          </div>
+
+          <div class="detail-divider"></div>
+
+          <div class="detail-info-card">
+            <div id="detailTitle" class="detail-content-title">도로 균열 발생</div>
+            <div id="detailLocation" class="detail-content-text">화성시 봉정동</div>
+          </div>
+
+          <div class="detail-close-wrap">
+            <button class="detail-close-btn" type="button" onclick="closeDetailModal()">닫기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openAddressModal() {
+      document.getElementById('addressModal').classList.add('show');
+    }
+
+    function closeAddressModal() {
+      document.getElementById('addressModal').classList.remove('show');
+    }
+
+    async function searchAddress() {
+      const keyword = document.getElementById('addressKeyword').value.trim();
+      const resultList = document.getElementById('addressResultList');
+
+      if (!keyword) {
+        window.location.href = '/alerts';
+        return;
+      }
+
+      resultList.innerHTML = '<div class="loading-text">검색 중...</div>';
+
+      try {
+        const response = await fetch(`/api/address/search?q=${encodeURIComponent(keyword)}`);
+        const data = await response.json();
+
+        if (!data.success || !data.items || data.items.length === 0) {
+          resultList.innerHTML = '<div class="empty-result-text">검색 결과가 없습니다.</div>';
+          return;
+        }
+
+        resultList.innerHTML = '';
+
+        data.items.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'result-item';
+          div.innerHTML = `<div class="result-main">${item.address_name}</div>`;
+          div.onclick = () => selectAddress(item);
+          resultList.appendChild(div);
+        });
+      } catch (error) {
+        console.error(error);
+        resultList.innerHTML = '<div class="empty-result-text">검색 중 오류가 발생했습니다.</div>';
+      }
+    }
+
+    let currentDetailLat = '';
+    let currentDetailLng = '';
+    let currentDetailMap = null;
+
+    function openDetailModal(title, location, status, time, riskScore, lat, lng) {
+      document.getElementById('detailTitle').textContent = title || '제목 없음';
+      document.getElementById('detailLocation').textContent = location || '위치 정보 없음';
+      document.getElementById('detailStatus').textContent = status || '상태 없음';
+      document.getElementById('detailTime').textContent = time || '';
+
+      const score = Number(riskScore || 0);
+      let riskText = '위험도 낮음';
+      let riskClass = 'detail-risk-low';
+
+      if (score >= 80) {
+        riskText = '위험도 높음';
+        riskClass = 'detail-risk-high';
+      } else if (score >= 50) {
+        riskText = '위험도 중간';
+        riskClass = 'detail-risk-medium';
+      }
+
+      const riskBadge = document.getElementById('detailRiskBadge');
+      riskBadge.textContent = riskText;
+      riskBadge.className = `detail-risk-badge ${riskClass}`;
+
+      currentDetailLat = lat || '';
+      currentDetailLng = lng || '';
+
+      document.getElementById('detailModal').classList.add('show');
+
+      const detailMap = document.getElementById('detailStaticMap');
+      const detailPlaceholder = document.getElementById('detailPlaceholder');
+
+      detailMap.innerHTML = '';
+
+      if (!lat || !lng) {
+        detailMap.style.display = 'none';
+        detailPlaceholder.style.display = 'flex';
+        detailPlaceholder.textContent = '좌표 정보가 없습니다.';
+        return;
+      }
+
+      try {
+        if (window.kakaoSdkLoaded === false) {
+          detailMap.style.display = 'none';
+          detailPlaceholder.style.display = 'flex';
+          detailPlaceholder.textContent = '카카오 SDK 파일 로드 실패';
+          return;
+        }
+
+        if (typeof kakao === 'undefined') {
+          detailMap.style.display = 'none';
+          detailPlaceholder.style.display = 'flex';
+          detailPlaceholder.textContent = 'SDK는 아직 준비되지 않았습니다.';
+          return;
+        }
+
+        detailMap.style.display = 'block';
+        detailPlaceholder.style.display = 'none';
+
+        kakao.maps.load(function () {
+          const markerPosition = new kakao.maps.LatLng(Number(lat), Number(lng));
+          const mapOption = {
+            center: markerPosition,
+            level: 3
+          };
+
+          currentDetailMap = new kakao.maps.Map(detailMap, mapOption);
+
+          const marker = new kakao.maps.Marker({
+            position: markerPosition
+          });
+          marker.setMap(currentDetailMap);
+        });
+      } catch (error) {
+        console.error('지도 생성 오류:', error);
+        detailMap.style.display = 'none';
+        detailPlaceholder.style.display = 'flex';
+        detailPlaceholder.textContent = '지도 오류: ' + (error.message || error);
+      }
+    }
+
+    function applyStatusFilter(status) {
+      const params = new URLSearchParams(window.location.search);
+
+      if (status) {
+        params.set('status', status);
+      } else {
+        params.delete('status');
+      }
+
+      window.location.href = `/alerts?${params.toString()}`;
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detailModal').classList.remove('show');
+      currentDetailMap = null;
+    }
+
+    function openMapFromDetail() {
+      if (!currentDetailLat || !currentDetailLng) {
+        alert('지도에 표시할 좌표 정보가 없습니다.');
+        return;
+      }
+
+      const mapUrl = `https://map.kakao.com/link/map/사건위치,${currentDetailLat},${currentDetailLng}`;
+      window.open(mapUrl, '_blank');
+    }
+
+    document.getElementById('detailModal').addEventListener('click', function (e) {
+      if (e.target.id === 'detailModal') {
+        closeDetailModal();
+      }
+    });
+
+    function selectAddress(item) {
+      if (item.is_city_district) {
+        let url = `/alerts?city=${encodeURIComponent(item.city)}`;
+        if (item.district) {
+          url += `&district=${encodeURIComponent(item.district)}`;
+        }
+        window.location.href = url;
+        return;
+      }
+
+      const radius = 500;
+      const url = `/alerts?lat=${item.latitude}&lng=${item.longitude}&radius_m=${radius}&address=${encodeURIComponent(item.address_name)}`;
+      window.location.href = url;
+    }
+
+    document.getElementById('addressKeyword').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        searchAddress();
+      }
+    });
+
+    function zoomInDetailMap() {
+      if (!currentDetailMap) return;
+      const level = currentDetailMap.getLevel();
+      currentDetailMap.setLevel(level - 1);
+    }
+
+    function zoomOutDetailMap() {
+      if (!currentDetailMap) return;
+      const level = currentDetailMap.getLevel();
+      currentDetailMap.setLevel(level + 1);
+    }
+
+    function getRiskText(score) {
+      const num = Number(score || 0);
+
+      if (num >= 80) return { text: '위험도 높음', cls: 'risk-high' };
+      if (num >= 50) return { text: '위험도 중간', cls: 'risk-medium' };
+
+      return { text: '위험도 낮음', cls: 'risk-low' };
+    }
+
+    function getStatusClass(status) {
+      if (status === '접수완료') return 'status-received';
+      if (status === '처리중') return 'status-processing';
+      if (status === '처리완료') return 'status-done';
+      return '';
+    }
+
+    function createAlertCard(item) {
+      const risk = getRiskText(item.risk_score);
+      const statusClass = getStatusClass(item.status);
+
+      const distanceHtml =
+        item.distance_m !== null && item.distance_m !== undefined
+          ? `<div class="distance-text">선택 위치에서 약 ${item.distance_m}m</div>`
+          : '';
+
+      const reportHtml =
+        item.group_reporter_count >= 3
+          ? `<div class="report-badge">동일 위치 제보 ${item.group_reporter_count}건</div>`
+          : '';
+
+      const multiReportClass =
+        item.group_reporter_count >= 5
+          ? 'multi-report danger'
+          : item.group_reporter_count >= 3
+            ? 'multi-report'
+            : '';
+
+      const multiReportLabel =
+        item.group_reporter_count >= 5
+          ? `<div class="multi-report-label danger">집중 위험</div>`
+          : item.group_reporter_count >= 3
+            ? `<div class="multi-report-label">반복 제보</div>`
+            : '';
+
+      return `
+        <article class="alert-card compact-card load-fade-up ${statusClass} ${multiReportClass}">
+          <div class="compact-main-row">
+            <div class="compact-left">
+              ${multiReportLabel}
+              <span class="alert-status">${item.status || ''}</span>
+              <h2 class="alert-title compact-title">${item.title || ''}</h2>
+              <div class="compact-location">${item.location || ''}</div>
+              ${distanceHtml}
+              ${reportHtml}
+            </div>
+
+            <div class="compact-right">
+              <span class="alert-time">${item.first_created_at || ''}</span>
+              <span class="risk-text ${risk.cls}">${risk.text}</span>
+            </div>
+          </div>
+
+          <div class="compact-row compact-bottom-row">
+            <div></div>
+            <button
+              class="check-btn compact-btn"
+              type="button"
+              onclick='openDetailModal(
+                ${JSON.stringify(item.title || "")},
+                ${JSON.stringify(item.location || "")},
+                ${JSON.stringify(item.status || "")},
+                ${JSON.stringify(item.first_created_at || "")},
+                ${JSON.stringify(item.risk_score || 0)},
+                ${JSON.stringify(item.latitude || "")},
+                ${JSON.stringify(item.longitude || "")}
+              )'
+            >
+              현장 확인
+            </button>
+          </div>
+        </article>
+      `;
+    }
+
+    let currentPage = 1;
+    let hasNextPage = {{ 'true' if has_next else 'false' }};
+    let isLoadingMore = false;
+    let observer = null;
+
+    async function loadMoreAlerts() {
+      if (isLoadingMore || !hasNextPage) return;
+
+      isLoadingMore = true;
+
+      if (observer && sentinel) {
+        observer.unobserve(sentinel);
+      }
+
+      const statusText = document.getElementById('listStatusText');
+      if (statusText) {
+        statusText.textContent = '로딩 중...';
+      }
+
+      try {
+        await new Promise(resolve => setTimeout(resolve, 400));
+
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', currentPage + 1);
+        params.set('per_page', 4);
+        params.set('api', '1');
+
+        const response = await fetch(`/alerts?${params.toString()}`);
+        const data = await response.json();
+
+        if (!data.success) {
+          if (statusText) {
+            statusText.textContent = '불러오기에 실패했습니다.';
+          }
+          return;
+        }
+
+        const alertList = document.getElementById('alertList');
+        data.items.forEach(item => {
+          alertList.insertAdjacentHTML('beforeend', createAlertCard(item));
+        });
+
+        currentPage += 1;
+        hasNextPage = data.has_next;
+
+        if (statusText) {
+          statusText.textContent = hasNextPage
+            ? '아래로 스크롤하면 더 불러옵니다.'
+            : '마지막 알림입니다.';
+        }
+      } catch (error) {
+        console.error('무한 스크롤 로딩 오류:', error);
+        if (statusText) {
+          statusText.textContent = '불러오는 중 오류가 발생했습니다.';
+        }
+      } finally {
+        isLoadingMore = false;
+
+        if (observer && sentinel && hasNextPage) {
+          setTimeout(() => {
+            observer.observe(sentinel);
+          }, 250);
+        }
+      }
+    }
+
+    const sentinel = document.getElementById('scrollSentinel');
+
+    if (sentinel) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && !isLoadingMore && hasNextPage) {
+            loadMoreAlerts();
+          }
+        },
+        {
+          root: document.querySelector('.content'),
+          threshold: 0.2
+        }
+      );
+
+      observer.observe(sentinel);
+    }
+
+    document.getElementById('addressModal').addEventListener('click', function (e) {
+      if (e.target.id === 'addressModal') {
+        closeAddressModal();
+      }
+    });
+  </script>
+</body>
+</html>

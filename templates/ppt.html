@@ -36,6 +36,8 @@
             overflow: hidden !important;
             width: 100%;
             height: 100vh;
+            overscroll-behavior: none;
+            /* [추가] 브라우저 바운스 및 흔들림 방지 */
         }
 
         body::-webkit-scrollbar {
@@ -105,6 +107,84 @@
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12) !important;
         }
 
+        .hover-fade-container:hover {
+            transform: scale(1.02);
+            z-index: 100 !important;
+        }
+
+        .hover-fade-container:hover .fade-front {
+            opacity: 0 !important;
+            z-index: 1;
+            pointer-events: none !important;
+        }
+
+        .hover-fade-container:hover .fade-back {
+            opacity: 1 !important;
+            z-index: 2;
+            pointer-events: auto !important;
+        }
+
+        .hover-fade-container {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: auto;
+        }
+
+        #globalZoomOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000000;
+            flex-direction: column;
+            padding: 40px;
+            backdrop-filter: blur(15px);
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+            pointer-events: none;
+        }
+
+        #globalZoomOverlay.active {
+            display: flex;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #zoomImg {
+            max-width: 80%;
+            max-height: 70%;
+            object-fit: contain;
+            border-radius: 20px;
+            box-shadow: 0 30px 100px rgba(0, 0, 0, 0.5);
+            transform: scale(0.8);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-bottom: 30px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #globalZoomOverlay.active #zoomImg {
+            transform: scale(1);
+        }
+
+        #zoomDesc {
+            color: white;
+            font-size: 1.8rem;
+            max-width: 800px;
+            text-align: center;
+            line-height: 1.8;
+            font-weight: 500;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
         .code-hover {
             position: absolute;
             top: 0;
@@ -128,6 +208,48 @@
         .risk-card:hover .code-hover {
             opacity: 1;
             pointer-events: auto;
+        }
+
+        /* Flip Card Base */
+        .flip-card {
+            background-color: transparent;
+            width: 100%;
+            height: 750px;
+            perspective: 2000px;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .flip-card:hover .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front,
+        .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 30px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .flip-card-back {
+            transform: rotateY(180deg);
+            background: #1b1b1b;
+            border: 1px solid #333;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            justify-content: center;
         }
 
         .code-hover code {
@@ -1222,6 +1344,78 @@
                 box-shadow: 0 0 0 0 rgba(255, 140, 0, 0);
             }
         }
+
+        /* [DB SECURITY MODAL & ZOOM OVERLAY] */
+        #securityModal,
+        #globalZoomOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        #globalZoomOverlay {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            pointer-events: none;
+            /* 호버 시 마우스 아웃 방지 */
+        }
+
+        #securityModal {
+            background: rgba(255, 255, 255, 0.15) !important;
+            backdrop-filter: blur(6px) !important;
+            -webkit-backdrop-filter: blur(6px) !important;
+        }
+
+        #securityModal.active,
+        #globalZoomOverlay.active {
+            opacity: 1;
+        }
+
+        #securityModal>div,
+        #globalZoomOverlay>img {
+            transform: scale(0.8);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #securityModal.active>div,
+        #globalZoomOverlay.active>img {
+            transform: scale(1);
+        }
+
+        #globalZoomOverlay img {
+            max-width: 90%;
+            max-height: 80%;
+            object-fit: contain;
+            border-radius: 20px;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #zoomDesc {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 140, 0, 0.9);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 50px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            box-shadow: 0 15px 35px rgba(255, 140, 0, 0.3);
+            max-width: 80%;
+            text-align: center;
+            line-height: 1.6;
+            word-break: keep-all;
+        }
     </style>
 </head>
 
@@ -1333,7 +1527,7 @@
                                     style="font-size: 1.45rem; line-height: 2.2; text-align: center; width: 100%; font-weight: 600;">
                                     Report, 게시물 첨부 담당<br>
                                     중복 신고 차단 로직<br>
-                                    PPT 자료 준비<br>
+                                    Report, Alert 서비스 병합로직<br>
                                     디버깅<br>
                                     데이터 라벨링 & 모델학습
                                 </div>
@@ -1369,21 +1563,16 @@
                     </div>
                     <div class="index-card">
                         <span class="num">04</span>
-                        <i class="bi bi-layers-fill" style="color: #26a69a;"></i>
-                        <span class="txt">기술 스택</span>
-                    </div>
-                    <div class="index-card">
-                        <span class="num">05</span>
                         <i class="bi bi-robot" style="color: #ab47bc;"></i>
                         <span class="txt">AI 모델</span>
                     </div>
                     <div class="index-card">
-                        <span class="num">06</span>
+                        <span class="num">05</span>
                         <i class="bi bi-play-circle-fill" style="color: #ff7043;"></i>
                         <span class="txt">핵심 서비스 시연</span>
                     </div>
                     <div class="index-card">
-                        <span class="num">07</span>
+                        <span class="num">06</span>
                         <i class="bi bi-flag-fill" style="color: #ef5350;"></i>
                         <span class="txt">향후 목표</span>
                     </div>
@@ -1471,12 +1660,17 @@
                     </div>
                     <!-- 카드 04: 도로 증가 통계 (신규 추가) -->
                     <div class="stat-card"
-                        style="border: 2.5px solid var(--point-orange); box-shadow: 0 15px 35px rgba(255,140,0,0.12);">
+                        style="border: 2.5px solid var(--point-orange); box-shadow: 0 15px 35px rgba(255,140,0,0.12); width: 360px;">
                         <div class="stat-icon" style="color: var(--point-orange);"><i
                                 class="bi bi-plus-circle-fill"></i></div>
                         <div class="stat-number" style="color: var(--point-orange);">861</div>
                         <div class="stat-unit">km / 연</div>
-                        <div class="stat-desc"><strong>연 평균 도로 신설·증가</strong><br>(최근 10년간 총 8,611km↑)</div>
+                        <div class="stat-desc" style="font-size: 1.25rem; line-height: 1.5; word-break: keep-all;">
+                            우리나라 도로는 멈춰있는 게 아니라,<br>
+                            매년 <strong>서울~부산 왕복 거리</strong>만큼<br>
+                            새로 생겨나고 있습니다.
+                            <div style="font-size: 1rem; color: #999; margin-top: 5px;">(최근 10년간 총 8,611km 이상 증가)</div>
+                        </div>
                     </div>
                 </div>
 
@@ -1948,97 +2142,161 @@
             </div>
 
 
-            <div class="spot" id="spot-14" style="width: 1500px;">
-                <h2 style="font-size: 5rem; margin-bottom: 40px;">Portable Runtime: <span class="point">무설치 독립 실행
+            <div class="spot" id="spot-14" style="width: 1750px;">
+                <h2 style="font-size: 5rem; margin-bottom: 40px;">Portable Runtime: <span class="point">원클릭 실행
                         환경</span></h2>
                 <div class="flex-row" style="gap: 50px; align-items: stretch;">
                     <!-- 설명 영역 -->
-                    <div style="flex: 1; text-align: left;">
+                    <div style="flex: 0 0 600px; text-align: left;">
                         <div class="stat-card"
                             style="width: 100%; border-top: 10px solid var(--point-orange); padding: 40px; margin-bottom: 30px;">
                             <h3 style="font-size: 2.2rem; color: #333; margin-bottom: 15px;">기술적 특장점</h3>
                             <ul style="font-size: 1.4rem; color: #555; line-height: 2; padding-left: 20px;">
-                                <li><strong>보안 정책 우회:</strong> 파이썬 설치가 제한된 서버에서도 즉시 구동</li>
-                                <li><strong>환경 무관 실행:</strong> 전용 라이브러리 번들링으로 의존성 무결성 확보</li>
-                                <li><strong>원클릭 자동화:</strong> 복잡한 명령 없이 `BAT` 실행으로 모든 구축 완료</li>
+                                <li><strong>보안 정책 우회:</strong> 파이썬 설치가 제한된 서버에서도<br> 즉시 구동</li>
+                                <li><strong>환경 무관 실행:</strong> 전용 라이브러리 번들링으로<br> 의존성 무결성 확보</li>
+                                <li><strong>원클릭 자동화:</strong> 복잡한 명령 없이 `BAT` 실행으로<br> 구축 완료</li>
                             </ul>
                         </div>
                         <div style="background: rgba(0,0,0,0.05); padding: 30px; border-radius: 20px;">
-                            <h4 style="font-size: 1.6rem; margin-bottom: 10px; font-weight: 800;"><i
-                                    class="bi bi-diagram-3-fill point"></i> 구동 프로세스</h4>
-                            <p style="font-size: 1.3rem; color: #666; font-family: monospace; line-height: 1.5;">
-                                STEP 01: ZIP 압축 해제<br>
-                                STEP 02: <strong>ONE_CLICK_START.bat</strong> 실행<br>
-                                STEP 03: 가상환경(.venv) 자동 감지 및 생성<br>
-                                STEP 04: 로컬 포터블 파이썬으로 라이브러리 자동 빌드<br>
-                                STEP 05: 서버 인스턴스 활성화 (8012 Port)
+                            <h4 style="font-size: 1.6rem; margin-bottom: 15px; font-weight: 800;"><i
+                                    class="bi bi-code-slash point"></i> 핵심 빌드 로직 (BAT 내부)</h4>
+                            <div
+                                style="background: #222; color: #adff2f; padding: 20px; border-radius: 15px; font-family: 'Consolas', monospace; font-size: 1.1rem; line-height: 1.4; margin-bottom: 20px; border: 1px solid #444;">
+                                <span style="color: #888;">:: 가상환경 활성화 및 라이브러리 자동 설치</span><br>
+                                <span style="color: #f1c40f;">call</span> "%~dp0.venv\Scripts\activate.bat"<br>
+                                <span style="color: #f1c40f;">pip</span> install -r "%~dp0requirements.txt"
+                            </div>
+                            <p style="font-size: 1.35rem; color: #555; line-height: 1.6; word-break: keep-all;">
+                                <strong>작동 원리:</strong> `BAT` 파일이 실행되면 가장 먼저 로컬의 <strong>Embedded Python</strong>을
+                                탐색합니다. 환경이 감지되면 독립된 가상공간(`.venv`)을 생성하고, 위 코드를 통해 `requirements.txt`에 명시된 <strong>약 40여
+                                    개의 라이브러리</strong>를 프로젝트 디렉토리에만 빌드합니다.
                             </p>
                         </div>
                     </div>
-                    <!-- 탐색기 시각화 (모서리 둥근 표) -->
-                    <div
-                        style="flex: 1.2; background: white; border-radius: 30px; border: 1px solid #eee; padding: 40px; box-shadow: 0 15px 50px rgba(0,0,0,0.08);">
-                        <h3 style="font-size: 1.8rem; color: #999; margin-bottom: 25px; font-weight: 800;"><i
-                                class="bi bi-folder-fill"></i> 프로젝트 폴더 패키징 구조</h3>
-                        <table
-                            style="width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 20px; overflow: hidden; border: 1.5px solid #eee;">
-                            <tr style="background: #fdfdfd; font-weight: 800; font-size: 1.3rem;">
-                                <th
-                                    style="padding: 15px; border-bottom: 1.5px solid #eee; text-align: left; width: 40%;">
-                                    파일명 / 폴더명</th>
-                                <th style="padding: 15px; border-bottom: 1.5px solid #eee; text-align: left;">역할 및 패키징
-                                    용도</th>
-                            </tr>
-                            <tr>
-                                <td
-                                    style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-weight: 700; color: var(--point-orange);">
-                                    <i class="bi bi-file-earmark-play-fill"></i> ONE_CLICK_START.bat
-                                </td>
-                                <td
-                                    style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-size: 1.2rem; color: #666;">
-                                    <strong>[실행 파일]</strong> 환경 구축 및 서버 가동 마스터 스크립트
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-weight: 700;"><i
-                                        class="bi bi-folder-fill" style="color: #FFD600;"></i> python_portable/</td>
-                                <td
-                                    style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-size: 1.2rem; color: #666;">
-                                    <strong>[내장 엔진]</strong> 설치가 필요 없는 임베디드 파이썬 시스템
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-weight: 700;"><i
-                                        class="bi bi-folder-fill" style="color: #4CAF50;"></i> .venv/</td>
-                                <td
-                                    style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-size: 1.2rem; color: #666;">
-                                    <strong>[라이브러리]</strong> 전용 종속 패키지들이 고립되어 저장되는 곳
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-weight: 700;"><i
-                                        class="bi bi-file-earmark-text"></i> requirements.txt</td>
-                                <td
-                                    style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-size: 1.2rem; color: #666;">
-                                    <strong>[목록]</strong> 설치해야 할 모든 라이브러리 버전 정보
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 15px; font-weight: 700;"><i class="bi bi-archive-fill"></i>
-                                    CRACK_STABLE.zip</td>
-                                <td style="padding: 15px; font-size: 1.2rem; color: #666;"><strong>[부모 패키지]</strong> 이
-                                    모든 것을 하나로 묶은 배포 본체</td>
-                            </tr>
-                        </table>
-                        <div
-                            style="margin-top: 30px; text-align: center; font-size: 1.4rem; color: #999; font-weight: 700;">
-                            <i class="bi bi-info-circle"></i> ZIP 해제 후 <span
-                                style="background: var(--point-orange); color: white; padding: 2px 8px; border-radius: 5px;">BAT
-                                파일</span>만 누르면 모든 설치가 자동으로 진행됩니다.
+                    <!-- 탐색기 시각화 (2D Fade 카드 적용 - 3D Transform/Scale 충돌 버그 방지) -->
+                    <div class="hover-fade-container"
+                        style="flex: 0 0 1000px; width: 1000px; height: 650px; position: relative;">
+                        <!-- FRONT: 프로젝트 폴더 구조 표 -->
+                        <div class="fade-front"
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; border: 1px solid #eee; padding: 40px; box-shadow: 0 15px 50px rgba(0,0,0,0.08); display: flex; flex-direction: column; border-radius: 30px; transition: opacity 0.4s ease; z-index: 2;">
+                            <h3
+                                style="font-size: 2.2rem; color: #333; margin-bottom: 25px; font-weight: 800; text-align: left;">
+                                <i class="bi bi-folder-fill" style="color: #FFCA28;"></i> 프로젝트 패키징 구조
+                                (Distribution)
+                            </h3>
+                            <table
+                                style="width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 20px; overflow: hidden; border: 1.5px solid #eee;">
+                                <tr style="background: #fdfdfd; font-weight: 800; font-size: 1.6rem;">
+                                    <th
+                                        style="padding: 20px; border-bottom: 2.2px solid #eee; text-align: left; width: 40%;">
+                                        파일명 / 폴더명</th>
+                                    <th style="padding: 20px; border-bottom: 2.2px solid #eee; text-align: left;">
+                                        역할 및 패키징
+                                        용도</th>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="padding: 20px; border-bottom: 1px solid #f5f5f5; font-size: 1.55rem; font-weight: 800; color: var(--point-orange);">
+                                        <i class="bi bi-file-earmark-play-fill"></i> ONE_CLICK_START.bat
+                                    </td>
+                                    <td
+                                        style="padding: 20px; border-bottom: 1px solid #f5f5f5; font-size: 1.5rem; color: #555;">
+                                        <strong>[실행 파일]</strong> 환경 구축 및 서버 가동 마스터 스크립트
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td
+                                        style="padding: 20px; border-bottom: 1px solid #f5f5f5; font-size: 1.55rem; font-weight: 800;">
+                                        <i class="bi bi-folder-fill" style="color: #4CAF50;"></i> .venv/
+                                    </td>
+                                    <td
+                                        style="padding: 20px; border-bottom: 1px solid #f5f5f5; font-size: 1.5rem; color: #555;">
+                                        <strong>[라이브러리]</strong> 전용 종속 패키지들이 고립되어 저장되는 곳
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="padding: 20px; border-bottom: 1px solid #f5f5f5; font-size: 1.55rem; font-weight: 800;">
+                                        <i class="bi bi-file-earmark-text"></i> requirements.txt
+                                    </td>
+                                    <td
+                                        style="padding: 20px; border-bottom: 1px solid #f5f5f5; font-size: 1.5rem; color: #555;">
+                                        <strong>[목록]</strong> 설치해야 할 모든 라이브러리 버전 정보
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 20px; font-size: 1.55rem; font-weight: 800;"><i
+                                            class="bi bi-archive-fill"></i>
+                                        CRACK_STABLE.zip</td>
+                                    <td style="padding: 20px; font-size: 1.5rem; color: #555;"><strong>[부모
+                                            패키지]</strong> 이
+                                        모든 것을 하나로 묶은 배포 본체</td>
+                                </tr>
+                            </table>
+                            <div
+                                style="margin-top: auto; text-align: center; font-size: 1.8rem; color: #666; font-weight: 700; background: #f9f9f9; padding: 20px; border-radius: 15px;">
+                                <i class="bi bi-mouse2"></i> 마우스를 올리면 <span class="point">배포용 BAT 코드</span>를
+                                확인합니다.
+                            </div>
+                        </div>
+
+                        <!-- BACK: 11페이지의 코드 분석 보드 (BAT 실행 스크립트) -->
+                        <div class="fade-back"
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1b; padding: 35px; border: 4px solid #333; display: flex; flex-direction: column; border-radius: 30px; opacity: 0; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; pointer-events: none; box-shadow: 0 20px 60px rgba(0,0,0,0.4);">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 12px;">
+                                <span
+                                    style="color: #4fc1ff; font-family: 'Consolas', monospace; font-size: 1.3rem; font-weight: bold;">ONE_CLICK_START.bat</span>
+                                <div style="display: flex; gap: 7px;">
+                                    <div style="width: 11px; height: 11px; border-radius: 50%; background: #ff5f56;">
+                                    </div>
+                                    <div style="width: 11px; height: 11px; border-radius: 50%; background: #ffbd2e;">
+                                    </div>
+                                    <div style="width: 11px; height: 11px; border-radius: 50%; background: #27c93f;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div
+                                style="font-family: 'Consolas', 'Monaco', monospace; font-size: 0.85rem; line-height: 1.6; color: #e0e0e0; text-align: left; padding: 15px; background: #0d0d0e; border-radius: 15px; border: 1px solid #333; flex: 1; height: 0; overflow-y: auto; pointer-events: auto !important; touch-action: pan-y;">
+                                <p style="margin-bottom: 8px;"><span style="color: #6a9955;">:: 1. 현재 경로 확보
+                                        (%~dp0)</span></p>
+                                <p><span style="color: #569cd6; font-weight: bold;">set</span> <span
+                                        style="color: #9cdcfe;">"PROJECT_ROOT=%~dp0"</span></p>
+
+                                <p style="margin: 15px 0 8px 0;"><span style="color: #6a9955;">:: 2. 가상환경 존재 여부
+                                        체크</span></p>
+                                <p><span style="color: #c586c0; font-weight: bold;">if not exist</span> <span
+                                        style="color: #9cdcfe;">"%PROJECT_ROOT%.venv"</span> (</p>
+                                <p>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #ce9178;">echo</span> <span
+                                        style="color: #ce9178;">가상환경을 최초 생성합니다...</span></p>
+                                <p>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #6a9955;">:: 시스템 파이썬을 이용해 전용 가상공간
+                                        생성</span></p>
+                                <p>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #dcdcaa;">python</span> -m venv <span
+                                        style="color: #9cdcfe;">"%PROJECT_ROOT%.venv"</span></p>
+                                <p>)</p>
+
+                                <p style="margin: 15px 0 8px 0;"><span style="color: #6a9955;">:: 3. 활성화 및 패키지
+                                        동기화</span></p>
+                                <p><span style="color: #c586c0; font-weight: bold;">call</span> <span
+                                        style="color: #9cdcfe;">"%PROJECT_ROOT%.venv\Scripts\activate.bat"</span></p>
+                                <p><span style="color: #dcdcaa;">pip</span> install --upgrade pip</p>
+                                <p><span style="color: #dcdcaa;">pip</span> install -r <span
+                                        style="color: #9cdcfe;">"%PROJECT_ROOT%requirements.txt"</span></p>
+
+                                <p style="margin: 15px 0 8px 0;"><span style="color: #6a9955;">:: 4. 환경 변수 주입 후 서버
+                                        기동</span></p>
+                                <p><span style="color: #dcdcaa;">python</span> <span
+                                        style="color: #9cdcfe;">"%PROJECT_ROOT%app.py"</span></p>
+                                <p style="margin-top: 10px;"><span
+                                        style="color: #c586c0; font-weight: bold;">pause</span></p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+
 
             <!-- spot-6a: 법적/운영 리스크 방어 -->
             <div class="spot" id="spot-6a">
@@ -2054,42 +2312,43 @@
 
                 <div style="display: flex; gap: 30px; justify-content: center; max-width: 1400px; flex-wrap: wrap;">
 
-                    <!-- 1. GPS 어뷰징 방지 -->
+                    <!-- 1. 중복/허위 제보 방지 -->
                     <div class="risk-card"
                         style="flex: 1; min-width: 320px; background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); border-top: 6px solid #E53935; display: flex; flex-direction: column;">
                         <div class="code-hover">
-                            <div class="code-header"><span>security_check.py</span> <i class="bi bi-shield-lock"></i>
+                            <div class="code-header"><span>report_service.py</span> <i class="bi bi-shield-lock"></i>
                             </div>
                             <code>
-                                <span class="code-comment"># 위치 무결성 검증</span><br>
-                                <span class="code-keyword">if</span> <span class="code-func">abs</span>(exif_lat - user_lat) > <span class="code-string">0.001</span>:<br>
-                                &nbsp;&nbsp;<span class="code-func">raise</span> SecurityError(<span class="code-string">"GPS Spoofed"</span>)<br>
-                                <br>
-                                <span class="code-keyword">if</span> timestamp_gap > <span class="code-string">600</span>:<br>
-                                &nbsp;&nbsp;<span class="code-func">reject_report</span>(<span class="code-string">"Old Metadata"</span>)
+                                <span class="code-comment"># 24시간 내 반경 50m 중복 검증</span><br>
+                                duplicate = <span class="code-func">Report.query.filter</span>(<br>
+                                &nbsp;&nbsp;Report.created_at >= yesterday<br>
+                                ).all()<br>
+                                <span class="code-keyword">for</span> r <span class="code-keyword">in</span> duplicate:<br>
+                                &nbsp;&nbsp;<span class="code-keyword">if</span> <span class="code-func">haversine</span>(lat, lng, r.lat, r.lng) <= <span class="code-string">50</span>:<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;<span class="code-func">reject_report</span>(<span class="code-string">"반경 50m 이내 중복건"</span>)
                             </code>
                         </div>
                         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
                             <i class="bi bi-geo-alt-fill" style="font-size: 2.5rem; color: #E53935;"></i>
-                            <h3 style="font-size: 1.9rem; color: #333; margin: 0; font-weight: 800;">정보 무결성 (GPS 어뷰징)
+                            <h3 style="font-size: 1.9rem; color: #333; margin: 0; font-weight: 800;">정보 무결성 (어뷰징 차단)
                             </h3>
                         </div>
                         <p style="font-size: 1.25rem; color: #E53935; font-weight: 700; margin-bottom: 12px;"><i
-                                class="bi bi-exclamation-triangle"></i> 우려: 허위 위치 제보 및 포인트 파밍</p>
+                                class="bi bi-exclamation-triangle">
+                            </i> 우려: 매크로 및 포인트 파밍 목적의 허위 제보</p>
                         <p
                             style="font-size: 1.45rem; color: #555; line-height: 1.6; word-break: keep-all; flex-grow: 1;">
-                            실제 현장이 아닌 집에서 가짜 좌표를 생성하여 제보하거나, 과거 사진을 재사용하여 행정 예산을 낭비하게 할 리스크가 있습니다.
+                            특정 지역의 과거 사진을 재사용하여 반복적으로 제보를 넣거나, 의도적으로 포인트를 파밍하기 위해 허위 접수를 시도해 행정 예산을 낭비시킬 리스크가 있습니다.
                         </p>
                         <div
                             style="margin-top: 20px; padding: 18px; background: #fafafa; border-radius: 12px; border: 1px solid #eee;">
                             <p
                                 style="font-size: 1.3rem; color: var(--point-orange); font-weight: 800; margin-bottom: 8px;">
-                                방어 로직: Location Cross-Check</p>
+                                방어 로직: Duplicate Cross-Check</p>
                             <p
                                 style="font-size: 1.4rem; color: #444; line-height: 1.6; word-break: keep-all; font-weight: 500;">
-                                사진의 <strong>EXIF 위치값</strong>과 촬영 시점 <strong>사용자의 실시간 GPS</strong>를 대조하여 100m 이상의 오차 발생
-                                시
-                                승인을 거절합니다.
+                                오직 사진 자체의 <strong>순수 EXIF 메타데이터 위치값</strong>망을 추출/활용하며, <strong>최근 24시간 내 반경 50m
+                                    이내</strong>의 동일한 중복 제보는 시스템 단에서 자동 승인 거절됩니다.
                             </p>
                         </div>
                     </div>
@@ -2098,15 +2357,17 @@
                     <div class="risk-card"
                         style="flex: 1; min-width: 320px; background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); border-top: 6px solid #1E88E5; display: flex; flex-direction: column;">
                         <div class="code-hover">
-                            <div class="code-header"><span>privacy_filter.js</span> <i class="bi bi-incognito"></i>
+                            <div class="code-header"><span>report_service.py</span> <i class="bi bi-shield-check"></i>
                             </div>
                             <code>
-                                <span class="code-comment">// EXIF 메타데이터 즉시 삭제</span><br>
-                                <span class="code-keyword">const</span> scrubbed = <span class="code-keyword">await</span> <span class="code-func">sharp</span>(image)<br>
-                                &nbsp;&nbsp;.<span class="code-func">keepMetadata</span>(<span class="code-keyword">false</span>)<br>
-                                &nbsp;&nbsp;.<span class="code-func">toBuffer</span>();<br>
+                                <span class="code-comment"># 원본에서 사전 GPS 정보 우선 추출</span><br>
+                                lat, lng = <span class="code-func">extract_gps_from_exif</span>(raw_file)<br>
                                 <br>
-                                <span class="code-func">saveToSecureStorage</span>(scrubbed);
+                                <span class="code-comment"># EXIF 메타데이터 물리적 완전 파쇄</span><br>
+                                image = Image.<span class="code-func">open</span>(raw_file)<br>
+                                image.<span class="code-func">save</span>(clean_path, <span class="code-string">"JPEG"</span>, quality=<span class="code-string">85</span>)<br>
+                                <br>
+                                <span class="code-func">os.remove</span>(raw_file) <span class="code-comment"># 원본 영구 삭제</span>
                             </code>
                         </div>
                         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
@@ -2117,7 +2378,7 @@
                                 class="bi bi-exclamation-triangle"></i> 우려: 민원인 신상 및 사생활 노출</p>
                         <p
                             style="font-size: 1.45rem; color: #555; line-height: 1.6; word-break: keep-all; flex-grow: 1;">
-                            공공 피드에 신고자의 신원이 드러나거나, 사진 원본의 EXIF 메타데이터를 통해 개인의 이동 동선이 노출될 위험이 있습니다.
+                            공공 피드에 신고자의 신원이 드러나거나, 사진 원본의 EXIF 메타데이터를 통해 개인의 이동 동선(집, 직장) 등이 분석되어 노출될 심각한 위험이 있습니다.
                         </p>
                         <div
                             style="margin-top: 20px; padding: 18px; background: #fafafa; border-radius: 12px; border: 1px solid #eee;">
@@ -2126,8 +2387,8 @@
                                 방어 로직: Data Minimization</p>
                             <p
                                 style="font-size: 1.4rem; color: #444; line-height: 1.6; word-break: keep-all; font-weight: 500;">
-                                자체 DB 내 민감정보 보관을 없애기 위해 <strong>Kakao OAuth</strong> 인증만 활용하며, 사진의 EXIF 데이터는
-                                <strong>서버에서 파싱 후 즉각 파기</strong>합니다.
+                                DB 보관 데이터를 최소화하기 위해 <strong>식별자 가명화(Pseudonymized ID)</strong>를 사용하며, 서버 전송 즉시
+                                <strong>Python Pillow</strong>를 이용하여 사진의 EXIF 데이터를 물리적 파쇄한 뒤 클린본만 저장해 추적을 원천 차단합니다.
                             </p>
                         </div>
                     </div>
@@ -2136,15 +2397,15 @@
                     <div class="risk-card"
                         style="flex: 1; min-width: 320px; background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); border-top: 6px solid #FDD835; display: flex; flex-direction: column;">
                         <div class="code-hover">
-                            <div class="code-header"><span>ai_inference.py</span> <i class="bi bi-cpu"></i></div>
+                            <div class="code-header"><span>app.py (AI Analysis Thread)</span> <i class="bi bi-cpu"></i>
+                            </div>
                             <code>
-                                <span class="code-comment"># Vision AI 필터링</span><br>
-                                results = <span class="code-func">pothole_model</span>(img)<br>
-                                <span class="code-keyword">if</span> results.conf < <span class="code-string">0.65</span>:<br>
-                                &nbsp;&nbsp;<span class="code-keyword">return</span> <span class="code-func">Response</span>(<span class="code-string">"Rejected"</span>)<br>
-                                <br>
-                                <span class="code-comment"># AI 확정 시에만 DB 저장</span><br>
-                                <span class="code-func">commit_to_database</span>(id, loc)
+                                <span class="code-comment"># Vision AI 백그라운드 스레드 판독</span><br>
+                                results = <span class="code-func">yolov8_model</span>(image_path)<br>
+                                <span class="code-keyword">if not</span> results.<span class="code-func">has_pothole</span>():<br>
+                                &nbsp;&nbsp;<span class="code-comment"># 반려 상태로 즉각 분류 전환</span><br>
+                                &nbsp;&nbsp;report.status = <span class="code-string">'반려 (자동분류)'</span><br>
+                                &nbsp;&nbsp;db.session.<span class="code-func">commit</span>()
                             </code>
                         </div>
                         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
@@ -2152,10 +2413,10 @@
                             <h3 style="font-size: 1.9rem; color: #333; margin: 0; font-weight: 800;">공무집행방해 (위계)</h3>
                         </div>
                         <p style="font-size: 1.25rem; color: #FBC02D; font-weight: 700; margin-bottom: 12px;"><i
-                                class="bi bi-exclamation-triangle"></i> 우려: 매크로 및 허위 신고 폭탄</p>
+                                class="bi bi-exclamation-triangle"></i> 우려: 무의미한 민원 및 스팸 사진 테러</p>
                         <p
                             style="font-size: 1.45rem; color: #555; line-height: 1.6; word-break: keep-all; flex-grow: 1;">
-                            무의미한 밈(Meme)이나 관계없는 사진을 대량으로 전송하여 행정망을 마비시키는 디지털 테러 가능성이 있습니다.
+                            도로와 완전히 관계없는 일상 사진이나 밈(Meme) 등을 다량으로 접수하여 행정망을 혼란에 빠뜨리고 인력을 고갈시키는 디지털 테러 가능성이 있습니다.
                         </p>
                         <div
                             style="margin-top: 20px; padding: 18px; background: #fafafa; border-radius: 12px; border: 1px solid #eee;">
@@ -2164,8 +2425,8 @@
                                 방어 로직: AI Filtering</p>
                             <p
                                 style="font-size: 1.4rem; color: #444; line-height: 1.6; word-break: keep-all; font-weight: 500;">
-                                <strong>YOLOv8 + ResNet50 Vision AI</strong>가 이미지를 1차 판독하여, 도로 파손 특성이 발견되지 않으면
-                                <strong>DB 적재 전 메모리 단에서 Drop (거절)</strong> 처리합니다.
+                                <strong>YOLOv8s Vision AI</strong>가 사진을 스레드로 정밀 판독하여 도로 파손 특성이 발견되지 않는 경우, 사람이 직접 보기도 전에
+                                <strong>자동으로 반려(Rejected) 상태로 강등</strong> 처리해 행정 인력을 보호합니다.
                             </p>
                         </div>
                     </div>
@@ -2318,76 +2579,6 @@
 
             </div>
 
-            <div class="spot" id="spot-7">
-                <h2 style="font-size: 6rem; margin-bottom: 50px;">Full-Stack <span class="point">Framework</span></h2>
-                <div class="flex-row" style="gap: 30px; align-items: stretch; width: 1400px;">
-                    <!-- Backend -->
-                    <div
-                        style="flex:1; text-align: left; padding: 40px; background: rgba(255,140,0,0.05); border-radius: 40px; border: 1px solid rgba(255,140,0,0.1);">
-                        <h3 class="point" style="font-size: 3.5rem; margin-bottom: 20px;">Backend</h3>
-                        <p
-                            style="font-size: 2.8rem; font-weight: 900; color: var(--text-asphalt); margin-bottom: 20px;">
-                            Python Flask</p>
-                        <ul style="font-size: 1.8rem; color: #555; line-height: 1.8; padding-left: 25px;">
-                            <li>비동기 AI 분석 파이프라인 (Threading)</li>
-                            <li>KST 기반 타임존 무결성 로직 구축</li>
-                            <li>RESTful API 아키텍처 설계</li>
-                        </ul>
-                    </div>
-                    <!-- Frontend -->
-                    <div
-                        style="flex:1; text-align: left; padding: 40px; background: var(--white); border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); border: 1px solid #eee;">
-                        <h3 style="color: #666; font-size: 3.5rem; margin-bottom: 20px;">Frontend</h3>
-                        <p
-                            style="font-size: 2.8rem; font-weight: 900; color: var(--text-asphalt); margin-bottom: 20px;">
-                            No-deps JS & CSS</p>
-                        <ul style="font-size: 1.8rem; color: #555; line-height: 1.8; padding-left: 25px;">
-                            <li>Virtual SPA Routing 최적화 엔진</li>
-                            <li>GPU 가속 활용 60FPS 애니메이션</li>
-                            <li><strong>Flexbox Centering System</strong> 도입</li>
-                        </ul>
-                    </div>
-                </div>
-                <!-- Flexbox Deep Dive (Hardcoded) -->
-                <div
-                    style="margin-top: 50px; width: 1400px; background: #333; color: white; padding: 35px; border-radius: 30px; text-align: left; display: flex; align-items: center; gap: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.2);">
-                    <div style="font-size: 4rem; color: var(--point-orange);"><i class="bi bi-box-seam-fill"></i></div>
-                    <div>
-                        <h4
-                            style="font-size: 2.2rem; color: var(--point-orange); margin-bottom: 10px; font-weight: 800;">
-                            Technical Blueprint: Flexbox Grouping Logic</h4>
-                        <p style="font-size: 1.6rem; line-height: 1.6; opacity: 0.9; word-break: keep-all;">
-                            개별 좌표(Absolute) 방식의 한계를 극복하기 위해 <strong>1차원 레이아웃 모델(Flexbox)</strong>을 채택했습니다.
-                            7개의 인덱스 카드를 '단일 그룹 객체'로 선언하고 <code
-                                style="background: #555; padding: 2px 8px; border-radius: 5px; font-family: monospace;">justify-content: center</code>를
-                            적용하여,
-                            좌표 계산 오차 없이 <strong>브라우저 전역 X축에 대해 완벽한 수학적 정중앙 정렬</strong>을 보장합니다.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="spot" id="spot-8">
-                <h1 style="font-size: 10rem;" class="point">YOLOv8</h1>
-                <p style="font-size: 3rem; font-weight: 800; color: var(--text-asphalt);">초고속 Computer Vision 객체 탐지
-                </p>
-                <div class="flex-row" style="margin-top: 80px;">
-                    <div style="flex:1;">
-                        <div style="font-size: 6rem; font-weight: 900; color: var(--text-asphalt);">94%</div>
-                        <h3 style="color:#555;">실측 정확도 (mAP)</h3>
-                    </div>
-                    <div class="v-divider"></div>
-                    <div style="flex:1;">
-                        <div style="font-size: 6rem; font-weight: 900; color: var(--text-asphalt);">350+</div>
-                        <h3 style="color:#555;">FPS (초당 처리속도)</h3>
-                    </div>
-                    <div class="v-divider"></div>
-                    <div style="flex:1;">
-                        <div style="font-size: 6rem; font-weight: 900; color: var(--text-asphalt);">PyTorch</div>
-                        <h3 style="color:#555;">학습 환경 기반</h3>
-                    </div>
-                </div>
-            </div>
 
             <!-- Phase 1: 1차 모델 학습 (v5) -->
             <div class="spot" id="spot-8a" style="width: 1400px;">
@@ -2415,12 +2606,13 @@
                     </div>
                     <div class="stat-card" style="flex: 1; padding: 40px; border-top: 10px solid #1E88E5;">
                         <div style="font-size: 4rem; margin-bottom: 20px; color: #1E88E5;"><i
-                                class="bi bi-graph-up"></i></div>
+                                class="bi bi-graph-up"></i>
+                        </div>
                         <h3 style="font-size: 2.5rem; color: #333; margin-bottom: 15px;">1차 학습 결과 및 문제점</h3>
                         <p
                             style="font-size: 1.5rem; color: #555; line-height: 1.6; word-break: keep-all; text-align: left; margin-bottom: 15px;">
-                            포트홀 부분에서 높은 성능을 달성했으나, 가장 치명적 위협인 <strong>싱크홀(Sinkhole)</strong> 데이터가 원본에 존재하지 않는 치명적 결함을
-                            발견하였습니다.
+                            포트홀 부분에서 높은 성능을 달성했으나, 가장 치명적 위협인 <strong>싱크홀(Sinkhole)</strong> 데이터가 없는 21만장의 사진이므로, 씽크홀과
+                            포트홀의 학습이 필요했습니다.
                         </p>
                         <table
                             style="width: 100%; border-collapse: collapse; text-align: left; font-size: 1.4rem; color: #333;">
@@ -2441,138 +2633,6 @@
                 </div>
             </div>
 
-            <!-- YOLO Metrics Multi-Graph Slide -->
-            <div class="spot" id="spot-8a-2" style="width: 1600px;">
-                <h2 style="font-size: 4.5rem; margin-bottom: 20px;"><span style="color: #666;">YOLOv8</span> <span
-                        class="point">Training Metrics Analysis</span></h2>
-                <p style="font-size: 2.0rem; margin-bottom: 40px; color: #666; font-weight: 500;">
-                    전 구간(1차~3차) Loss 및 정밀도(Precision/Recall/mAP) 지표 변화 추이 (전체 측정 데이터 가시화)
-                </p>
-                <style>
-                    .stat-card {
-                        transition: all 0.3s ease;
-                    }
-
-                    .stat-card:hover {
-                        z-index: 10000 !important;
-                        transform: translateY(-5px);
-                    }
-
-                    .zoomable-img {
-                        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-                        cursor: zoom-in;
-                        z-index: 1;
-                    }
-
-                    .stat-card:hover .hover-insight {
-                        opacity: 1;
-                        visibility: visible;
-                        bottom: -10px;
-                        transform: translateX(-50%) scale(1);
-                    }
-
-                    /* 브라우저 정중앙 확대 오버레이 스타일 */
-                    #globalZoomOverlay {
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        width: 100vw;
-                        height: 100vh;
-                        background: rgba(0, 0, 0, 0.85);
-                        display: none;
-                        justify-content: center;
-                        align-items: center;
-                        z-index: 100000;
-                        backdrop-filter: blur(10px);
-                        pointer-events: none;
-                        /* 마우스 이벤트 방해 금지 */
-                        opacity: 0;
-                        transition: opacity 0.3s ease;
-                    }
-
-                    #globalZoomOverlay img {
-                        max-width: 90%;
-                        max-height: 90%;
-                        object-fit: contain;
-                        box-shadow: 0 50px 100px rgba(0, 0, 0, 0.5);
-                        border-radius: 15px;
-                        border: 3px solid rgba(255, 255, 255, 0.2);
-                        transform: scale(0.8);
-                        transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-                    }
-
-                    #globalZoomOverlay.active {
-                        display: flex;
-                        opacity: 1;
-                    }
-
-                    #globalZoomOverlay.active img {
-                        transform: scale(1);
-                    }
-
-                    .analysis-text {
-                        font-size: 1.35rem;
-                        color: #444;
-                        line-height: 1.7;
-                        margin-top: 15px;
-                        word-break: keep-all;
-                        text-align: left;
-                        border-left: 44px solid #eee;
-                        padding-left: 15px;
-                    }
-                </style>
-                <div class="flex-row" style="gap: 40px; align-items: stretch;">
-                    <!-- 1차 수치 -->
-                    <div class="stat-card"
-                        style="flex: 1.2; background: white; padding: 25px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); display: flex; flex-direction: column; overflow: visible;">
-                        <h3 style="font-size: 2.0rem; margin-bottom: 20px; color: #1E88E5; font-weight: 800;"><i
-                                class="bi bi-graph-up"></i> Phase 1: 100 Epochs 종합 분석</h3>
-                        <img src="/static/images/yolo/v5/results.png" class="zoomable-img"
-                            onmouseover="openGlobalZoom(this.src)" onmouseout="closeGlobalZoom()"
-                            style="width: 100%; object-fit: contain; border-radius: 10px; border: 1px solid #eee; background: white;">
-                        <div class="hover-insight">mAP 86% 달성: 안정적인 검출 성능 확보</div>
-                        <div class="analysis-text">
-                            <strong>[학습 흐름]</strong> Box/Class Loss가 100 Epoch 동안 <strong>계단 현상 없이 매끄럽게 하락</strong>하며
-                            최적의 수렴점에 도달했습니다.
-                            이는 모델이 도로 파손물의 기하학적 특징을 과적합 없이 안정적으로 학습했음을 의미하며, 최종 mAP(0.5) 지표가 <strong>86% 이상</strong>으로
-                            우수하게 집계되었습니다.
-                        </div>
-                    </div>
-                    <!-- 3차 수치 -->
-                    <div class="stat-card"
-                        style="flex: 1.2; background: white; padding: 25px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); display: flex; flex-direction: column; overflow: visible;">
-                        <h3 style="font-size: 2.0rem; margin-bottom: 20px; color: #43A047; font-weight: 800;"><i
-                                class="bi bi-bullseye"></i> Phase 3: Segment 정밀도 분석</h3>
-                        <img src="/static/images/yolo/v7/results.png" class="zoomable-img"
-                            onmouseover="openGlobalZoom(this.src)" onmouseout="closeGlobalZoom()"
-                            style="width: 100%; object-fit: contain; border-radius: 10px; border: 1px solid #eee; background: white;">
-                        <div class="hover-insight">세그먼트 전환: 픽셀 단위 정밀 분할중 (현재 10/40)</div>
-                        <div class="analysis-text">
-                            <strong>[세그먼트 개선]</strong> 픽셀 단위 분할 학습 결과, <strong>Mask Loss</strong>가 초기 5 Epoch 내에 급격히
-                            안정화되었습니다.
-                            단순 사각형(Box) 탐지에서 나아가 파손 부위의 실제 단면적을 계산할 수 있는 기반을 마련했으며, 현재 10/40 Epoch 시점에서도 <strong>주요 클래스
-                                경계 정밀도</strong>가 우수하게 개선되는 추세입니다.
-                        </div>
-                    </div>
-                    <!-- Confusion Matrix -->
-                    <div class="stat-card"
-                        style="flex: 1; background: white; padding: 25px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); display: flex; flex-direction: column; overflow: visible;">
-                        <h3 style="font-size: 2.0rem; margin-bottom: 20px; color: #8E24AA; font-weight: 800;"><i
-                                class="bi bi-pie-chart-fill"></i> 오분류 원인 분석 (Matrix)</h3>
-                        <img src="/static/images/yolo/v7/confusion_matrix.png" class="zoomable-img"
-                            onmouseover="openGlobalZoom(this.src)" onmouseout="closeGlobalZoom()"
-                            style="width: 100%; object-fit: contain; border-radius: 10px; border: 1px solid #eee; background: white;"
-                            onerror="this.src='/static/images/yolo/v5/confusion_matrix.png'">
-                        <div class="hover-insight">분류 성능 검증: FP/FN 분석을 통한 개선 근거 확보</div>
-                        <div class="analysis-text">
-                            <strong>[데이터 편향 대응]</strong> Confusion Matrix의 대각선(True Positives)이 짙게 분포되어 분류 정확도가 높음을
-                            증명합니다.
-                            다만 <strong>Minor Crack</strong>의 일부가 배경으로 오인되는 경향을 식별하였으며, 이를 보완하기 위해 <strong>Darkness
-                                Augmentation</strong> 전략을 수립하는 근거 데이터로 활용하였습니다.
-                        </div>
-                    </div>
-                </div>
-            </div>
 
 
             <!-- Phase 2: 2차 싱크홀 통합 보강 학습 (v6) -->
@@ -2581,10 +2641,10 @@
                         (v6)</span></h2>
                 <div class="flex-row" style="align-items: stretch; gap: 60px;">
                     <!-- Chart Area -->
-                    <div
-                        style="flex: 1.5; background: white; padding: 40px; border-radius: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.05); position: relative;">
+                    <div onclick="zoomChart('trainingChart')"
+                        style="flex: 1.5; background: white; padding: 40px; border-radius: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.05); position: relative; cursor: pointer;">
                         <!-- 그래프(앱에서 자동 렌더링) -->
-                        <canvas id="trainingChart" style="max-height: 500px;"></canvas>
+                        <canvas id="trainingChart" style="max-height: 500px; pointer-events: none;"></canvas>
                     </div>
                     <!-- Stats Area -->
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
@@ -2597,7 +2657,7 @@
                         <div class="stat-card" style="width: 100%; text-align: left; padding: 30px;">
                             <h3 class="point" style="font-size: 2rem; margin-bottom: 10px;"><i
                                     class="bi bi-gear-wide-connected"></i> Method</h3>
-                            <p style="font-size: 1.4rem; color: #333; font-weight: 700;">전이 학습(TL) — 18 에포크 심화</p>
+                            <p style="font-size: 1.4rem; color: #333; font-weight: 700;">전이 학습(TL)</p>
                             <p style="font-size: 1.1rem; color: #777;">v5 베스트 가중치를 이어받아 초기 손실율을 대폭 낮추고 수렴 속도 제고</p>
                         </div>
                         <div class="stat-card" style="width: 100%; text-align: left; padding: 30px;">
@@ -2651,12 +2711,190 @@
                                 style="font-size: 1.25rem; color: #555; line-height: 1.6; padding-left: 20px; margin: 0;">
                                 <li style="margin-bottom: 8px;"><strong>이미지 해상도 상향 (800~1024)</strong> 추진</li>
                                 <li style="margin-bottom: 8px;">작은 객체 특화 <strong>Augmentation</strong> 도입</li>
-                                <li>지자체 협력을 통한 싱크홀 데이터 추가 수급</li>
+                                <li>싱크홀 데이터 추가 확보 및 학습 진행 필요</li>
                             </ul>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- YOLO Metrics Multi-Graph Slide -->
+            <div class="spot" id="spot-8a-2"
+                style="width: 1600px; height: 1080px; display: flex; flex-direction: column; justify-content: center;">
+                <h2 style="font-size: 3.2rem; margin-bottom: 10px;"><span style="color: #666;">YOLOv8</span> <span
+                        class="point">Training Metrics Analysis</span></h2>
+                <p style="font-size: 1.6rem; margin-bottom: 120px; color: #666; font-weight: 500;">
+                    전 구간(1차~3차) Loss 및 정밀도(Precision/Recall/mAP) 지표 변화 추이 (전체 측정 데이터 가시화)
+                </p>
+                <style>
+                    .stat-card {
+                        transition: all 0.3s ease;
+                    }
+
+                    .stat-card:hover {
+                        z-index: 10;
+                        transform: translateY(-5px);
+                        border-color: var(--point-orange) !important;
+                    }
+
+                    .zoomable-img {
+                        transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+                        cursor: pointer;
+                        z-index: 1;
+                    }
+
+                    /* 브라우저 정중앙 확대 오버레이 스타일 */
+                    #globalZoomOverlay {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100vw;
+                        height: 100vh;
+                        background: rgba(0, 0, 0, 0.85);
+                        display: none;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 100000;
+                        backdrop-filter: blur(10px);
+                        cursor: pointer;
+
+                        opacity: 0;
+                        transition: opacity 0.3s ease;
+                    }
+
+                    #globalZoomOverlay img {
+                        max-width: 90%;
+                        max-height: 80%;
+                        object-fit: contain;
+                        box-shadow: 0 50px 100px rgba(0, 0, 0, 0.5);
+                        border-radius: 15px;
+                        border: 3px solid rgba(255, 255, 255, 0.2);
+                        transform: scale(0.8);
+                        transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+                    }
+
+                    #globalZoomOverlay.active {
+                        display: flex;
+                        opacity: 1;
+                    }
+
+                    #globalZoomOverlay.active img {
+                        transform: scale(1);
+                    }
+
+                    #zoomDesc {
+                        position: absolute;
+                        bottom: 40px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        color: white;
+                        font-size: 1.5rem;
+                        background: rgba(0, 0, 0, 0.6);
+                        padding: 15px 30px;
+                        border-radius: 50px;
+                        max-width: 80%;
+                        text-align: center;
+                    }
+
+                    .analysis-text {
+                        font-size: 1.35rem;
+                        color: #444;
+                        line-height: 1.7;
+                        margin-top: 15px;
+                        word-break: keep-all;
+                        text-align: left;
+                        border-left: 44px solid #eee;
+                        padding-left: 15px;
+                    }
+                </style>
+                <div class="flex-row" style="gap: 25px; align-items: stretch; width: 100%; padding: 0 20px;">
+                    <!-- Phase 1: 포트홀 전용 학습 -->
+                    <div class="stat-card"
+                        style="flex: 1; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); display: flex; flex-direction: column; border: 1.5px solid #eee;">
+                        <h3 style="font-size: 1.5rem; margin-bottom: 10px; color: #1E88E5; font-weight: 800;"><i
+                                class="bi bi-graph-up"></i> Phase 1: 1차 분석</h3>
+                        <img src="/static/images/yolo/v5/results.png" class="zoomable-img"
+                            onclick="openGlobalZoom(this.src, '')"
+                            style="width: 100%; height: 160px; object-fit: contain; border-radius: 10px; border: 1px solid #f5f5f5; background: #fafafa; margin-bottom: 10px;"
+                            alt="">
+                        <div class="analysis-text"
+                            style="font-size: 1.1rem; border-left-width: 25px; line-height: 1.5;">
+                            <strong>[학습 성과]</strong> 100 Epoch 완주, 21,421장의 검증 데이터셋에서 Loss가 매끄럽게 하락하며 수렴되었습니다.
+                            최종 mAP <strong>86%</strong>를 상회하는 결과를 달성했습니다.
+                        </div>
+                    </div>
+
+                    <!-- Phase 2: 싱크홀 통합 보강 -->
+                    <div class="stat-card"
+                        style="flex: 1; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); display: flex; flex-direction: column; border: 1.5px solid #eee;">
+                        <h3 style="font-size: 1.5rem; margin-bottom: 10px; color: #FF8C00; font-weight: 800;"><i
+                                class="bi bi-plus-circle-fill"></i> Phase 2: 보강 학습</h3>
+                        <div id="phase2-stats" class="zoomable-img"
+                            onclick="openGlobalZoomUI('phase2-stats', 'Phase 2: 보강 학습 - 탐지 사각지대(Sinkhole) 제거 및 mAP 90% 달성')"
+                            style="background: #f8f9fa; border-radius: 10px; padding: 15px; margin-bottom: 10px; flex: 1; display: flex; flex-direction: column; justify-content: center; border: 1px solid #eee;">
+                            <div style="margin-bottom: 12px;">
+                                <div
+                                    style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 4px;">
+                                    <span>mAP50 (정밀도)</span>
+                                    <span style="color: #FF8C00; font-weight: 800;">90.1% (+3.3%)</span>
+                                </div>
+                                <div style="height: 8px; background: #eee; border-radius: 4px; overflow: hidden;">
+                                    <div style="width: 90.1%; height: 100%; background: #FF8C00;"></div>
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 5px;">
+                                <div
+                                    style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 4px;">
+                                    <span>Recall (검출률)</span>
+                                    <span style="color: #4CAF50; font-weight: 800;">84.8% (+4.1%)</span>
+                                </div>
+                                <div style="height: 8px; background: #eee; border-radius: 4px; overflow: hidden;">
+                                    <div style="width: 84.8%; height: 100%; background: #4CAF50;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="analysis-text"
+                            style="font-size: 1.1rem; border-left-width: 25px; line-height: 1.5; margin-top: 0;">
+                            <strong>[데이터 보강]</strong> 위험 요소인 <strong>'Sinkhole'</strong> 데이터를 통합하여
+                            mAP를 <strong>90%대</strong>로 고도화했습니다. (recall 4.1% 개선)
+                        </div>
+                    </div>
+
+                    <!-- Phase 3: 세그먼트 고도화 -->
+                    <div class="stat-card"
+                        style="flex: 1; background: white; border-radius: 20px; border: 1.5px solid #eee; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); display: flex; flex-direction: column;">
+                        <h3 style="font-size: 1.5rem; color: #2E7D32; margin-bottom: 10px; font-weight: 800;">
+                            <i class="bi bi-bullseye"></i> Phase 3: 세그먼트
+                        </h3>
+                        <img src="/static/images/yolo/v7/results.png" class="zoomable-img"
+                            onclick="openGlobalZoom(this.src, '')"
+                            style="width: 100%; height: 160px; object-fit: contain; border-radius: 10px; border: 1px solid #f5f5f5; background: #fafafa; margin-bottom: 10px;"
+                            alt="">
+                        <div class="analysis-text"
+                            style="font-size: 1.1rem; border-left-width: 25px; line-height: 1.5; margin-top: 0;">
+                            <strong>[정밀 산출]</strong> 단순 탐지를 넘어 파손 부위의 <strong>실제 면적</strong>을 계산할 수 있는
+                            기반을 마련했습니다. (Mask Loss 급강하)
+                        </div>
+                    </div>
+
+                    <!-- Matrix -->
+                    <div class="stat-card"
+                        style="flex: 1; background: white; border-radius: 20px; border: 1.5px solid #eee; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); display: flex; flex-direction: column;">
+                        <h3 style="font-size: 1.5rem; color: #6a1b9a; margin-bottom: 10px; font-weight: 800;"><i
+                                class="bi bi-grid-3x3"></i> Matrix 분석</h3>
+                        <img src="/static/images/yolo/v7/confusion_matrix.png" class="zoomable-img"
+                            onclick="openGlobalZoom(this.src, '')"
+                            style="width: 100%; height: 160px; object-fit: contain; border-radius: 10px; border: 1px solid #f5f5f5; background: #fafafa; margin-bottom: 10px;"
+                            onerror="this.src='/static/images/yolo/v5/confusion_matrix.png'" alt="">
+                        <div class="analysis-text"
+                            style="font-size: 1.1rem; border-left-width: 25px; line-height: 1.5; margin-top: 0;">
+                            <strong>[학습 정보]</strong> YOLOv8s Segmentation / Dataset v7 (100 Epochs) 학습 완료 / Test Data
+                            12,421건 검증을 통해 <strong>안정적 분류 성능</strong>을 증명했습니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="spot" id="spot-9">
                 <div class="flex-row" style="gap: 80px; align-items: center; width: 1400px; margin: 0 auto;">
                     <div class="phone-frame"><iframe src="/alert?ppt=1" id="iframe-alert"></iframe></div>
@@ -2670,7 +2908,7 @@
                                 노출됩니다.</p>
                             <i class="bi bi-shield-check point" style="font-size: 3rem;"></i>
                             <h3 style="font-size: 2.5rem; margin: 12px 0;">AI 60% 이상 필터링</h3>
-                            <p style="font-size: 1.6rem;">YOLOv8이 60% 이상의 확률로 판정한 신고만 노출하여 허위 신고를 자동 차단합니다.</p>
+                            <p style="font-size: 1.6rem;">YOLOv8s이 60% 이상의 확률로 판정한 신고만 노출하여 허위 신고를 자동 차단합니다.</p>
                         </div>
                         <div class="desc-block" data-desc="notices">
                             <i class="bi bi-megaphone-fill point" style="font-size: 3rem;"></i>
@@ -2735,18 +2973,18 @@
                 </div>
             </div>
 
-            <div class="spot" id="spot-13">
-                <div class="flex-row" style="gap: 80px; align-items: center; width: 1400px; margin: 0 auto;">
+            <div class="spot" id="spot-13" style="display: flex; align-items: center; justify-content: center;">
+                <div
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 1700px; gap: 20px;">
+                    <!-- [수정] 타이틀 간격 및 정렬 최적화 -->
+                    <h2 style="font-size: 5.5rem; font-weight: 900; color: #333; margin: 0 0 10px 0;">
+                        핵심 서비스 로직 <span class="point">05</span>
+                    </h2>
+
+                    <!-- [수정] 컨테이너 정중앙 배치 (1550x900) -->
                     <div
-                        style="flex: 0 0 600px; height: 400px; background: #1a1a1a; border-radius: 20px; box-shadow: 0 30px 80px rgba(0,0,0,0.18); overflow: hidden; border: 3px solid #333; position: relative;">
-                        <iframe src="/admin/dashboard?ppt=1" style="width:100%;height:100%;border:none;"></iframe>
-                    </div>
-                    <div class="desc-panel">
-                        <h2 style="font-size: 5rem;">핵심 서비스 로직 <span class="point">05</span></h2>
-                        <p style="font-size: 2rem; margin-bottom: 40px; color: #555;">Admin — 종합 관제</p>
-                        <div class="desc-block active">
-                            <p style="font-size: 1.8rem;">전체 신고 현황을 한눈에 파악하는 고성능 대시보드</p>
-                        </div>
+                        style="width: 1550px; height: 900px; background: #fff; border-radius: 50px; box-shadow: 0 40px 100px rgba(0,0,0,0.12); overflow: hidden; border: 1.5px solid #eee; position: relative;">
+                        <iframe src="/admin/dashboard?ppt=1" style="width:100%; height:100%; border:none;"></iframe>
                     </div>
                 </div>
             </div>
@@ -2754,25 +2992,7 @@
 
 
 
-            <div class="spot" id="spot-15">
-                <h2 style="font-size: 6rem;">Next Steps</h2>
-                <div class="flex-col" style="gap: 50px; text-align: left; max-width: 1100px;">
-                    <div style="display: flex; gap: 40px; align-items: flex-start;"><span
-                            style="font-size: 4rem; font-weight: 900; color: rgba(255,140,0,0.2);">01</span>
-                        <div>
-                            <h3 style="font-size: 3rem;">AI 엣지 추론</h3>
-                            <p style="font-size: 2rem;">TFLite 기반 기기 내부 분석</p>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 40px; align-items: flex-start;"><span
-                            style="font-size: 4rem; font-weight: 900; color: rgba(255,140,0,0.2);">02</span>
-                        <div>
-                            <h3 style="font-size: 3rem;">공공데이터 연계</h3>
-                            <p style="font-size: 2rem;">안전신문고 다이렉트 이관</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
 
             <div class="spot" id="spot-16"
                 style="display: flex; align-items: center; justify-content: center; gap: 120px;">
@@ -2812,7 +3032,7 @@
                         style="display:flex; align-items:center; gap:12px; padding:14px 20px; background:white; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.04); text-decoration:none; color:var(--text-asphalt); font-size:1.2rem; font-weight:700; transition:all 0.3s; border:1px solid #eee;"
                         onmouseover="this.style.transform='translateX(6px)';this.style.boxShadow='0 6px 24px rgba(255,140,0,0.12)';this.style.borderColor='var(--point-orange)';"
                         onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.04)';this.style.borderColor='#eee';">
-                        <i class="bi bi-newspaper" style="color:var(--point-orange); font-size:1.4rem;"></i> 연합뉴스 — 전국
+                        <i class="bi bi-link-45deg" style="color:var(--point-orange); font-size:1.4rem;"></i> 연합뉴스 — 전국
                         포트홀 65만개 집계
                     </a>
                     <a href="https://council.songpa.go.kr/record/recordView.do?key=d028afde648b4807c620c31470e88630c1a4340e93656eb04a9c1ed19f287e8b65193a6241086205"
@@ -2820,8 +3040,17 @@
                         style="display:flex; align-items:center; gap:12px; padding:14px 20px; background:white; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.04); text-decoration:none; color:var(--text-asphalt); font-size:1.2rem; font-weight:700; transition:all 0.3s; border:1px solid #eee;"
                         onmouseover="this.style.transform='translateX(6px)';this.style.boxShadow='0 6px 24px rgba(255,140,0,0.12)';this.style.borderColor='var(--point-orange)';"
                         onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.04)';this.style.borderColor='#eee';">
-                        <i class="bi bi-building" style="color:var(--point-orange); font-size:1.4rem;"></i> 송파구의회 — 영조물
+                        <i class="bi bi-link-45deg" style="color:var(--point-orange); font-size:1.4rem;"></i> 송파구의회 —
+                        영조물
                         배상책임 현황
+                    </a>
+                    <a href="https://www.rsis.kr/statistics_road_year.htm" target="_blank"
+                        onclick="event.stopPropagation();"
+                        style="display:flex; align-items:center; gap:12px; padding:14px 20px; background:white; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.04); text-decoration:none; color:var(--text-asphalt); font-size:1.2rem; font-weight:700; transition:all 0.3s; border:1px solid #7986CB;"
+                        onmouseover="this.style.transform='translateX(6px)';this.style.boxShadow='0 6px 24px rgba(121,134,203,0.12)';this.style.borderColor='#3F51B5';"
+                        onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.04)';this.style.borderColor='#7986CB';">
+                        <i class="bi bi-link-45deg" style="color:#3F51B5; font-size:1.4rem;"></i> RSIS — 도로 보수 현황 시스템
+                        (연도별 통계 공식 출처)
                     </a>
                 </div>
             </div>
@@ -2839,7 +3068,7 @@
         //    - Indicators (left) and active state tracking (activeIdx) sync automatically.
         // 3. SCALABILITY: To add/remove slides, simply update this array and corresponding .spot divs.
         //    - Mismatch between array length and .spot divs will cause JS errors.
-        // 4. CURRENT STATUS: 23 Slides (v1.7.7)
+        // 4. CURRENT STATUS: 22 Slides (v1.7.7)
         // -----------------------------------------------------------------
         const spotsCoord = [
             { x: 0, y: 0, scale: 1, rot: 0 },         // 0: Cover
@@ -2851,21 +3080,21 @@
             { x: -3000, y: 5500, scale: 0.9, rot: 3 },  // 3c: 결론 빌드업
             { x: -2000, y: 3000, scale: 1.1, rot: 5 },  // 5: 협협 툴
             { x: -5000, y: -2000, scale: 1, rot: 0 },    // 6: DB
-            { x: 18000, y: 1500, scale: 1.0, rot: -2 },  // 14: Portable Runtime (MOVED AFTER DB)
+            { x: 18000, y: 1500, scale: 1.0, rot: -2 },  // 14: Portable Runtime (MOVED)
+
             { x: -3000, y: -3000, scale: 0.9, rot: -2 }, // 6a: 리스크 방어
             { x: -2000, y: -2000, scale: 0.8, rot: 2 },  // 6b: 민간 한계 극복
-            { x: -1000, y: -4000, scale: 1.1, rot: 3 },  // 7: 스택
-            { x: 4000, y: -4000, scale: 0.9, rot: -3 },  // 8: AI
-            { x: 4000, y: -7000, scale: 1.1, rot: 2 },   // 8a: Phase 1 (v1~v4)
-            { x: 6000, y: -8500, scale: 1.0, rot: 0 },   // 8a-2: Metrics Dashboard
+            // { x: -1000, y: -4000, scale: 1.1, rot: 3 },  // 7: 스택 (DELETED)
+
+            { x: 4000, y: -7000, scale: 1.1, rot: 2 },   // 8a: Phase 1 (v1~v4) (New Index 12)
             { x: 8000, y: -7000, scale: 1.1, rot: -2 },  // 8b: Phase 2 (v5 Hardlink/MP)
             { x: 8000, y: -4500, scale: 1.2, rot: 3 },   // 8c: Phase 3 (v6 Sinkhole Analysis)
+            { x: 6000, y: -8500, scale: 1.0, rot: 0 },   // 8a-2: Metrics Dashboard (MOVED HERE)
             { x: 8000, y: -2000, scale: 1, rot: 0 },     // 9: 서비스로직1
             { x: 12000, y: -2000, scale: 1, rot: 3 },    // 10: 서비스로직2
             { x: 12000, y: 2000, scale: 1, rot: -3 },    // 11: 서비스로직3
             { x: 16000, y: 2000, scale: 1, rot: 0 },     // 12: 서비스로직4
-            { x: 16000, y: -2000, scale: 1.1, rot: 5 },  // 13: 서비스로직5
-            { x: 20000, y: 5000, scale: 1, rot: 0 },     // 15: Next Steps
+            { x: 16000, y: -2000, scale: 1.0, rot: 0 },  // 13: 서비스로직5 (Admin Dashboard)
             { x: 10000, y: 500, scale: 0.12, rot: 0 }    // 16: Q&A
         ];
 
@@ -2958,6 +3187,17 @@
 
                 // [INDEX AUTO HOVER] 3페이지(Index) 진입 시 자동 순차 애니메이션 시작
                 handleIndexAutoHover(activeIdx === 2);
+
+                // [ADMIN DASHBOARD RELAYOUT] 21페이지(Admin Dashboard) 진입 시 지도 릴레이아웃 트리거
+                if (activeIdx === 20) {
+                    const iframe = document.querySelector('#spot-13 iframe');
+                    if (iframe && iframe.contentWindow) {
+                        console.log("[PPT] Triggering map relayout for Slide 22");
+                        // 전환 애니메이션 시간을 고려하여 시차를 두고 2번 전송
+                        setTimeout(() => iframe.contentWindow.postMessage('ppt_relayout', '*'), 300);
+                        setTimeout(() => iframe.contentWindow.postMessage('ppt_relayout', '*'), 1000);
+                    }
+                }
             }
 
             const fitScale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
@@ -3081,6 +3321,28 @@
             }, 3000);
         }
 
+        // [DB SECURITY MODAL LOGIC]
+        function showSecurityModal(e) {
+            if (e) e.stopPropagation();
+            const modal = document.getElementById('securityModal');
+            if (!modal) return;
+
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.classList.add('active');
+            }, 10);
+        }
+
+        function closeSecurityModal() {
+            const modal = document.getElementById('securityModal');
+            if (!modal) return;
+
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 400);
+        }
+
         // [INDEX AUTO HOVER LOGIC]
         let indexAutoTimer = null;
         let indexAutoIdx = 0;
@@ -3111,6 +3373,15 @@
 
             runStep(); // 즉시 첫 번째 카드 실행
             indexAutoTimer = setInterval(runStep, 1500);
+        }
+
+        function zoomChart(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (canvas) {
+                // [FIX] 차트를 이미지로 변환하여 줌 오버레이에 표시
+                const dataUrl = canvas.toDataURL('image/png');
+                openGlobalZoom(dataUrl, ''); // 확대 시 설명 제거 (사용자 요청 반영)
+            }
         }
 
         function initCharts() {
@@ -3205,6 +3476,125 @@
                 }
             });
         }
+    </script>
+
+    <!-- 글로벌 줌 오버레이 요소 (클릭 시 닫힘) -->
+    <div id="globalZoomOverlay" onclick="closeGlobalZoom()">
+        <img id="zoomImg" src="" alt="Zoomed Metric">
+        <div id="zoomDesc"></div>
+    </div>
+
+    <script>
+        function openGlobalZoom(src, desc) {
+            console.log('Opening zoom for:', src);
+            const overlay = document.getElementById('globalZoomOverlay');
+            if (src && src !== '') {
+                overlay.innerHTML = `<img src="${src}" alt="Zoomed View"><div id="zoomDesc">${desc}</div>`;
+                overlay.style.display = 'flex';
+                setTimeout(() => {
+                    overlay.classList.add('active');
+                }, 10);
+            }
+        }
+
+        function openGlobalZoomUI(id, desc) {
+            const overlay = document.getElementById('globalZoomOverlay');
+            const target = document.getElementById(id);
+            if (!target) return;
+
+            const clone = target.cloneNode(true);
+            clone.id = id + "-cloned";
+            clone.style.width = "70%";
+            clone.style.height = "auto";
+            clone.style.transform = "scale(1)";
+            clone.style.background = "white";
+            clone.style.padding = "40px";
+            clone.style.border = "5px solid var(--point-orange)";
+            clone.style.boxShadow = "0 30px 100px rgba(0,0,0,0.5)";
+            clone.style.cursor = "default";
+            clone.style.display = "flex";
+
+            // 시인성 개선을 위한 글자 크기 조정
+            clone.querySelectorAll('span').forEach(s => s.style.fontSize = "1.8rem");
+            clone.querySelectorAll('div').forEach(d => {
+                if (d.style.height === '8px') d.style.height = '20px';
+                if (d.style.fontSize === '0.9rem') d.style.fontSize = '1.8rem';
+            });
+
+            overlay.innerHTML = "";
+            overlay.appendChild(clone);
+            const descDiv = document.createElement('div');
+            descDiv.id = "zoomDesc";
+            descDiv.innerText = desc;
+            overlay.appendChild(descDiv);
+
+            overlay.style.display = "flex";
+            setTimeout(() => {
+                overlay.classList.add('active');
+            }, 10);
+        }
+
+        function closeGlobalZoom() {
+            const overlay = document.getElementById('globalZoomOverlay');
+            overlay.classList.remove('active');
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                overlay.innerHTML = `<img id="zoomImg" src="" alt="Zoomed Metric"><div id="zoomDesc"></div>`;
+            }, 400);
+        }
+
+        // [YOLO HOVER EFFECT]
+        // 전역으로 이동하여 모든 YOLO 관련 요소에 적용
+        function setupYoloHoverEffect() {
+            document.querySelectorAll('.yolo-box').forEach(box => {
+                box.addEventListener('mouseenter', () => {
+                    const targetId = box.dataset.target;
+                    if (targetId) {
+                        const targetElement = document.getElementById(targetId);
+                        if (targetElement) {
+                            targetElement.classList.add('highlight');
+                        }
+                    }
+                });
+                box.addEventListener('mouseleave', () => {
+                    const targetId = box.dataset.target;
+                    if (targetId) {
+                        const targetElement = document.getElementById(targetId);
+                        if (targetElement) {
+                            targetElement.classList.remove('highlight');
+                        }
+                    }
+                });
+            });
+        }
+
+        // Portable Runtime 상세 기술 슬라이드 (spot-14b) 추가
+        // 이 함수는 해당 슬라이드가 활성화될 때 호출되어야 합니다.
+        function handlePortableRuntimeSlide(isActive) {
+            const slide = document.getElementById('spot-14b'); // 가정: spot-14b는 해당 슬라이드의 ID
+            if (!slide) return;
+
+            if (isActive) {
+                // 슬라이드 활성화 시 필요한 로직 (예: 애니메이션 시작, 특정 요소 표시)
+                slide.classList.add('active');
+                // 추가적인 초기화 또는 애니메이션 로직
+            } else {
+                // 슬라이드 비활성화 시 필요한 로직 (예: 애니메이션 중단, 요소 숨김)
+                slide.classList.remove('active');
+            }
+        }
+
+        // 내비게이션 좌표 수정 (예시: 특정 슬라이드의 위치를 업데이트)
+        // 이 함수는 전체 내비게이션 시스템에 통합되어야 합니다.
+        function updateNavigationCoordinates(slideId, newCoords) {
+            // 실제 내비게이션 시스템에 따라 구현 방식이 달라질 수 있습니다.
+            // 예: 전역 설정 객체 업데이트, 특정 UI 요소의 data-attribute 변경 등
+            console.log(`Updating coordinates for ${slideId} to ${JSON.stringify(newCoords)}`);
+            // 예시: if (navigationConfig[slideId]) navigationConfig[slideId] = newCoords;
+        }
+
+        // 페이지 로드 시 YOLO 호버 효과 설정
+        document.addEventListener('DOMContentLoaded', setupYoloHoverEffect);
     </script>
 </body>
 

@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRACK Admin Alerts</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Pretendard", "Noto Sans KR", Arial, sans-serif;
+    }
+
+    body {
+      background: #f3f3f3;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .phone {
+      width: 390px;
+      height: 844px;
+      background: #efede9;
+      border-radius: 36px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #ddd;
+      position: relative;
+    }
+
+    .topbar {
+      height: 78px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid #efefef;
+    }
+
+    .brand {
+      font-size: 23px;
+      font-weight: 800;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .top-actions button {
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid #ddd;
+      border-radius: 16px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .content {
+      flex: 1;
+      padding: 16px 18px 12px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .content::-webkit-scrollbar {
+      display: none;
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 0;
+    }
+
+    .alert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .alert-card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 8px 10px;
+      border-left: 5px solid transparent;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    .alert-card.status-received {
+      border-left-color: #ff8c00;
+    }
+
+    .alert-card.status-processing {
+      border-left-color: #3498db;
+    }
+
+    .alert-card.status-done {
+      border-left-color: #27ae60;
+    }
+
+    .alert-card.status-rejected {
+      border-left-color: #94a3b8;
+      background: #fbfcfd;
+    }
+
+    .check-btn {
+      background: #ff8c00;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: none;
+    }
+
+    .check-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .sub-btn {
+      background: #fff;
+      color: #444;
+      border: 1px solid #e3e3e3;
+      padding: 6px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .sub-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .bottom-nav {
+      height: 74px;
+      background: #fff;
+      border-top: 1px solid #ececec;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: center;
+      text-align: center;
+    }
+
+    .nav-item {
+      text-decoration: none;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .empty-message {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      color: #888;
+    }
+
+    @media (max-width: 430px) {
+      body {
+        padding: 0;
+      }
+
+      .phone {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+      }
+    }
+
+    .risk-high {
+      color: #e74c3c;
+    }
+
+    .risk-medium {
+      color: #f39c12;
+    }
+
+    .risk-low {
+      color: #27ae60;
+    }
+
+    .detail-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 120;
+      padding: 18px;
+    }
+
+    .detail-modal-backdrop.show {
+      display: flex;
+    }
+
+    .detail-modal-card {
+      width: 100%;
+      max-width: 360px;
+      background: #ffffff;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.20);
+      border: 1px solid rgba(255, 255, 255, 0.65);
+    }
+
+    .detail-thumb-box {
+      position: relative;
+      width: 100%;
+      height: 360px;
+      background: #ececec;
+      overflow: hidden;
+    }
+
+    .detail-thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .detail-thumb-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #666;
+      font-weight: 600;
+    }
+
+    .detail-map-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .detail-content-box {
+      padding: 14px 16px 16px;
+      background: #fff;
+    }
+
+    .detail-content-title {
+      font-size: 22px;
+      font-weight: 900;
+      color: #111;
+      margin-bottom: 8px;
+      line-height: 1.3;
+      letter-spacing: -0.4px;
+    }
+
+    .detail-content-text {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.5;
+      margin-bottom: 0;
+      white-space: pre-line;
+    }
+
+    .detail-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .detail-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #fff3e8;
+      color: #ff7a00;
+      box-shadow: inset 0 0 0 1px rgba(255, 122, 0, 0.10);
+    }
+
+    .detail-divider {
+      height: 1px;
+      background: #f1f1f1;
+      margin: 0 0 16px 0;
+    }
+
+    .detail-info-card {
+      background: #fafafa;
+      border: 1px solid #f0f0f0;
+      border-radius: 18px;
+      padding: 14px 14px 12px;
+      margin-bottom: 16px;
+    }
+
+    .detail-close-wrap {
+      margin-top: 0;
+    }
+
+    .detail-time-risk-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .detail-time-text {
+      font-size: 13px;
+      color: #777;
+      white-space: nowrap;
+    }
+
+    .detail-risk-badge {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+    }
+
+    .detail-risk-high {
+      color: #e74c3c;
+    }
+
+    .detail-risk-medium {
+      color: #f39c12;
+    }
+
+    .detail-risk-low {
+      color: #27ae60;
+    }
+
+    .detail-close-btn {
+      width: 100%;
+      height: 44px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #1f1f22, #2c2c30);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(34, 34, 34, 0.18);
+    }
+
+    .status-filter-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin-bottom: 10px;
+      padding-bottom: 2px;
+    }
+
+    .status-filter-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .status-filter-btn {
+      flex: 0 0 auto;
+      height: 36px;
+      padding: 0 14px;
+      border: 1px solid #d9d9d9;
+      border-radius: 999px;
+      background: #fff;
+      color: #555;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .status-filter-btn.active {
+      background: #ff8c00;
+      color: #fff;
+      border-color: #ff8c00;
+    }
+
+    .page-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .admin-label {
+      font-size: 12px;
+      color: #888;
+      font-weight: 500;
+    }
+
+    .compact-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .alert-status {
+      font-size: 12px;
+      font-weight: 800;
+      color: #222;
+    }
+
+    .compact-btn-group {
+      gap: 6px;
+    }
+
+    .compact-btn {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .alert-time {
+      font-size: 12px;
+      color: #222;
+      white-space: nowrap;
+    }
+
+    .risk-text {
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .compact-main-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .compact-left {
+      flex: 1;
+      min-width: 0;
+      padding-top: 1px;
+    }
+
+    .compact-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      min-width: 92px;
+      padding-top: 2px;
+    }
+
+    .compact-title {
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin: 4px 0 4px;
+      letter-spacing: -0.3px;
+      color: #111;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .compact-bottom-row {
+      margin-top: 10px;
+    }
+
+    .compact-location {
+      margin-top: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+      line-height: 1.3;
+    }
+
+    .location-region {
+      font-size: 13px;
+      color: #444;
+      font-weight: 500;
+    }
+
+    .location-detail {
+      font-size: 13px;
+      color: #222;
+      font-weight: 500;
+    }
+
+    .location-separator {
+      font-size: 13px;
+      color: #999;
+      font-weight: 600;
+    }
+
+    .list-status-text {
+      padding: 14px 0 6px;
+      text-align: center;
+      font-size: 13px;
+      color: #888;
+    }
+
+    .report-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eef6ff;
+      color: #2f6fdd;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1;
+      border: 1px solid #cfe2ff;
+    }
+
+    .alert-card.multi-report {
+      background: #fffaf5;
+      box-shadow: 0 8px 18px rgba(255, 140, 0, 0.08);
+    }
+
+    .multi-report-label {
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f8f1e8;
+      color: #b86b1b;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .multi-report-label.danger {
+      background: #fbeaea;
+      color: #b94a48;
+    }
+
+    .alert-card.multi-report.danger {
+      background: #fff7f7;
+      box-shadow: 0 8px 18px rgba(214, 69, 69, 0.08);
+    }
+
+    .admin-btn-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .ghost-btn {
+      color: #888;
+      border-color: #e5e5e5;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <header class="topbar">
+      <div class="brand">CRACK</div>
+      <div class="top-actions">
+        <button type="button" class="ghost-btn">관리메뉴</button>
+        <button type="button" onclick="location.href='/logout'">로그아웃</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="page-title-row">
+        <h1 class="page-title">지역 관리 피드</h1>
+        <span class="admin-label">매니저용</span>
+      </div>
+
+      <div class="status-filter-bar">
+        <button type="button" class="status-filter-btn {% if not selected_status %}active{% endif %}" onclick="applyStatusFilter('')">전체</button>
+        <button type="button" class="status-filter-btn {% if selected_status == '접수완료' %}active{% endif %}" onclick="applyStatusFilter('접수완료')">접수완료</button>
+        <button type="button" class="status-filter-btn {% if selected_status == '처리중' %}active{% endif %}" onclick="applyStatusFilter('처리중')">처리중</button>
+        <button type="button" class="status-filter-btn {% if selected_status == '처리완료' %}active{% endif %}" onclick="applyStatusFilter('처리완료')">처리완료</button>
+      </div>
+
+      <section class="alert-list" id="alertList">
+        {% for incident in incidents %}
+        <article class="alert-card
+          {% if incident.status == '접수완료' %}status-received
+          {% elif incident.status == '처리중' %}status-processing
+          {% elif incident.status == '처리완료' %}status-done
+          {% elif incident.status == '반려' %}status-rejected
+          {% endif %}
+          {% if incident.group_reporter_count and incident.group_reporter_count >= 5 %} multi-report danger
+          {% elif incident.group_reporter_count and incident.group_reporter_count >= 3 %} multi-report
+          {% endif %}
+        ">
+          {% set score = incident.risk_score|float %}
+
+          <div class="compact-main-row">
+            <div class="compact-left">
+              {% if incident.group_reporter_count and incident.group_reporter_count >= 5 %}
+              <div class="multi-report-label danger">집중 위험</div>
+              {% elif incident.group_reporter_count and incident.group_reporter_count >= 3 %}
+              <div class="multi-report-label">반복 제보</div>
+              {% endif %}
+
+              <span class="alert-status">{{ incident.status }}</span>
+              <h2 class="compact-title">{{ incident.title }}</h2>
+
+              <div class="compact-location">
+                <span class="location-region">{{ incident.region_name }}</span>
+                <span class="location-separator">·</span>
+                <span class="location-detail">
+                  {% if incident.location.startswith(incident.region_name) %}
+                    {{ incident.location[incident.region_name|length:]|trim }}
+                  {% else %}
+                    {{ incident.location }}
+                  {% endif %}
+                </span>
+              </div>
+
+              {% if incident.group_reporter_count and incident.group_reporter_count >= 2 %}
+              <div class="report-badge">동일 위치 제보 {{ incident.group_reporter_count }}건</div>
+              {% endif %}
+            </div>
+
+            <div class="compact-right">
+              <span class="alert-time">{{ incident.first_created_at.strftime('%m-%d %H:%M') }}</span>
+
+              {% if score >= 80 %}
+                <span class="risk-text risk-high">위험도 높음</span>
+              {% elif score >= 50 %}
+                <span class="risk-text risk-medium">위험도 중간</span>
+              {% else %}
+                <span class="risk-text risk-low">위험도 낮음</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="compact-row compact-bottom-row">
+            <div></div>
+            <div class="admin-btn-group">
+              <button
+                class="sub-btn compact-btn"
+                type="button"
+                onclick="openDetailModal(
+                  '{{ incident.title|e }}',
+                  '{{ incident.location|e }}',
+                  '{{ incident.status|e }}',
+                  '{{ incident.first_created_at.strftime('%m-%d %H:%M') }}',
+                  '{{ incident.risk_score|default(0) }}',
+                  '{{ incident.image_path|default('', true)|e }}',
+                  '{{ incident.latitude|default('', true) }}',
+                  '{{ incident.longitude|default('', true) }}'
+                )"
+              >
+                현장 확인
+              </button>
+
+              <form action="/incident/update-status" method="POST" class="status-update-form" style="display:flex; gap:6px; align-items:center; justify-content:flex-end;">
+                <input type="hidden" name="incident_id" value="{{ incident.id }}">
+                <input type="hidden" name="reject_reason" value="{{ incident.reject_reason if incident.reject_reason else '' }}">
+
+                <select name="new_status" class="sub-btn compact-btn" style="padding-right:28px;">
+                  <option value="접수완료" {% if incident.status == '접수완료' %}selected{% endif %}>접수완료</option>
+                  <option value="처리중" {% if incident.status == '처리중' %}selected{% endif %}>처리중</option>
+                  <option value="처리완료" {% if incident.status == '처리완료' %}selected{% endif %}>처리완료</option>
+                  <option value="반려" {% if incident.status == '반려' %}selected{% endif %}>반려</option>
+                </select>
+
+                <button class="check-btn compact-btn" type="submit">변경</button>
+              </form>
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+
+        {% if incidents|length == 0 %}
+        <div class="empty-message">
+          현재 표시할 사건이 없습니다.
+        </div>
+        {% endif %}
+      </section>
+
+      <div id="listStatusText" class="list-status-text">
+        {% if has_next %}
+          아래로 스크롤하면 더 불러옵니다.
+        {% else %}
+          마지막 사건입니다.
+        {% endif %}
+      </div>
+
+      <div id="scrollSentinel" style="height: 1px;"></div>
+    </main>
+
+    <nav class="bottom-nav">
+      <a href="/alerts" class="nav-item">Alerts</a>
+      <a href="#" class="nav-item">Manage</a>
+      <a href="#" class="nav-item">Status</a>
+      <a href="/mypage" class="nav-item">My</a>
+    </nav>
+
+    <div class="detail-modal-backdrop" id="detailModal">
+      <div class="detail-modal-card">
+        <div class="detail-thumb-box">
+          <img id="detailImage" class="detail-thumb-img" src="" alt="사건 썸네일">
+          <div id="detailPlaceholder" class="detail-thumb-placeholder">사진이 없습니다.</div>
+          <button class="detail-map-btn" type="button" onclick="openMapFromDetail()" title="지도 보기">🌍</button>
+        </div>
+
+        <div class="detail-content-box">
+          <div class="detail-meta-row">
+            <span id="detailStatus" class="detail-chip">상태</span>
+
+            <div class="detail-time-risk-wrap">
+              <span id="detailTime" class="detail-time-text">00-00 00:00</span>
+              <span id="detailRiskBadge" class="detail-risk-badge">위험도 높음</span>
+            </div>
+          </div>
+
+          <div class="detail-divider"></div>
+
+          <div class="detail-info-card">
+            <div id="detailTitle" class="detail-content-title">사건 제목</div>
+            <div id="detailLocation" class="detail-content-text">사건 위치</div>
+          </div>
+
+          <div class="detail-close-wrap">
+            <button class="detail-close-btn" type="button" onclick="closeDetailModal()">닫기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-modal-backdrop" id="rejectReasonModal">
+    <div class="detail-modal-card" style="max-width:320px;">
+      <div class="detail-content-box" style="padding-top:20px;">
+        <div class="detail-content-title" style="font-size:20px; margin-bottom:10px;">반려 사유 입력</div>
+        <div class="detail-content-text" style="margin-bottom:12px;">반려 처리 시 사유를 입력해주세요.</div>
+
+        <div class="detail-info-card" style="margin-bottom:14px;">
+          <textarea
+            id="rejectReasonInput"
+            placeholder="예: 중복 신고, 위험도 기준 미달"
+            style="width:100%; min-height:88px; border:1px solid #ddd; border-radius:12px; padding:10px 12px; outline:none; font-size:14px; resize:none;"
+          ></textarea>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+          <button
+            type="button"
+            class="sub-btn"
+            style="flex:1; height:44px;"
+            onclick="closeRejectReasonModal()"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            class="check-btn"
+            style="flex:1; height:44px;"
+            onclick="submitRejectReason()"
+          >
+            확인
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function applyStatusFilter(status) {
+      const params = new URLSearchParams(window.location.search);
+
+      if (status) {
+        params.set('status', status);
+      } else {
+        params.delete('status');
+      }
+
+      window.location.href = `/alerts?${params.toString()}`;
+    }
+
+    let currentDetailLat = '';
+    let currentDetailLng = '';
+
+    function openDetailModal(title, location, status, time, riskScore, imagePath, lat, lng) {
+      document.getElementById('detailTitle').textContent = title || '제목 없음';
+      document.getElementById('detailLocation').textContent = location || '위치 정보 없음';
+      document.getElementById('detailStatus').textContent = status || '상태 없음';
+      document.getElementById('detailTime').textContent = time || '';
+
+      const score = Number(riskScore || 0);
+      let riskText = '위험도 낮음';
+      let riskClass = 'detail-risk-low';
+
+      if (score >= 80) {
+        riskText = '위험도 높음';
+        riskClass = 'detail-risk-high';
+      } else if (score >= 50) {
+        riskText = '위험도 중간';
+        riskClass = 'detail-risk-medium';
+      }
+
+      const riskBadge = document.getElementById('detailRiskBadge');
+      riskBadge.textContent = riskText;
+      riskBadge.className = `detail-risk-badge ${riskClass}`;
+
+      const detailImage = document.getElementById('detailImage');
+      const detailPlaceholder = document.getElementById('detailPlaceholder');
+
+      if (imagePath && imagePath.trim() !== '') {
+        let finalImagePath = imagePath.trim();
+
+        if (!finalImagePath.startsWith('/')) {
+          finalImagePath = '/uploads/' + finalImagePath;
+        }
+
+        detailImage.src = finalImagePath;
+        detailImage.style.display = 'block';
+        detailPlaceholder.style.display = 'none';
+
+        detailImage.onerror = function () {
+          detailImage.src = '';
+          detailImage.style.display = 'none';
+          detailPlaceholder.textContent = '사진을 불러올 수 없습니다.';
+          detailPlaceholder.style.display = 'flex';
+        };
+      } else {
+        detailImage.src = '';
+        detailImage.style.display = 'none';
+        detailPlaceholder.textContent = '사진이 없습니다.';
+        detailPlaceholder.style.display = 'flex';
+      }
+
+      currentDetailLat = lat || '';
+      currentDetailLng = lng || '';
+
+      document.getElementById('detailModal').classList.add('show');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detailModal').classList.remove('show');
+    }
+
+    function openMapFromDetail() {
+      if (!currentDetailLat || !currentDetailLng) {
+        alert('지도에 표시할 좌표 정보가 없습니다.');
+        return;
+      }
+
+      const mapUrl = `https://map.kakao.com/link/map/사건위치,${currentDetailLat},${currentDetailLng}`;
+      window.open(mapUrl, '_blank');
+    }
+
+    document.getElementById('detailModal').addEventListener('click', function (e) {
+      if (e.target.id === 'detailModal') {
+        closeDetailModal();
+      }
+    });
+
+    function getRiskText(score) {
+      const num = Number(score || 0);
+      if (num >= 80) return { text: '위험도 높음', cls: 'risk-high' };
+      if (num >= 50) return { text: '위험도 중간', cls: 'risk-medium' };
+      return { text: '위험도 낮음', cls: 'risk-low' };
+    }
+
+    function getStatusClass(status) {
+      if (status === '접수완료') return 'status-received';
+      if (status === '처리중') return 'status-processing';
+      if (status === '처리완료') return 'status-done';
+      if (status === '반려') return 'status-rejected';
+      return '';
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function createAlertCard(item) {
+      const risk = getRiskText(item.risk_score);
+      const statusClass = getStatusClass(item.status);
+
+      const regionName = item.region_name || '';
+      let detailLocation = item.location || '';
+
+      if (regionName && detailLocation.startsWith(regionName)) {
+        detailLocation = detailLocation.slice(regionName.length).trim();
+      }
+
+      const locationHtml = regionName
+        ? `
+          <span class="location-region">${escapeHtml(regionName)}</span>
+          <span class="location-separator">·</span>
+          <span class="location-detail">${escapeHtml(detailLocation)}</span>
+        `
+        : `<span class="location-detail">${escapeHtml(detailLocation)}</span>`;
+
+      const reportHtml = (item.group_reporter_count || 0) >= 2
+        ? `<div class="report-badge">동일 위치 제보 ${item.group_reporter_count}건</div>`
+        : '';
+
+      const multiReportClass = (item.group_reporter_count || 0) >= 5
+        ? 'multi-report danger'
+        : (item.group_reporter_count || 0) >= 3
+          ? 'multi-report'
+          : '';
+
+      const multiReportLabel = (item.group_reporter_count || 0) >= 5
+        ? `<div class="multi-report-label danger">집중 위험</div>`
+        : (item.group_reporter_count || 0) >= 3
+          ? `<div class="multi-report-label">반복 제보</div>`
+          : '';
+
+      const fullLocation = regionName
+        ? `${regionName} · ${detailLocation}`
+        : detailLocation;
+
+      return `
+        <article class="alert-card ${statusClass} ${multiReportClass}">
+          <div class="compact-main-row">
+            <div class="compact-left">
+              ${multiReportLabel}
+              <span class="alert-status">${escapeHtml(item.status || '')}</span>
+              <h2 class="compact-title">${escapeHtml(item.title || '')}</h2>
+              <div class="compact-location">
+                ${locationHtml}
+              </div>
+              ${reportHtml}
+            </div>
+
+            <div class="compact-right">
+              <span class="alert-time">${escapeHtml(item.first_created_at || '')}</span>
+              <span class="risk-text ${risk.cls}">${risk.text}</span>
+            </div>
+          </div>
+
+          <div class="compact-row compact-bottom-row">
+            <div></div>
+            <div class="admin-btn-group">
+              <button
+                class="sub-btn compact-btn"
+                type="button"
+                onclick='openDetailModal(
+                  ${JSON.stringify(item.title || "")},
+                  ${JSON.stringify(fullLocation || "")},
+                  ${JSON.stringify(item.status || "")},
+                  ${JSON.stringify(item.first_created_at || "")},
+                  ${JSON.stringify(item.risk_score || 0)},
+                  ${JSON.stringify(item.image_path || "")},
+                  ${JSON.stringify(item.latitude || "")},
+                  ${JSON.stringify(item.longitude || "")}
+                )'
+              >
+                현장 확인
+              </button>
+
+              <form action="/incident/update-status" method="POST" class="status-update-form" style="display:flex; gap:6px; align-items:center; justify-content:flex-end;">
+                <input type="hidden" name="incident_id" value="${escapeHtml(item.id || '')}">
+                <input type="hidden" name="reject_reason" value="${escapeHtml(item.reject_reason || '')}">
+
+                <select name="new_status" class="sub-btn compact-btn" style="padding-right:28px;">
+                  <option value="접수완료" ${item.status === '접수완료' ? 'selected' : ''}>접수완료</option>
+                  <option value="처리중" ${item.status === '처리중' ? 'selected' : ''}>처리중</option>
+                  <option value="처리완료" ${item.status === '처리완료' ? 'selected' : ''}>처리완료</option>
+                  <option value="반려" ${item.status === '반려' ? 'selected' : ''}>반려</option>
+                </select>
+
+                <button class="check-btn compact-btn" type="submit">변경</button>
+              </form>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    let pendingRejectForm = null;
+
+    function openRejectReasonModal(form) {
+      pendingRejectForm = form;
+
+      const hiddenReasonInput = form.querySelector('input[name="reject_reason"]');
+      const modalInput = document.getElementById('rejectReasonInput');
+
+      modalInput.value = hiddenReasonInput ? hiddenReasonInput.value : '';
+      document.getElementById('rejectReasonModal').classList.add('show');
+      modalInput.focus();
+    }
+
+    function closeRejectReasonModal() {
+      pendingRejectForm = null;
+      document.getElementById('rejectReasonModal').classList.remove('show');
+      document.getElementById('rejectReasonInput').value = '';
+    }
+
+    function submitRejectReason() {
+      if (!pendingRejectForm) return;
+
+      const modalInput = document.getElementById('rejectReasonInput');
+      const reason = modalInput.value.trim();
+
+      if (!reason) {
+        alert('반려 사유를 입력해주세요.');
+        modalInput.focus();
+        return;
+      }
+
+      const hiddenReasonInput = pendingRejectForm.querySelector('input[name="reject_reason"]');
+      if (hiddenReasonInput) {
+        hiddenReasonInput.value = reason;
+      }
+
+      document.getElementById('rejectReasonModal').classList.remove('show');
+      pendingRejectForm.submit();
+    }
+
+    document.addEventListener('submit', function (e) {
+      const form = e.target;
+
+      if (!form.classList.contains('status-update-form')) return;
+
+      const statusSelect = form.querySelector('select[name="new_status"]');
+      const hiddenReasonInput = form.querySelector('input[name="reject_reason"]');
+
+      if (!statusSelect) return;
+
+      if (statusSelect.value === '반려') {
+        e.preventDefault();
+        openRejectReasonModal(form);
+        return;
+      }
+
+      if (hiddenReasonInput) {
+        hiddenReasonInput.value = '';
+      }
+    });
+
+    document.getElementById('rejectReasonModal').addEventListener('click', function (e) {
+      if (e.target.id === 'rejectReasonModal') {
+        closeRejectReasonModal();
+      }
+    });
+
+    let currentPage = 1;
+    let hasNextPage = {{ 'true' if has_next else 'false' }};
+    let isLoadingMore = false;
+    let observer = null;
+
+    async function loadMoreAlerts() {
+      if (isLoadingMore || !hasNextPage) return;
+
+      isLoadingMore = true;
+
+      if (observer && sentinel) {
+        observer.unobserve(sentinel);
+      }
+
+      const statusText = document.getElementById('listStatusText');
+      if (statusText) {
+        statusText.textContent = '로딩 중...';
+      }
+
+      try {
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', currentPage + 1);
+        params.set('per_page', 4);
+        params.set('api', '1');
+
+        const response = await fetch(`/alerts?${params.toString()}`);
+        const data = await response.json();
+
+        if (!data.success) {
+          if (statusText) {
+            statusText.textContent = '불러오기에 실패했습니다.';
+          }
+          return;
+        }
+
+        const alertList = document.getElementById('alertList');
+
+        data.items.forEach(item => {
+          alertList.insertAdjacentHTML('beforeend', createAlertCard(item));
+        });
+
+        currentPage += 1;
+        hasNextPage = data.has_next;
+
+        if (statusText) {
+          statusText.textContent = hasNextPage
+            ? '아래로 스크롤하면 더 불러옵니다.'
+            : '마지막 사건입니다.';
+        }
+
+      } catch (error) {
+        console.error('무한 스크롤 로딩 오류:', error);
+        if (statusText) {
+          statusText.textContent = '불러오는 중 오류가 발생했습니다.';
+        }
+      } finally {
+        isLoadingMore = false;
+
+        if (observer && sentinel && hasNextPage) {
+          setTimeout(() => {
+            observer.observe(sentinel);
+          }, 250);
+        }
+      }
+    }
+
+    const sentinel = document.getElementById('scrollSentinel');
+
+    if (sentinel) {
+      observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !isLoadingMore && hasNextPage) {
+          loadMoreAlerts();
+        }
+      }, {
+        root: document.querySelector('.content'),
+        threshold: 0.2
+      });
+
+      observer.observe(sentinel);
+    }
+  </script>
+</body>
+</html>
