@@ -357,9 +357,154 @@
       font-weight: 700;
     }
 
-    .time {
-      color: #475569;
+    .reporter-count-btn {
+      border: none;
+      background: transparent;
+      padding: 0;
+      font-size: 13px;
       font-weight: 700;
+      color: #334155;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .reporter-count-btn:hover {
+      color: #0f172a;
+    }
+
+    .reporter-count-text {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .group-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.38);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1400;
+      padding: 20px;
+    }
+
+    .group-modal-backdrop.show {
+      display: flex;
+    }
+
+    .group-modal-box {
+      width: 100%;
+      max-width: 760px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 24px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+      overflow: hidden;
+    }
+
+    .group-modal-header {
+      padding: 22px 24px 10px;
+    }
+
+    .group-modal-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+    }
+
+    .group-modal-subtitle {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .group-modal-body {
+      padding: 0 24px 20px;
+    }
+
+    .group-modal-table-wrap {
+      border: 1px solid #edf1f5;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .group-modal-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .group-modal-table th,
+    .group-modal-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #f1f5f9;
+      text-align: center;
+    }
+
+    .group-modal-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 800;
+    }
+
+    .group-modal-table td:nth-child(2) {
+      text-align: left;
+    }
+
+    .group-modal-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .group-representative-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 52px;
+      height: 24px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #fff7ed;
+      color: #ea580c;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .group-modal-empty {
+      padding: 28px 16px;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .group-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+
+    .group-modal-close-btn {
+      min-width: 92px;
+      height: 40px;
+      padding: 0 16px;
+      border: 1px solid #dbe3ec;
+      border-radius: 12px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .group-modal-close-btn:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
     }
 
     .badge {
@@ -604,9 +749,8 @@
 }
 
 .detail-close-btn:hover {
-  background: #ffffff;
-  border-color: #cbd5e1;
   transform: translateY(-1px);
+  opacity: 0.96;
 }
 
 .detail-modal-card {
@@ -1232,6 +1376,7 @@
 
           <form method="GET" action="/admin/incidents" class="filter-form">
             <input type="hidden" name="quick_filter" value="{{ quick_filter }}">
+            <input type="hidden" name="member_id" value="{{ request.args.get('member_id', '') }}">
               <select name="status" class="filter-control">
                   <option value="">전체 상태</option>
                   <option value="접수완료" {{ 'selected' if selected_status == '접수완료' else '' }}>접수완료</option>
@@ -1273,10 +1418,10 @@
               <button type="submit" class="btn">필터 적용</button>
 
               {% if quick_filter %}
-                <a href="/admin/incidents" class="btn">빠른 필터 해제</a>
+                <a href="/admin/incidents?member_id={{ request.args.get('member_id', '') }}" class="btn">빠른 필터 해제</a>
               {% endif %}
 
-              <a href="/admin/incidents" class="btn">초기화</a>
+              <a href="/admin/incidents?member_id={{ request.args.get('member_id', '') }}" class="btn">초기화</a>
             </form>
           <form id="bulkStatusForm" method="POST" action="/admin/incidents/bulk-update">
             <input type="hidden" name="new_status" id="bulkNewStatusInput">
@@ -1372,9 +1517,15 @@
 
                   <td class="reporter">
                     {% if incident.group_reporter_count and incident.group_reporter_count >= 2 %}
-                      {{ incident.group_reporter_count }}건
+                      <button
+                        type="button"
+                        class="reporter-count-btn"
+                        onclick="openIncidentGroupModal('{{ incident.id }}', '{{ incident.group_reporter_count }}')"
+                      >
+                        {{ incident.group_reporter_count }}건
+                      </button>
                     {% else %}
-                      1건
+                      <span class="reporter-count-text">1건</span>
                     {% endif %}
                   </td>
 
@@ -1424,7 +1575,7 @@
             {% if page > 1 %}
               <a
                 class="btn js-page-transition-link"
-                href="/admin/incidents?status={{ selected_status }}&risk={{ selected_risk }}&region={{ selected_region }}&keyword={{ keyword }}&sort={{ sort_by }}&order={{ request.args.get('order', 'desc') }}&page={{ page - 1 }}"
+                href="/admin/incidents?member_id={{ request.args.get('member_id', '') }}&status={{ selected_status }}&risk={{ selected_risk }}&region={{ selected_region }}&keyword={{ keyword }}&sort={{ sort_by }}&order={{ request.args.get('order', 'desc') }}&page={{ page - 1 }}"
               >
                 이전
               </a>
@@ -1437,7 +1588,7 @@
             {% if page < total_pages %}
               <a
                 class="btn js-page-transition-link"
-                href="/admin/incidents?status={{ selected_status }}&risk={{ selected_risk }}&region={{ selected_region }}&keyword={{ keyword }}&sort={{ sort_by }}&order={{ request.args.get('order', 'desc') }}&page={{ page + 1 }}"
+                href="/admin/incidents?member_id={{ request.args.get('member_id', '') }}&status={{ selected_status }}&risk={{ selected_risk }}&region={{ selected_region }}&keyword={{ keyword }}&sort={{ sort_by }}&order={{ request.args.get('order', 'desc') }}&page={{ page + 1 }}"
               >
                 다음
               </a>
@@ -1596,6 +1747,45 @@
       </div>
     </div>
   </div>
+  <div class="group-modal-backdrop" id="incidentGroupModal">
+  <div class="group-modal-box">
+    <div class="group-modal-header">
+      <div class="group-modal-title">중복 신고 목록</div>
+      <div class="group-modal-subtitle" id="incidentGroupSubtitle">
+        같은 그룹으로 묶인 신고 목록입니다.
+      </div>
+    </div>
+
+    <div class="group-modal-body">
+      <div class="group-modal-table-wrap">
+        <table class="group-modal-table">
+          <thead>
+            <tr>
+              <th>번호</th>
+              <th>제목</th>
+              <th>제보자</th>
+              <th>위치</th>
+              <th>상태</th>
+              <th>접수시간</th>
+              <th>대표</th>
+            </tr>
+          </thead>
+          <tbody id="incidentGroupTableBody">
+            <tr>
+              <td colspan="7" class="group-modal-empty">불러오는 중입니다.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="group-modal-actions">
+        <button type="button" class="group-modal-close-btn" onclick="closeIncidentGroupModal()">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 <div id="pageTransitionOverlay" class="page-transition-overlay"></div>
   <script>
 
@@ -1623,6 +1813,80 @@ function openCustomAlert(message, title = '알림') {
 
 function closeCustomAlert() {
   document.getElementById('customAlertModal').classList.remove('show');
+}
+
+function getIncidentStatusBadgeHtml(status) {
+  if (status === '접수완료') {
+    return '<span class="badge status-received">접수완료</span>';
+  }
+  if (status === '처리중') {
+    return '<span class="badge status-processing">처리중</span>';
+  }
+  if (status === '처리완료') {
+    return '<span class="badge status-done">처리완료</span>';
+  }
+  if (status === '반려') {
+    return '<span class="badge status-rejected">반려</span>';
+  }
+  return `<span class="badge">${status || '-'}</span>`;
+}
+
+function closeIncidentGroupModal() {
+  document.getElementById('incidentGroupModal').classList.remove('show');
+}
+
+async function openIncidentGroupModal(incidentId, reporterCount) {
+  const modal = document.getElementById('incidentGroupModal');
+  const subtitle = document.getElementById('incidentGroupSubtitle');
+  const tbody = document.getElementById('incidentGroupTableBody');
+
+  subtitle.textContent = `반복 제보 ${reporterCount}건에 포함된 원본 신고 목록입니다.`;
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="7" class="group-modal-empty">불러오는 중입니다.</td>
+    </tr>
+  `;
+
+  modal.classList.add('show');
+
+  try {
+    const response = await fetch(`/admin/incidents/group/${incidentId}`);
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || '중복 신고 목록을 불러오지 못했습니다.');
+    }
+
+    if (!data.items || data.items.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="group-modal-empty">같은 그룹 신고가 없습니다.</td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = data.items.map(item => `
+      <tr>
+        <td class="number">${item.id}</td>
+        <td>${item.title || '-'}</td>
+        <td>${item.member_name || '-'}</td>
+        <td>${item.location || '-'}</td>
+        <td>${getIncidentStatusBadgeHtml(item.status)}</td>
+        <td class="time">${item.first_created_at || '-'}</td>
+        <td>
+          ${item.is_representative ? '<span class="group-representative-badge">대표</span>' : '-'}
+        </td>
+      </tr>
+    `).join('');
+  } catch (error) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="group-modal-empty">불러오기에 실패했습니다.</td>
+      </tr>
+    `;
+    openCustomAlert(error.message || '중복 신고 목록을 불러오지 못했습니다.');
+  }
 }
 
 function openConfirmActionModal(statusLabel) {
@@ -1891,6 +2155,12 @@ function applyInlineIncidentStatus() {
       closeBulkRejectModal();
     }
   });
+
+document.getElementById('incidentGroupModal').addEventListener('click', function(e) {
+  if (e.target.id === 'incidentGroupModal') {
+    closeIncidentGroupModal();
+  }
+});
 
 document.addEventListener('click', function(e) {
   const wrap = document.getElementById('incidentInlineStatusWrap');

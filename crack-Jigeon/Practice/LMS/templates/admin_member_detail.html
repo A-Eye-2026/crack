@@ -8,22 +8,11 @@
     :root {
       --bg: #f4f6f8;
       --surface: #ffffff;
-      --surface-soft: #f8fafc;
       --border: #e5e7eb;
-      --border-strong: #d8dde6;
       --text: #0f172a;
       --text-sub: #64748b;
-      --sidebar: #162132;
-      --sidebar-soft: #223148;
-      --sidebar-hover: #2b3c56;
       --accent: #ff7a1a;
       --accent-dark: #ea6500;
-      --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-      --shadow-soft: 0 4px 14px rgba(15, 23, 42, 0.04);
-      --radius-xl: 22px;
-      --radius-lg: 16px;
-      --radius-md: 12px;
-      --radius-sm: 10px;
     }
 
     * {
@@ -78,10 +67,116 @@
       margin-bottom: 16px;
     }
 
-    .topbar-left {
+    .member-layout {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 18px;
+    }
+
+    .member-main,
+    .member-side {
+      min-height: 0;
+    }
+
+    .member-main {
+      display: grid;
+      grid-template-rows: 160px 1fr;
+      gap: 16px;
+    }
+
+    .member-info-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .member-side {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 16px;
+    }
+
+    .member-profile-card {
+      background: #ffffff;
+      border: 1px solid #e5ebf2;
+      border-radius: 20px;
+      padding: 22px 24px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .member-profile-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, #ff7a1a 0%, #ffb37a 100%);
+    }
+
+    .member-profile-top {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .member-profile-name-row {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .member-profile-name {
+      font-size: 36px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -1.2px;
+      line-height: 1;
+    }
+
+    .member-profile-id {
+      font-size: 18px;
+      font-weight: 800;
+      color: #64748b;
+    }
+
+    .member-profile-meta {
       display: flex;
       align-items: center;
-      min-width: 0;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .member-profile-chip {
+      display: inline-flex;
+      align-items: center;
+      height: 32px;
+      padding: 0 13px;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid #dbe4ee;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .member-back-btn {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      z-index: 2;
     }
 
     .header-brand {
@@ -180,6 +275,27 @@
       white-space: nowrap;
     }
 
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid #dbe3ec;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+      text-decoration: none;
+      transition: all 0.18s ease;
+    }
+
+    .back-btn:hover {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+    }
+
     .logout-pill {
       display: inline-flex;
       align-items: center;
@@ -204,457 +320,12 @@
       transform: translateY(-1px);
     }
 
-    .profile-hero {
-      display: flex;
-      align-items: stretch;
-      justify-content: space-between;
-      gap: 20px;
-      padding: 24px;
-      margin-bottom: 16px;
-      background: linear-gradient(135deg, #fff7ed 0%, #ffffff 45%, #f8fafc 100%);
-      border: 1px solid #e8edf3;
-      border-radius: 22px;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-    }
-
-    .profile-hero-left {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      min-width: 0;
-      flex: 1;
-    }
-
-    .profile-avatar {
-      width: 78px;
-      height: 78px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #ff7a1a 0%, #fb923c 100%);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: -0.5px;
-      box-shadow: 0 10px 20px rgba(249, 115, 22, 0.22);
-      flex-shrink: 0;
-    }
-
-    .profile-main {
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .profile-name-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .profile-name {
-      font-size: 30px;
-      font-weight: 900;
-      color: #0f172a;
-      letter-spacing: -0.8px;
-      line-height: 1.1;
-    }
-
-    .profile-id {
-      font-size: 15px;
-      font-weight: 700;
-      color: #64748b;
-    }
-
-    .profile-meta-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .profile-meta-chip {
-      display: inline-flex;
-      align-items: center;
-      height: 32px;
-      padding: 0 12px;
-      border-radius: 999px;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      color: #334155;
-      font-size: 12px;
-      font-weight: 800;
-    }
-
-    .profile-hero-right {
-      min-width: 250px;
-      max-width: 280px;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-
-    .profile-mini-card {
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid #e7edf4;
-      border-radius: 16px;
-      padding: 14px 16px;
-    }
-
-    .profile-mini-label {
-      font-size: 12px;
-      color: #7b8794;
-      font-weight: 800;
-      margin-bottom: 8px;
-    }
-
-    .profile-mini-value {
-      font-size: 22px;
-      line-height: 1.15;
-      font-weight: 900;
-      color: #0f172a;
-      letter-spacing: -0.4px;
-    }
-
-    .profile-content-grid {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 16px;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .info-panel {
-      background: #ffffff;
-      border: 1px solid #e8edf3;
-      border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .info-panel-title {
-      font-size: 18px;
-      font-weight: 900;
-      color: #0f172a;
-      letter-spacing: -0.4px;
-      margin-bottom: 14px;
-    }
-
-    .info-list {
-      display: grid;
-      gap: 12px;
-    }
-
-    .info-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      padding: 14px 16px;
-      border-radius: 14px;
-      background: #f8fafc;
-      border: 1px solid #e9eef5;
-    }
-
-    .info-item-label {
-      font-size: 13px;
-      font-weight: 800;
-      color: #7b8794;
-    }
-
-    .info-item-value {
-      font-size: 16px;
-      font-weight: 900;
-      color: #0f172a;
-      text-align: right;
-      word-break: break-word;
-    }
-
-    .profile-note-box {
-      margin-top: 12px;
-      padding: 16px;
-      border-radius: 14px;
-      background: #fbfdff;
-      border: 1px dashed #d8e2ec;
-      color: #64748b;
-      font-size: 13px;
-      font-weight: 700;
-      line-height: 1.5;
-    }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 16px;
-    }
-
-    .summary-card {
-      position: relative;
-      overflow: hidden;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 14px 16px 12px;
-      min-height: 92px;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-      display: block;
-    }
-
-    .summary-card::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 5px;
-      background: #dbe3ec;
-    }
-
-    .summary-card.member-id::before {
-      background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
-    }
-
-    .summary-card.member-role::before {
-      background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);
-    }
-
-    .summary-card.member-name::before {
-      background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);
-    }
-
-    .summary-card.member-status::before {
-      background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
-    }
-
-    .summary-card.member-id {
-      background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
-    }
-
-    .summary-card.member-role {
-      background: linear-gradient(180deg, #fffaf5 0%, #ffffff 100%);
-    }
-
-    .summary-card.member-name {
-      background: linear-gradient(180deg, #faf7ff 0%, #ffffff 100%);
-    }
-
-    .summary-card.member-status {
-      background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
-    }
-
-    .summary-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: #7b8794;
-      margin-bottom: 10px;
-    }
-
-    .summary-value {
-      font-size: 24px;
-      line-height: 1;
-      font-weight: 900;
-      letter-spacing: -0.6px;
-      color: #0f172a;
-      margin-bottom: 6px;
-    }
-
-    .summary-meta {
-      font-size: 11px;
-      color: #94a3b8;
-      font-weight: 600;
-      line-height: 1.3;
-    }
-
-    .section {
-      background: rgba(255, 255, 255, 0.94);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 16px;
-      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
-      margin-bottom: 18px;
-    }
-
-    .section-fill {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .section:last-child {
-      margin-bottom: 0;
-    }
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .section-title-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .section-title {
-      font-size: 20px;
-      font-weight: 900;
-      letter-spacing: -0.5px;
-      color: #0f172a;
-    }
-
-    .section-subtitle {
-      font-size: 12px;
-      color: #7b8794;
-      font-weight: 600;
-    }
-
-    .section-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .mini-btn {
-      height: 34px;
-      padding: 0 14px;
-      border: 1px solid #d7dde5;
-      background: #fff;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 800;
-      cursor: pointer;
-      color: #334155;
-      transition: all 0.18s ease;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .mini-btn:hover {
-      background: #f8fafc;
-      border-color: #c9d3df;
-      transform: translateY(-1px);
-    }
-
-    .table-shell {
-      border: 1px solid #edf1f5;
-      border-radius: 18px;
-      overflow: hidden;
-      background: #fff;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .member-detail-list {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-    }
-
-    .member-detail-row {
-      background: #f8fafc;
-      border: 1px solid #e9eef5;
-      border-radius: 16px;
-      padding: 14px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      transition: background 0.16s ease;
-    }
-
-    .member-detail-row:hover {
-      background: #fcfcfd;
-    }
-
-    .member-detail-main,
-    .member-detail-side {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      min-width: 0;
-    }
-
-    .member-detail-main {
-      flex: 1;
-    }
-
-    .member-detail-side {
-      min-width: 180px;
-      align-items: flex-start;
-    }
-
-    .member-detail-title {
-      font-size: 12px;
-      font-weight: 800;
-      color: #7b8794;
-    }
-
-    .member-detail-value {
-      font-size: 24px;
-      line-height: 1.2;
-      font-weight: 900;
-      color: #0f172a;
-      letter-spacing: -0.4px;
-      word-break: break-word;
-    }
-
-    .member-detail-subtext {
-      font-size: 13px;
-      color: #64748b;
-      font-weight: 700;
-    }
-
-    .member-detail-badge-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .info-label {
-      font-size: 11px;
-      font-weight: 800;
-      color: #7b8794;
-      margin-bottom: 6px;
-    }
-
-    .info-card {
-      background: #f8fafc;
-      border: 1px solid #e9eef5;
-      border-radius: 16px;
-      padding: 16px;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .info-value {
-      font-size: 16px;
-      font-weight: 900;
-      color: #0f172a;
-      letter-spacing: -0.2px;
-      line-height: 1.28;
-      word-break: break-word;
-    }
-
     .role-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 88px;
-      height: 28px;
+      min-width: 78px;
+      height: 30px;
       padding: 0 12px;
       border-radius: 999px;
       font-size: 12px;
@@ -681,15 +352,609 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 88px;
-      height: 28px;
+      min-width: 78px;
+      height: 30px;
       padding: 0 12px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 800;
       white-space: nowrap;
+      background: #ecfdf5;
+      color: #16a34a;
+    }
+
+    .status-inactive {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .activity-card {
+      background: #fff;
+      border: 1px solid #e5ebf2;
+      border-radius: 18px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+     .stats-card {
+      background: #fff;
+      border: 1px solid #e5ebf2;
+      border-radius: 18px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.03);
+    }
+
+        .risk-card {
+          background: #fff;
+          border: 1px solid #e5ebf2;
+          border-radius: 18px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
+          height: 100%;
+          box-shadow: 0 6px 18px rgba(15, 23, 42, 0.03);
+        }
+
+        .risk-card-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 12px;
+        }
+
+        .risk-card-title {
+          font-size: 15px;
+          font-weight: 900;
+          color: #0f172a;
+          letter-spacing: -0.3px;
+        }
+
+        .risk-card-total {
+          flex-shrink: 0;
+          font-size: 12px;
+          font-weight: 800;
+          color: #64748b;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 999px;
+          padding: 6px 10px;
+          line-height: 1;
+          white-space: nowrap;
+        }
+
+        .risk-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          flex: 1;
+          min-height: 0;
+        }
+
+        .risk-item {
+          border-radius: 16px;
+          padding: 14px 14px 12px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          min-height: 102px;
+          border: 1px solid #e2e8f0;
+        }
+
+        .risk-item.high {
+          background: linear-gradient(180deg, #fef2f2 0%, #fff8f8 100%);
+          border-color: #fecaca;
+        }
+
+        .risk-item.medium {
+          background: linear-gradient(180deg, #fff7ed 0%, #fffbf7 100%);
+          border-color: #fed7aa;
+        }
+
+        .risk-item.low {
+          background: linear-gradient(180deg, #ecfdf5 0%, #f7fef9 100%);
+          border-color: #bbf7d0;
+        }
+
+        .risk-item.avg {
+          background: linear-gradient(180deg, #f8fafc 0%, #fbfdff 100%);
+          border-color: #dbe4ee;
+        }
+
+        .risk-label {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          font-size: 13px;
+          font-weight: 800;
+          color: #475569;
+          letter-spacing: -0.2px;
+          line-height: 1.2;
+        }
+
+        .risk-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          flex-shrink: 0;
+        }
+
+        .risk-item.high .risk-dot {
+          background: #dc2626;
+        }
+
+        .risk-item.medium .risk-dot {
+          background: #ea580c;
+        }
+
+        .risk-item.low .risk-dot {
+          background: #16a34a;
+        }
+
+        .risk-item.avg .risk-dot {
+          background: #64748b;
+        }
+
+        .risk-value {
+          margin-top: 14px;
+          font-size: 34px;
+          font-weight: 900;
+          letter-spacing: -1px;
+          line-height: 1;
+        }
+
+        .risk-item.high .risk-value {
+          color: #dc2626;
+        }
+
+        .risk-item.medium .risk-value {
+          color: #ea580c;
+        }
+
+        .risk-item.low .risk-value {
+          color: #16a34a;
+        }
+
+        .risk-item.avg .risk-value {
+          color: #475569;
+        }
+
+        .risk-sub {
+          margin-top: 6px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #64748b;
+          letter-spacing: -0.2px;
+          line-height: 1.3;
+        }
+
+    .summary-card {
+      background: #fff;
+      border: 1px solid #e5ebf2;
+      border-radius: 18px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.03);
+      overflow: hidden;
+    }
+
+    .summary-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .summary-card-title {
+      font-size: 14px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+    }
+
+    .summary-card-badge {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 800;
+      color: #64748b;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 4px 8px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .summary-item {
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      padding: 8px 10px;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .summary-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: #64748b;
+      letter-spacing: -0.2px;
+      line-height: 1.1;
+    }
+
+    .summary-value {
+      font-size: 20px;
+      font-weight: 900;
+      color: #0f172a;
+      margin-top: 2px;
+    }
+
+    .summary-item.date {
+      background: linear-gradient(180deg, #f8fafc 0%, #fbfdff 100%);
+    }
+
+    .summary-item.grouped {
+      background: linear-gradient(180deg, #fff7ed 0%, #fffbf7 100%);
+      border-color: #fed7aa;
+    }
+
+    .summary-item.avg {
+      background: linear-gradient(180deg, #f0fdf4 0%, #f7fef9 100%);
+      border-color: #bbf7d0;
+    }
+
+    .summary-item.reject {
+      background: linear-gradient(180deg, #fef2f2 0%, #fff8f8 100%);
+      border-color: #fecaca;
+    }
+
+    .summary-item.grouped .summary-value {
+      color: #ea580c;
+    }
+
+    .summary-item.avg .summary-value {
+      color: #16a34a;
+    }
+
+    .summary-item.reject .summary-value {
+      color: #dc2626;
+    }
+
+    .stats-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .stats-card-title {
+      font-size: 15px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+    }
+
+    .stats-card-total {
+      flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 800;
+      color: #64748b;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 6px 10px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .stats-item {
+      border-radius: 16px;
+      padding: 14px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 102px;
+      border: 1px solid #e2e8f0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stats-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #475569;
+      letter-spacing: -0.2px;
+      line-height: 1.2;
+    }
+
+    .stats-value {
+      margin-top: 14px;
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .stats-sub {
+      margin-top: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: -0.2px;
+      line-height: 1.3;
+    }
+
+    .stats-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+
+    .stats-item.received .stats-dot {
+      background: #f97316;
+    }
+
+    .stats-item.processing .stats-dot {
+      background: #d97706;
+    }
+
+    .stats-item.completed .stats-dot {
+      background: #16a34a;
+    }
+
+    .stats-item.rejected .stats-dot {
+      background: #94a3b8;
+    }
+
+    .stats-item.received .stats-value {
+      color: #f97316;
+    }
+
+    .stats-item.processing .stats-value {
+      color: #d97706;
+    }
+
+    .stats-item.completed .stats-value {
+      color: #16a34a;
+    }
+
+    .stats-item.rejected .stats-value {
+      color: #64748b;
+    }
+
+    .stats-item.received {
+      background: linear-gradient(180deg, #fff7ed 0%, #fffbf7 100%);
+      border-color: #fed7aa;
+    }
+
+    .stats-item.processing {
+      background: linear-gradient(180deg, #fffbeb 0%, #fffef7 100%);
+      border-color: #fde68a;
+    }
+
+    .stats-item.completed {
+      background: linear-gradient(180deg, #f0fdf4 0%, #f7fef9 100%);
+      border-color: #bbf7d0;
+    }
+
+    .stats-item.rejected {
+      background: linear-gradient(180deg, #f8fafc 0%, #fbfdff 100%);
+      border-color: #dbe4ee;
+    }
+
+    .section-card-title {
+      font-size: 15px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+      margin-bottom: 14px;
+    }
+
+    .post-list {
+      display: grid;
+      grid-template-rows: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .post-list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .post-item {
+      display: block;
+      height: 100%;
+      text-decoration: none;
+      color: inherit;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      transition: all 0.16s ease;
+    }
+
+    .post-item:hover {
+      background: #ffffff;
+      border-color: #cfd8e3;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    .post-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .post-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.2px;
+      line-height: 1.3;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .post-date {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 700;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+
+    .post-meta {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .section-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .section-card-count {
+      flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 800;
+      color: #64748b;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 6px 10px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .mini-badge {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    .mini-risk-high {
+      background: #fef2f2;
+      color: #dc2626;
+      border-color: #fecaca;
+    }
+
+    .mini-risk-medium {
+      background: #fff7ed;
+      color: #ea580c;
+      border-color: #fed7aa;
+    }
+
+    .mini-risk-low {
+      background: #ecfdf5;
+      color: #16a34a;
+      border-color: #bbf7d0;
+    }
+
+    .mini-status-received {
+      background: #fff7ed;
+      color: #f97316;
+      border-color: #fed7aa;
+    }
+
+    .mini-status-processing {
+      background: #fffbeb;
+      color: #d97706;
+      border-color: #fde68a;
+    }
+
+    .mini-status-done {
       background: #f0fdf4;
       color: #16a34a;
+      border-color: #bbf7d0;
+    }
+
+    .mini-status-rejected {
+      background: #f1f5f9;
+      color: #64748b;
+      border-color: #cbd5e1;
+    }
+
+    .post-location {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    .section-card-footer {
+      margin-top: auto;
+      padding-top: 12px;
+      padding-right: 2px;
+      padding-bottom: 2px;
+      border-top: 1px solid #edf2f7;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .section-link {
+      display: inline-flex;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--accent);
+      text-decoration: none;
+      line-height: 1;
+    }
+
+    .section-link:hover {
+      color: var(--accent-dark);
     }
 
     .empty-box {
@@ -727,12 +992,6 @@
       transition: opacity 0.12s ease;
     }
 
-    @media (max-width: 1400px) {
-      .summary-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
     @media (max-width: 900px) {
   .layout {
     padding: 16px;
@@ -742,6 +1001,14 @@
     flex-direction: column;
     align-items: stretch;
   }
+
+  .member-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .member-info-grid {
+      grid-template-columns: 1fr;
+    }
 
   .topbar-actions {
     width: 100%;
@@ -754,71 +1021,25 @@
     flex-wrap: wrap;
   }
 
-  .profile-hero {
-    flex-direction: column;
+  .member-profile-card {
+    background: #ffffff;
+    border: 1px solid #e6ecf3;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+    position: relative;
   }
 
-  .profile-hero-right {
-    min-width: 0;
-    max-width: none;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .profile-content-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .section-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .section-actions {
-    justify-content: flex-end;
-  }
-
-  .section-title {
-    font-size: 24px;
-  }
-
-  .profile-name {
-    font-size: 24px;
-  }
-
-  .profile-hero-right {
-    grid-template-columns: 1fr;
-  }
-
-  .info-item {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .info-item-value {
-    text-align: left;
+  .member-profile-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #ff7a1a 0%, #ffb37a 100%);
   }
 }
-
-    @media (max-width: 640px) {
-      .summary-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .section-header {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .section-actions {
-        justify-content: flex-end;
-      }
-
-      .section-title {
-        font-size: 24px;
-      }
-    }
   </style>
 </head>
 <body>
@@ -850,127 +1071,248 @@
             </div>
           </div>
         </div>
+        <div class="member-layout">
+          <div class="member-main">
+            <div class="member-profile-card">
+              <a
+                href="/admin/members?page={{ request.args.get('page', 1) }}&keyword={{ request.args.get('keyword', '') }}&role={{ request.args.get('role', '') }}&sort={{ request.args.get('sort', 'role') }}&order={{ request.args.get('order', 'asc') }}"
+                class="back-btn member-back-btn js-page-transition-link"
+              >
+                ← 목록으로
+              </a>
 
-        <div class="profile-hero">
-          <div class="profile-hero-left">
-            <div class="profile-avatar">
-              {{ member.name[:1] }}
+              <div class="member-profile-top">
+                <div class="member-profile-name-row">
+                  <div class="member-profile-name">{{ member.name }}</div>
+                  <div class="member-profile-id">@{{ member.uid }}</div>
+
+                  {% if member.role == 'admin' %}
+                    <span class="role-badge role-admin">관리자</span>
+                  {% elif member.role == 'manager' %}
+                    <span class="role-badge role-manager">매니저</span>
+                  {% else %}
+                    <span class="role-badge role-user">일반회원</span>
+                  {% endif %}
+
+                  {% if member.active %}
+                    <span class="status-badge">활성</span>
+                  {% else %}
+                    <span class="status-badge status-inactive">비활성</span>
+                  {% endif %}
+                </div>
+
+                <div class="member-profile-meta">
+                  <span class="member-profile-chip">
+                    가입일 {{ member.created_at.strftime('%Y-%m-%d') }}
+                  </span>
+
+                  {% if member.role == 'manager' %}
+                  <span class="member-profile-chip">
+                    지역 · {{ member.manager_region if member.manager_region else '미지정' }}
+                  </span>
+                  {% endif %}
+
+                  <span class="member-profile-chip">
+                    총 게시글 {{ member_stats.total_reports or 0 }}건
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div class="profile-main">
-              <div class="profile-name-row">
-                <div class="profile-name">{{ member.name }}</div>
+            <div class="member-info-grid">
+              <div class="stats-card">
+                <div class="stats-card-head">
+                  <div class="stats-card-title">게시글 상태 통계</div>
+                  <div class="stats-card-total">전체 {{ member_stats.total_reports or 0 }}건</div>
+                </div>
 
-                {% if member.role == 'admin' %}
-                  <span class="role-badge role-admin">관리자</span>
-                {% elif member.role == 'manager' %}
-                  <span class="role-badge role-manager">매니저</span>
-                {% else %}
-                  <span class="role-badge role-user">일반회원</span>
-                {% endif %}
+                <div class="stats-grid">
+                  <div class="stats-item received">
+                    <div class="stats-label">
+                      <span class="stats-dot"></span>
+                      접수완료
+                    </div>
+                    <div class="stats-value">{{ member_stats.received_reports or 0 }}</div>
+                    <div class="stats-sub">전체 신고 접수</div>
+                  </div>
 
-                <span class="status-badge">정상</span>
+                  <div class="stats-item processing">
+                    <div class="stats-label">
+                      <span class="stats-dot"></span>
+                      처리중
+                    </div>
+                    <div class="stats-value">{{ member_stats.processing_reports or 0 }}</div>
+                    <div class="stats-sub">관리자 검토 진행</div>
+                  </div>
+
+                  <div class="stats-item completed">
+                    <div class="stats-label">
+                      <span class="stats-dot"></span>
+                      처리완료
+                    </div>
+                    <div class="stats-value">{{ member_stats.completed_reports or 0 }}</div>
+                    <div class="stats-sub">조치 완료</div>
+                  </div>
+
+                  <div class="stats-item rejected">
+                    <div class="stats-label">
+                      <span class="stats-dot"></span>
+                      반려
+                    </div>
+                    <div class="stats-value">{{ member_stats.rejected_reports or 0 }}</div>
+                    <div class="stats-sub">
+                      {% if (member_stats.rejected_reports or 0) > 0 %}
+                        반려 이력 있음
+                      {% else %}
+                        반려 처리 없음
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div class="profile-id">@{{ member.uid }}</div>
+              <div class="risk-card">
+                <div class="risk-card-head">
+                  <div class="risk-card-title">처리 현황</div>
+                  <div class="risk-card-total">최근 7일 {{ member_stats.recent_7d_reports or 0 }}건</div>
+                </div>
 
-              <div class="profile-meta-row">
-                <span class="profile-meta-chip">회원번호 {{ member.id }}</span>
-                <span class="profile-meta-chip">CRACK 계정</span>
-                <span class="profile-meta-chip">프로필 상세 보기</span>
+                <div class="risk-grid">
+                  <div class="risk-item avg">
+                    <div class="risk-label">
+                      <span class="risk-dot"></span>
+                      미처리
+                    </div>
+                    <div class="risk-value">{{ member_stats.pending_reports or 0 }}</div>
+                    <div class="risk-sub">접수완료 + 처리중</div>
+                  </div>
+
+                  <div class="risk-item high">
+                    <div class="risk-label">
+                      <span class="risk-dot"></span>
+                      고위험 미처리
+                    </div>
+                    <div class="risk-value">{{ member_stats.high_risk_pending_reports or 0 }}</div>
+                    <div class="risk-sub">위험도 70점 이상</div>
+                  </div>
+
+                  <div class="risk-item medium">
+                    <div class="risk-label">
+                      <span class="risk-dot"></span>
+                      장기 미처리
+                    </div>
+                    <div class="risk-value">{{ member_stats.long_pending_reports or 0 }}</div>
+                    <div class="risk-sub">24시간 이상 경과</div>
+                  </div>
+
+                  <div class="risk-item low">
+                    <div class="risk-label">
+                      <span class="risk-dot"></span>
+                      최근 7일
+                    </div>
+                    <div class="risk-value">{{ member_stats.recent_7d_reports or 0 }}</div>
+                    <div class="risk-sub">최근 활동량</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="profile-hero-right">
-            <div class="profile-mini-card">
-              <div class="profile-mini-label">계정 상태</div>
-              <div class="profile-mini-value">정상</div>
+          <div class="member-side">
+            <div class="summary-card">
+              <div class="summary-card-head">
+                <div class="summary-card-title">운영 요약</div>
+                <div class="summary-card-badge">핵심 지표</div>
+              </div>
+
+              <div class="summary-grid">
+                <div class="summary-item avg">
+                  <div class="summary-label">승인율</div>
+                  <div class="summary-value">{{ member_stats.approved_rate or 0 }}%</div>
+                </div>
+
+                <div class="summary-item reject">
+                  <div class="summary-label">반려율</div>
+                  <div class="summary-value">{{ member_stats.rejected_rate or 0 }}%</div>
+                </div>
+
+                <div class="summary-item grouped">
+                  <div class="summary-label">중복율</div>
+                  <div class="summary-value">{{ member_stats.duplicate_rate or 0 }}%</div>
+                </div>
+
+                <div class="summary-item date">
+                  <div class="summary-label">최근 30일</div>
+                  <div class="summary-value">{{ member_stats.recent_30d_reports or 0 }}건</div>
+                </div>
+              </div>
             </div>
 
-            <div class="profile-mini-card">
-              <div class="profile-mini-label">권한 수준</div>
-              <div class="profile-mini-value">
-                {% if member.role == 'admin' %}
-                  관리자
-                {% elif member.role == 'manager' %}
-                  매니저
-                {% else %}
-                  일반회원
-                {% endif %}
+            <div class="activity-card">
+              <div class="section-card-head">
+                <div class="section-card-title">게시글</div>
+                <div class="section-card-count">총 게시글 {{ member_stats.total_reports or 0 }}건</div>
               </div>
+
+              {% if member_incidents and member_incidents|length > 0 %}
+                <div class="post-list">
+                  {% for post in member_incidents %}
+                  <a href="/admin/incidents/{{ post.id }}" class="post-item js-page-transition-link">
+                    <div class="post-item-top">
+                      <div class="post-title">
+                        {{ post.title if post.title else '제목 없는 게시글' }}
+                      </div>
+                      <div class="post-date">
+                        {{ post.first_created_at.strftime('%Y-%m-%d') if post.first_created_at else '-' }}
+                      </div>
+                    </div>
+
+                    <div class="post-meta">
+                      {% if post.risk_score >= 70 %}
+                        <span class="mini-badge mini-risk-high">위험도 높음</span>
+                      {% elif post.risk_score >= 40 %}
+                        <span class="mini-badge mini-risk-medium">위험도 중간</span>
+                      {% else %}
+                        <span class="mini-badge mini-risk-low">위험도 낮음</span>
+                      {% endif %}
+
+                      {% if post.status == '접수완료' %}
+                        <span class="mini-badge mini-status-received">접수완료</span>
+                      {% elif post.status == '처리중' %}
+                        <span class="mini-badge mini-status-processing">처리중</span>
+                      {% elif post.status == '처리완료' %}
+                        <span class="mini-badge mini-status-done">처리완료</span>
+                      {% elif post.status == '반려' %}
+                        <span class="mini-badge mini-status-rejected">반려</span>
+                      {% else %}
+                        <span class="mini-badge mini-status-rejected">{{ post.status }}</span>
+                      {% endif %}
+
+                      <span class="post-location">
+                        {{ post.region_name if post.region_name else (post.location if post.location else '위치 정보 없음') }}
+                      </span>
+                    </div>
+                  </a>
+                  {% endfor %}
+                </div>
+
+                <div class="section-card-footer">
+                  <a
+                    href="/admin/incidents?member_id={{ member.id }}"
+                    class="section-link js-page-transition-link"
+                  >
+                    전체 보기 →
+                  </a>
+                </div>
+              {% else %}
+                <div class="empty-box" style="height: 100%;">
+                  등록한 게시글이 없습니다.
+                </div>
+              {% endif %}
             </div>
           </div>
         </div>
 
-        <section class="section section-fill">
-          <div class="section-header">
-            <div class="section-title-wrap">
-              <div class="section-title">회원 상세 정보</div>
-              <div class="section-subtitle">선택한 회원의 기본 프로필과 계정 정보를 확인할 수 있습니다.</div>
-            </div>
-
-            <div class="section-actions">
-              <a href="/admin/members" class="mini-btn js-page-transition-link">목록으로</a>
-            </div>
-          </div>
-
-          <div class="profile-content-grid">
-              <div class="info-panel">
-                <div class="info-panel-title">기본 정보</div>
-
-                <div class="info-list">
-                  <div class="info-item">
-                    <div class="info-item-label">회원 번호</div>
-                    <div class="info-item-value">{{ member.id }}</div>
-                  </div>
-
-                  <div class="info-item">
-                    <div class="info-item-label">이름</div>
-                    <div class="info-item-value">{{ member.name }}</div>
-                  </div>
-
-                  <div class="info-item">
-                    <div class="info-item-label">아이디</div>
-                    <div class="info-item-value">{{ member.uid }}</div>
-                  </div>
-                </div>
-
-                <div class="profile-note-box">
-                  이 영역은 나중에 가입일, 최근 로그인, 신고 수, 처리 이력 같은 회원 활동 정보를 자연스럽게 확장하기 좋습니다.
-                </div>
-              </div>
-
-              <div class="info-panel">
-                <div class="info-panel-title">계정 정보</div>
-
-                <div class="info-list">
-                  <div class="info-item">
-                    <div class="info-item-label">역할</div>
-                    <div class="info-item-value">
-                      {% if member.role == 'admin' %}
-                        관리자
-                      {% elif member.role == 'manager' %}
-                        매니저
-                      {% else %}
-                        일반회원
-                      {% endif %}
-                    </div>
-                  </div>
-
-                  <div class="info-item">
-                    <div class="info-item-label">계정 상태</div>
-                    <div class="info-item-value">정상</div>
-                  </div>
-
-                  <div class="info-item">
-                    <div class="info-item-label">추가 정보</div>
-                    <div class="info-item-value">추후 확장 예정</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-        </section>
       </div>
     </main>
   </div>
