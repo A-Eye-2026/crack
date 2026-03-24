@@ -278,7 +278,7 @@
                 const img = document.getElementById('crop-image');
                 img.src = e.target.result;
                 document.getElementById('crop-container').style.display = "block";
-                document.getElementById('crop-controls').style.display = "block";
+                document.getElementById('crop-controls').style.display = "flex";
 
                 img.onload = function () {
                     if (window.cropper) { window.cropper.destroy(); window.cropper = null; }
@@ -348,6 +348,7 @@
             // 즉시 안내 문구 노출 시도
             setTimeout(() => {
                 restoreMapState('동영상은 위치 정보 자동 추출을 지원하지 않습니다. 지도에서 직접 핀을 지정해 주세요.');
+                document.getElementById('crop-controls').style.display = "flex";
             }, 500);
 
             const previewImg = document.getElementById('final-preview-image');
