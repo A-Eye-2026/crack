@@ -978,7 +978,7 @@
         if (!offset) return null;
         const absOffset = base + offset;
         const d = view.getUint32(absOffset, littleEndian) / view.getUint32(absOffset + 4, littleEndian);
-        const m = view.getUint32(absOffset + 8, littlw.getUint32(absOffset + 12, littleEndian);
+        const m = view.getUint32(absOffset + 8, littleEndian) / view.getUint32(absOffset + 12, littleEndian);
         const s = view.getUint32(absOffset + 16, littleEndian) / view.getUint32(absOffset + 20, littleEndian);
         return d + (m / 60) + (s / 3600);
     }
