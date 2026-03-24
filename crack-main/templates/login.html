@@ -1,0 +1,204 @@
+{% extends 'layout.html' %}
+
+{% block title %}Login - Crack{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-brand">
+        <i class="bi bi-lightning-charge-fill"></i> CRACK
+    </div>
+
+    <div class="auth-card">
+        <h2 style="margin-bottom: 8px; font-size: 1.5rem;">로그인</h2>
+        <p style="margin-bottom: 30px; opacity: 0.5; font-size: 0.9rem;">신속한 도로 파손 신고와 확인을 위해<br>로그인이 필요합니다.</p>
+
+        {% if error %}
+        <p style="color: #FF4D4D; font-size: 0.85rem; margin-bottom: 15px; font-weight: 600;">{{ error }}</p>
+        {% endif %}
+
+        <form method="POST" action="/login" style="display: flex; flex-direction: column; gap: 12px;">
+            <input type="text" name="username" placeholder="아이디" required
+                style="padding: 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.95rem; outline: none; transition: 0.2s;">
+            <input type="password" name="password" placeholder="비밀번호" required
+                style="padding: 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.95rem; outline: none; transition: 0.2s; margin-bottom: 8px;">
+
+            <button type="submit" class="auth-btn" style="margin-bottom: 0;">
+                <i class="bi bi-box-arrow-in-right"></i> 로그인
+            </button>
+        </form>
+        <div class="auth-links">
+            <button type="button" class="link-btn" onclick="openModal('findIdModal')">아이디 찾기</button>
+            <span>|</span>
+            <button type="button" class="link-btn" onclick="openModal('findPwModal')">비밀번호 찾기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 아이디 찾기 모달 -->
+<div id="findIdModal" class="modal-overlay">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal('findIdModal')">&times;</button>
+        <h3>아이디 찾기</h3>
+        <p class="modal-desc">가입할 때 사용한 정보를 입력해주세요.</p>
+        <p class="modal-message" style="min-height: 18px; font-size: 0.85rem; color: red;"></p>
+
+        <form method="POST" action="/find-id" class="modal-form">
+            <input type="text" name="name" placeholder="이름" required>
+            <input type="email" name="email" placeholder="이메일" required>
+            <button type="submit" class="auth-btn">아이디 찾기</button>
+        </form>
+    </div>
+</div>
+
+<!-- 비밀번호 찾기 모달 -->
+<div id="findPwModal" class="modal-overlay">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal('findPwModal')">&times;</button>
+        <h3>비밀번호 찾기</h3>
+        <p class="modal-desc">가입한 아이디와 이메일을 입력해주세요.</p>
+
+        <form method="POST" action="/find-password" class="modal-form">
+            <input type="text" name="username" placeholder="아이디" required>
+            <input type="email" name="email" placeholder="이메일" required>
+            <button type="submit" class="auth-btn">비밀번호 찾기</button>
+        </form>
+    </div>
+</div>
+
+<style>
+    .auth-links {
+        margin-top: 18px;
+        text-align: center;
+        font-size: 0.85rem;
+        color: #bbb;
+    }
+
+    .link-btn {
+        background: none;
+        border: none;
+        color: #666;
+        font-size: 0.85rem;
+        cursor: pointer;
+        margin: 0 6px;
+        padding: 0;
+        transition: color 0.2s ease;
+    }
+
+    .link-btn:hover {
+        color: #111;
+        text-decoration: underline;
+    }
+
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+
+    .modal-box {
+        position: relative;
+        width: 100%;
+        max-width: 420px;
+        background: #fff;
+        border-radius: 20px;
+        padding: 28px 24px 24px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        animation: modalFade 0.2s ease;
+    }
+
+    .modal-box h3 {
+        margin: 0 0 8px;
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+
+    .modal-desc {
+        margin-bottom: 18px;
+        font-size: 0.9rem;
+        color: #777;
+        line-height: 1.5;
+    }
+
+    .modal-form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .modal-form input {
+        padding: 14px;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 12px;
+        font-size: 0.95rem;
+        outline: none;
+        transition: 0.2s;
+    }
+
+    .modal-form input:focus {
+        border-color: #666;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 14px;
+        right: 16px;
+        background: none;
+        border: none;
+        font-size: 2.5rem;
+        color: #888;
+        cursor: pointer;
+    }
+
+    .modal-close:hover {
+        color: #111;
+    }
+
+    @keyframes modalFade {
+        from {
+            opacity: 0;
+            transform: translateY(10px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+</style>
+
+<script>
+    function openModal(modalId) {
+        resetModal(modalId);
+
+        const modal = document.getElementById(modalId);
+        modal.style.display = 'flex';
+
+        const firstInput = modal.querySelector('input');
+        if (firstInput) {
+            firstInput.focus();
+        }
+    }
+
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.style.display = 'none';
+        resetModal(modalId);
+    }
+
+    function resetModal(modalId) {
+        const modal = document.getElementById(modalId);
+
+        modal.querySelectorAll('form').forEach(form => form.reset());
+
+        modal.querySelectorAll('.modal-message').forEach(msg => {
+            msg.textContent = '';
+            msg.removeAttribute('style');
+        });
+    }
+</script>
+
+{% endblock %}
