@@ -137,10 +137,10 @@
         </div>
         <div style="padding: 20px 24px; display: flex; gap: 12px; background: #fff;">
             <button type="button" class="btn-auth-outline"
-                style="flex: 1; padding: 14px; border-radius: 14px; font-weight: 600;"
+                style="flex: 1; padding: 14px; border-radius: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; text-align: center;"
                 onclick="closeCropModal()">취소</button>
             <button type="button" class="btn-auth-solid"
-                style="flex: 1; padding: 14px; background: var(--point-orange); border-radius: 14px; font-weight: 600; border: none; color: white;"
+                style="flex: 1; padding: 14px; background: var(--point-orange); border-radius: 14px; font-weight: 600; border: none; color: white; display: flex; align-items: center; justify-content: center; text-align: center;"
                 onclick="confirmCrop()">적용하기</button>
         </div>
     </div>
@@ -153,6 +153,24 @@
     /* [교정] 신고 탭에서는 브라우저 기본 PTR 및 스크롤 바운스 완전 차단 */
     main {
         overscroll-behavior-y: contain !important;
+    }
+
+    /* [고도화] 크로퍼 UI 커스텀 (모바일 터치 편의성 및 테마 통일) */
+    .cropper-point {
+        width: 12px !important;
+        height: 12px !important;
+        background-color: var(--point-orange) !important;
+        opacity: 0.9 !important;
+        border-radius: 50%;
+    }
+
+    .cropper-line,
+    .cropper-point.point-se::before {
+        background-color: var(--point-orange) !important;
+    }
+
+    .cropper-view-box {
+        outline: 2px solid var(--point-orange) !important;
     }
 </style>
 {% endblock %}
@@ -488,7 +506,7 @@
             if (window.cropper) { window.cropper.destroy(); window.cropper = null; }
             window.cropper = new Cropper(modalImg, {
                 viewMode: 1, dragMode: 'move', aspectRatio: 16 / 9,
-                autoCropArea: 1, restore: false, guides: true, center: true,
+                autoCropArea: 0.8, restore: false, guides: true, center: true,
                 highlight: false, cropBoxMovable: true, cropBoxResizable: true,
                 toggleDragModeOnDblclick: false, background: false
             });
