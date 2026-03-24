@@ -193,56 +193,95 @@
     }
 
     .page-title-box {
-      margin-bottom: 14px;
-      padding: 14px 16px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.94);
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.9);
       border: 1px solid var(--border);
-      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+      box-shadow: none;
       flex-shrink: 0;
     }
 
     .page-title {
-      font-size: 20px;
+      font-size: 16px;
       font-weight: 900;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.3px;
       color: #0f172a;
-      margin-bottom: 6px;
+      margin-bottom: 2px;
     }
 
     .page-subtitle {
-      font-size: 12px;
-      color: #7b8794;
-      font-weight: 600;
-      line-height: 1.5;
+      font-size: 11px;
+      color: #8a97a8;
+      font-weight: 700;
+      line-height: 1.4;
     }
 
     .page-title-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
+      display: block;
     }
 
     .page-title-wrap {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 2px;
       min-width: 0;
     }
 
-    .global-filter-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
+    .compare-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
       flex-shrink: 0;
     }
 
-    .risk-filter-chip {
-      min-width: 56px;
-      padding: 0 14px;
-      white-space: nowrap;
+    .compare-card {
+      border-radius: 14px;
+      border: 1px solid #e6ecf3;
+      background: rgba(248, 250, 252, 0.82);
+      padding: 12px 14px;
+      min-height: 78px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      box-shadow: none;
+    }
+
+    .compare-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #64748b;
+      margin-bottom: 7px;
+      letter-spacing: -0.15px;
+    }
+
+    .compare-value {
+      font-size: 18px;
+      line-height: 1.1;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.35px;
+      margin-bottom: 4px;
+    }
+
+    .compare-meta {
+      font-size: 11px;
+      line-height: 1.35;
+      color: #8a97a8;
+      font-weight: 700;
+    }
+
+    .compare-value.up {
+      color: #c2410c;
+    }
+
+    .compare-value.down {
+      color: #1d4ed8;
+    }
+
+    .compare-value.same {
+      color: #0f172a;
     }
 
     .summary-grid {
@@ -420,9 +459,9 @@
 
     .section-subtitle {
       font-size: 12px;
-      color: #7b8794;
-      font-weight: 600;
-      line-height: 1.4;
+      color: #7a8798;
+      font-weight: 700;
+      line-height: 1.45;
     }
 
     .mini-filter-chip {
@@ -481,7 +520,7 @@
       font-weight: 800;
       color: #64748b;
       margin-bottom: 8px;
-      letter-spacing: -0.2px;
+      letter-spacing: -0.15px;
     }
 
     .trend-summary-value {
@@ -701,7 +740,7 @@
       font-size: 13px;
       font-weight: 900;
       color: #0f172a;
-      letter-spacing: -0.2px;
+      letter-spacing: -0.15px;
     }
 
     .region-detail-head-count {
@@ -901,6 +940,10 @@
 }
 
 @media (max-width: 900px) {
+  .compare-row {
+    grid-template-columns: 1fr;
+  }
+
   .trend-summary-row {
     grid-template-columns: 1fr;
   }
@@ -946,10 +989,6 @@
     .page-title-row {
       flex-direction: column;
       align-items: stretch;
-    }
-
-    .global-filter-bar {
-      justify-content: flex-start;
     }
 
   .trend-filter-actions {
@@ -1010,13 +1049,25 @@
                 지역별 신고 분포와 기간별 추이를 기준별로 확인합니다.
               </div>
             </div>
+          </div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-card">
+            <div class="compare-label">전주 대비</div>
+            <div class="compare-value" id="weeklyCompareValue">-</div>
+            <div class="compare-meta" id="weeklyCompareMeta">이전 7일 대비</div>
+          </div>
 
-            <div class="global-filter-bar">
-              <button type="button" class="mini-filter-chip risk-filter-chip active" data-risk="all">전체</button>
-              <button type="button" class="mini-filter-chip risk-filter-chip" data-risk="high">고위험</button>
-              <button type="button" class="mini-filter-chip risk-filter-chip" data-risk="medium">중위험</button>
-              <button type="button" class="mini-filter-chip risk-filter-chip" data-risk="low">저위험</button>
-            </div>
+          <div class="compare-card">
+            <div class="compare-label">전월 대비</div>
+            <div class="compare-value" id="monthlyCompareValue">-</div>
+            <div class="compare-meta" id="monthlyCompareMeta">이전 30일 대비</div>
+          </div>
+
+          <div class="compare-card">
+            <div class="compare-label">최근 흐름 요약</div>
+            <div class="compare-value" id="trendCompareValue">-</div>
+            <div class="compare-meta" id="trendCompareMeta">최근 추이 기준</div>
           </div>
         </div>
         <div class="content-grid">
@@ -1111,7 +1162,6 @@
     let trendLineChart = null;
     let currentTrendRange = "7d";
     let currentOtherItems = null;
-    let currentRiskFilter = "all";
 
     function runPageTransition(href) {
       if (!href || pageTransitionRunning) return;
@@ -1174,7 +1224,7 @@ let currentPath = ["전국"];
 
 // ===== 3. 현재 노드 가져오기 =====
 function getCurrentNode() {
-  let node = regionDataMap[currentRiskFilter];
+  let node = regionDataMap.all;
   for (let key of currentPath) {
     node = node[key];
   }
@@ -1291,6 +1341,77 @@ function destroyTrendChart() {
     trendLineChart.destroy();
     trendLineChart = null;
   }
+}
+
+function formatDiff(current, previous) {
+  if (previous === null || previous === undefined) {
+    return {
+      text: "-",
+      meta: "비교 데이터 없음",
+      className: "same"
+    };
+  }
+
+  const diff = current - previous;
+  const percent = previous > 0 ? Math.round((diff / previous) * 100) : null;
+
+  if (diff > 0) {
+    return {
+      text: `+${diff}건`,
+      meta: previous > 0 ? `${previous}건 대비 ${percent}% 증가` : `이전 기간 0건`,
+      className: "up"
+    };
+  }
+
+  if (diff < 0) {
+    return {
+      text: `${diff}건`,
+      meta: previous > 0 ? `${previous}건 대비 ${Math.abs(percent)}% 감소` : `이전 기간 0건`,
+      className: "down"
+    };
+  }
+
+  return {
+    text: "변화 없음",
+    meta: `${previous}건과 동일`,
+    className: "same"
+  };
+}
+
+function updateCompareCards() {
+  const trend7 = trendDataMap.all["7d"];
+  const trend30 = trendDataMap.all["30d"];
+
+  if (!trend7 || !trend30) return;
+
+  const current7 = trend7.values.reduce((sum, value) => sum + value, 0);
+  const previous7 = Array.isArray(trend7.previous_values)
+    ? trend7.previous_values.reduce((sum, value) => sum + value, 0)
+    : null;
+
+  const current30 = trend30.values.reduce((sum, value) => sum + value, 0);
+  const previous30 = Array.isArray(trend30.previous_values)
+    ? trend30.previous_values.reduce((sum, value) => sum + value, 0)
+    : null;
+
+  const weekResult = formatDiff(current7, previous7);
+  const monthResult = formatDiff(current30, previous30);
+
+  const max7 = Math.max(...trend7.values);
+  const max7Index = trend7.values.indexOf(max7);
+  const max7Label = trend7.labels[max7Index];
+
+  document.getElementById("weeklyCompareValue").textContent = weekResult.text;
+  document.getElementById("weeklyCompareMeta").textContent = weekResult.meta;
+  document.getElementById("weeklyCompareValue").className = `compare-value ${weekResult.className}`;
+
+  document.getElementById("monthlyCompareValue").textContent = monthResult.text;
+  document.getElementById("monthlyCompareMeta").textContent = monthResult.meta;
+  document.getElementById("monthlyCompareValue").className = `compare-value ${monthResult.className}`;
+
+  document.getElementById("trendCompareValue").textContent = `${max7}건`;
+  document.getElementById("trendCompareMeta").textContent = `최근 7일 최고치는 ${max7Label}`;
+  document.getElementById("trendCompareValue").className = "compare-value same";
 }
 
 const centerTextPlugin = {
@@ -1526,7 +1647,7 @@ if (backBtn) {
 function renderTrendChart(range = currentTrendRange) {
   currentTrendRange = range;
 
-  const trend = trendDataMap[currentRiskFilter][range];
+  const trend = trendDataMap.all[range];
   if (!trend) return;
 
   console.log("range:", range);
@@ -1629,27 +1750,11 @@ document.querySelectorAll(".trend-filter-chip").forEach(btn => {
     renderTrendChart(range);
   });
 });
-document.querySelectorAll(".risk-filter-chip").forEach(btn => {
-  btn.addEventListener("click", () => {
-    currentRiskFilter = btn.dataset.risk;
-
-    document.querySelectorAll(".risk-filter-chip").forEach(chip => {
-      chip.classList.remove("active");
-    });
-
-    btn.classList.add("active");
-
-    currentPath = ["전국"];
-    currentOtherItems = null;
-
-    renderRegion();
-    renderTrendChart(currentTrendRange);
-  });
-});
 
 // ===== 8. 최초 실행 =====
 renderRegion();
 renderTrendChart();
+updateCompareCards();
   </script>
 </body>
 </html>

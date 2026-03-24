@@ -835,32 +835,32 @@ def admin_dashboard():
 
             dashboard_tab_map = {
                 'urgent': {
-                    'title': '긴급 조치 필요',
-                    'subtitle': '고위험 또는 반복 제보로 우선 확인이 필요한 신고입니다.',
+                    'title': '즉시 확인 필요',
+                    'subtitle': '고위험·반복 제보 우선 처리',
                     'items': urgent_all,
                     'more_url': '/admin/incidents?quick_filter=urgent'
                 },
                 'today': {
-                    'title': '오늘 접수 신고',
-                    'subtitle': '오늘 새로 등록된 신고 목록입니다.',
+                    'title': '오늘 유입 신고',
+                    'subtitle': '오늘 들어온 신고 흐름',
                     'items': today_all,
                     'more_url': '/admin/incidents?quick_filter=today'
                 },
                 'pending': {
-                    'title': '미처리 신고',
-                    'subtitle': '아직 검토 전인 신고 목록입니다.',
+                    'title': '검토 대기 신고',
+                    'subtitle': '첫 조치 전 신고 목록',
                     'items': pending_all,
                     'more_url': '/admin/incidents?quick_filter=pending'
                 },
                 'long_pending': {
-                    'title': '장기 미처리 신고',
-                    'subtitle': '24시간 이상 조치되지 않은 신고 목록입니다.',
+                    'title': '처리 병목 구간',
+                    'subtitle': '24시간 이상 지연 신고',
                     'items': long_pending_all,
                     'more_url': '/admin/incidents?quick_filter=long_pending'
                 },
                 'rejected': {
-                    'title': '반려 신고',
-                    'subtitle': '관리 기준에 따라 반려된 신고 목록입니다.',
+                    'title': '반려 품질 점검',
+                    'subtitle': '반려 기준과 사유 확인',
                     'items': rejected_all,
                     'more_url': '/admin/incidents?quick_filter=rejected'
                 }
@@ -2422,40 +2422,46 @@ def build_region_data_from_incidents(grouped_incidents):
 
 def build_trend_data_from_incidents(grouped_incidents):
     now_dt = datetime.now()
+    today = now_dt.date()
 
-    # 7일
-    labels_7d = []
-    values_7d = []
-
-    for i in range(6, -1, -1):
-        target_day = (now_dt - timedelta(days=i)).date()
-        labels_7d.append(target_day.strftime('%m-%d'))
-
-        count = sum(
+    def count_by_day(target_day):
+        return sum(
             1 for incident in grouped_incidents
             if incident.get('first_created_at')
             and incident.get('first_created_at').date() == target_day
         )
-        values_7d.append(count)
 
-    # 30일(주 단위 5칸)
+    # ===== 최근 7일 =====
+    labels_7d = []
+    values_7d = []
+
+    for i in range(6, -1, -1):
+        target_day = today - timedelta(days=i)
+        labels_7d.append(target_day.strftime('%m-%d'))
+        values_7d.append(count_by_day(target_day))
+
+    # ===== 이전 7일 =====
+    previous_values_7d = []
+    for i in range(13, 6, -1):
+        target_day = today - timedelta(days=i)
+        previous_values_7d.append(count_by_day(target_day))
+
+    # ===== 최근 30일 =====
     labels_30d = []
     values_30d = []
 
-    for i in range(4, -1, -1):
-        end_day = (now_dt - timedelta(days=i * 7)).date()
-        start_day = end_day - timedelta(days=6)
+    for i in range(29, -1, -1):
+        target_day = today - timedelta(days=i)
+        labels_30d.append(target_day.strftime('%m-%d'))
+        values_30d.append(count_by_day(target_day))
 
-        labels_30d.append(f"{5 - i}주")
+    # ===== 이전 30일 =====
+    previous_values_30d = []
+    for i in range(59, 29, -1):
+        target_day = today - timedelta(days=i)
+        previous_values_30d.append(count_by_day(target_day))
 
-        count = sum(
-            1 for incident in grouped_incidents
-            if incident.get('first_created_at')
-            and start_day <= incident.get('first_created_at').date() <= end_day
-        )
-        values_30d.append(count)
-
-    # 전체(최근 6개월)
+    # ===== 전체(최근 6개월) =====
     labels_all = []
     values_all = []
 
@@ -2480,11 +2486,13 @@ def build_trend_data_from_incidents(grouped_incidents):
     return {
         '7d': {
             'labels': labels_7d,
-            'values': values_7d
+            'values': values_7d,
+            'previous_values': previous_values_7d
         },
         '30d': {
             'labels': labels_30d,
-            'values': values_30d
+            'values': values_30d,
+            'previous_values': previous_values_30d
         },
         'all': {
             'labels': labels_all,
@@ -2655,4 +2663,4 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(host='localhost', port=5001, debug=True)
+    app.run(host='192.168.0.164', port=5001, debug=True)
