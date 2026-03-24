@@ -1,20 +1,25 @@
-{% extends 'layout.html' %}
+﻿{% extends 'layout.html' %}
 
 {% block title %}Report - Crack{% endblock %}
 
 {% block content %}
-<div class="page-header" style="margin-bottom: 24px;">
-    <h2 style="font-size: 0.9rem; opacity: 0.6;">포트홀 사진 또는 영상을 찍어 신고해 주세요.</p>
-</div>
-
+<!-- h2 포트홀 사진 또는 영상을 찍어 신고해주세요 삭제-->
 <!-- 로컬 공지 모달 제거 (layout.html 전역 모달 사용) -->
 
 <div class="report-form card" style="margin-bottom: 24px;">
+    <!--제목div 위로 올림-->
+    <div class="form-group" style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">제목</label>
+        <input type="text" id="report-title" placeholder="신고 제목을 입력해주세요" maxlength="30"
+            style="width: 100%; padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.9rem; font-family: inherit;">
+    </div>
+
     <!-- 버그 수정: 글로벌 모달 제거하고 무조건 file-input 강제 클릭 (os 창 딱 1회만 호출) -->
     <div class="upload-area" id="upload-area-box" onclick="triggerFileInput()"
         style="border: 2px dashed rgba(255,140,0, 0.4); border-radius: 20px; text-align: center; margin-bottom: 24px; cursor: pointer; transition: background 0.2s; aspect-ratio: 16 / 9; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; position: relative; overflow: hidden;">
 
-        <div id="upload-placeholder">
+        <div id="upload-placeholder"
+            style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
             <i class="bi bi-camera-reels-fill" style="font-size: 2.5rem; color: var(--point-orange); opacity: 0.8;"></i>
             <p id="selected-file-name" style="margin-top: 12px; font-weight: 600;">사진/영상 첨부 또는 직접 촬영</p>
             <span style="font-size: 0.75rem; opacity: 0.5;">동영상은 최대 100MB까지 가능합니다.</span>
@@ -30,19 +35,24 @@
         <img id="final-preview-image" src="" style="display: none; width: 100%; height: 100%; object-fit: cover;">
     </div>
 
-    <!-- 크롭 조작 메뉴 (사용자 요청: 모든 조절 버튼 제거) -->
-    <div id="crop-controls" style="display: none; margin-bottom: 24px;">
+    <!-- 크롭 조작 메뉴 -->
+    <div id="crop-controls" style="display: none; margin-bottom: 24px; gap: 10px; width: 100%;">
+        <button type="button" class="btn-auth-solid"
+            style="flex: 1; padding: 12px; font-size: 0.9rem; background: #5c5cff; border: none; display: flex; align-items: center; justify-content: center; gap: 6px;"
+            onclick="openCropModal()">
+            <i class="bi bi-scissors"></i> 사진 자르기
+        </button>
+        <button type="button" class="btn-auth-outline"
+            style="flex: 1; padding: 12px; font-size: 0.9rem; color: #ef4444; border-color: #ef4444; display: flex; align-items: center; justify-content: center; gap: 6px;"
+            onclick="removeImage()">
+            <i class="bi bi-trash3-fill"></i> 이미지 삭제
+        </button>
     </div>
 
     <!-- Hidden Inputs (단일화) -->
     <input type="file" id="file-input" accept="image/*,video/*" style="display: none;"
         onchange="handleFileSelection(this)">
 
-    <div class="form-group" style="margin-bottom: 20px;">
-        <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">제목</label>
-        <input type="text" id="report-title" placeholder="신고 제목을 입력해주세요" maxlength="30"
-            style="width: 100%; padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.9rem; font-family: inherit;">
-    </div>
 
     <div class="form-group" style="margin-bottom: 20px;">
         <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">위치 설정</label>
@@ -97,9 +107,9 @@
         </div>
     </div>
 
-    <div class="form-group" style="margin-bottom: 30px;">
-        <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">추가 설명</label>
-        <textarea id="report-content" rows="3" placeholder="상황에 대한 상세 내용을 적어주세요 (선택)"
+    <div class="form-group" style="margin-bottom: 15px;">
+        <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom:8px;">추가 설명</label>
+        <textarea id="report-content" rows="1" placeholder="상황에 대한 상세 내용을 적어주세요 (선택)"
             style="width: 100%; padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.9rem; resize: none; font-family: inherit;"></textarea>
     </div>
 
@@ -108,6 +118,32 @@
         onclick="submitReport()">
         신고 제출하기
     </button>
+</div>
+
+<!-- [추가] 전용 크롭 모달 (최상위 계층으로 독립 배치) -->
+<div id="cropModal"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100000; align-items: center; justify-content: center; padding: 15px; pointer-events: auto;">
+    <div
+        style="width: 100%; max-width: 500px; background: white; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; position: relative;">
+        <div
+            style="padding: 18px 24px; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0; color: #333;">사진 편집</h3>
+            <button type="button" onclick="closeCropModal()"
+                style="border: none; background: none; font-size: 1.8rem; line-height: 1; cursor: pointer; color: #999; padding: 0;">&times;</button>
+        </div>
+        <div
+            style="flex: 1; background: #000; display: flex; align-items: center; justify-content: center; min-height: 280px; max-height: 55vh; overflow: hidden; position: relative;">
+            <img id="modal-crop-image" style="max-width: 100%; display: block;" alt="crop preview">
+        </div>
+        <div style="padding: 20px 24px; display: flex; gap: 12px; background: #fff;">
+            <button type="button" class="btn-auth-outline"
+                style="flex: 1; padding: 14px; border-radius: 14px; font-weight: 600;"
+                onclick="closeCropModal()">취소</button>
+            <button type="button" class="btn-auth-solid"
+                style="flex: 1; padding: 14px; background: var(--point-orange); border-radius: 14px; font-weight: 600; border: none; color: white;"
+                onclick="confirmCrop()">적용하기</button>
+        </div>
+    </div>
 </div>
 
 <!-- 기존 불필요했던 히든 인풋 제거 -->
@@ -438,6 +474,57 @@
         reverseGeocode(lat, lng);
     }
 
+    // [추가] 크롭 모달 열기
+    function openCropModal() {
+        if (!selectedFile) return;
+        const modal = document.getElementById('cropModal');
+        const modalImg = document.getElementById('modal-crop-image');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            modalImg.src = e.target.result;
+            if (window.cropper) { window.cropper.destroy(); window.cropper = null; }
+            window.cropper = new Cropper(modalImg, {
+                viewMode: 1, dragMode: 'move', aspectRatio: 16 / 9,
+                autoCropArea: 1, restore: false, guides: true, center: true,
+                highlight: false, cropBoxMovable: true, cropBoxResizable: true,
+                toggleDragModeOnDblclick: false, background: false
+            });
+        };
+        reader.readAsDataURL(selectedFile);
+    }
+
+    // [추가] 크롭 모달 닫기
+    function closeCropModal() {
+        document.getElementById('cropModal').style.display = 'none';
+        document.body.style.overflow = '';
+        if (window.cropper) { window.cropper.destroy(); window.cropper = null; }
+    }
+
+    // [추가] 크롭 적용하기
+    function confirmCrop() {
+        if (!window.cropper) return;
+        const canvas = window.cropper.getCroppedCanvas({ maxWidth: 1600, maxHeight: 900, imageSmoothingQuality: 'high' });
+        if (canvas) {
+            const previewImg = document.getElementById('final-preview-image');
+            previewImg.src = canvas.toDataURL('image/jpeg', 0.9);
+            canvas.toBlob((blob) => {
+                const ext = selectedFile.name.split('.').pop();
+                const croppedFile = new File([blob], 'cropped_' + Date.now() + '.' + ext, { type: 'image/jpeg' });
+                selectedFile = croppedFile;
+            }, 'image/jpeg', 0.9);
+            if (typeof showToastMsg === 'function') showToastMsg('사진이 성공적으로 편집되었습니다.');
+            closeCropModal();
+        }
+    }
+
+    // [추가] 이미지 삭제
+    function removeImage() {
+        if (typeof showToastMsg === 'function') showToastMsg('이미지가 삭제되었습니다.');
+        cancelCrop();
+    }
+
     // 자르기 완료 함수 (사용자 요청으로 제거: 제출 시 자동 처리)
     function finishCrop() {
         console.log("finishCrop is now automated via submission.");
@@ -453,7 +540,7 @@
         document.getElementById('upload-placeholder').style.display = "flex";
         document.getElementById('selected-file-name').innerText = "사진/영상 첨부 또는 직접 촬영";
         document.getElementById('selected-file-name').style.color = "inherit";
-        restoreMapState(); // 초기화 시 지도도 정상 상태로 복구
+        restoreMapState();
     }
 
     function getCroppedBlob() {
@@ -891,7 +978,7 @@
         if (!offset) return null;
         const absOffset = base + offset;
         const d = view.getUint32(absOffset, littleEndian) / view.getUint32(absOffset + 4, littleEndian);
-        const m = view.getUint32(absOffset + 8, littleEndian) / view.getUint32(absOffset + 12, littleEndian);
+        const m = view.getUint32(absOffset + 8, littlw.getUint32(absOffset + 12, littleEndian);
         const s = view.getUint32(absOffset + 16, littleEndian) / view.getUint32(absOffset + 20, littleEndian);
         return d + (m / 60) + (s / 3600);
     }

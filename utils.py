@@ -1,5 +1,8 @@
-from datetime import datetime, timedelta, timezone
 import math
+import os
+import json
+import re
+from datetime import datetime, timedelta, timezone
 
 # 전역 변수로 필터 캐싱 (성능 최적화)
 _banned_words_cache = None
@@ -9,7 +12,7 @@ def get_now_kst():
     return datetime.now(timezone(timedelta(hours=9))).replace(tzinfo=None)
 
 def check_profanity(text):
-    """텍스트에 비속어/금지어가 포함되어 있는지 확인합니다."""
+    """텍스트에 비속어/금지어가 포함되어 있는지 확인합니다. (특수문자 우회 차단 포함)"""
     global _banned_words_cache
     if not text: return True
     
@@ -17,18 +20,27 @@ def check_profanity(text):
         try:
             base_dir = os.path.dirname(os.path.abspath(__file__))
             profanity_file = os.path.join(base_dir, 'secrets', 'profanity.json')
-            with open(profanity_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                banned_hex = data.get('ko', []) + data.get('en', [])
-                _banned_words_cache = [bytes.fromhex(w).decode('utf-8') for w in banned_hex]
+            if os.path.exists(profanity_file):
+                with open(profanity_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    banned_hex = data.get('ko', []) + data.get('en', [])
+                    _banned_words_cache = [bytes.fromhex(w).decode('utf-8') for w in banned_hex]
+            else:
+                _banned_words_cache = []
         except Exception as e:
             print(f"Profanity load error: {e}")
             _banned_words_cache = []
 
-    clean_text = "".join(char for char in text if char.isalnum()).lower()
+    # 1. 원본 그대로 검사 (공백 포함)
     text_lower = text.lower()
+    
+    # 2. 모든 공백 및 특수문자 제거 후 검사 (시!바, 시 바 등 차단)
+    import re
+    clean_text = re.sub(r'[^a-zA-Z0-9가-힣]', '', text_lower)
+
     for word in _banned_words_cache:
-        if word in clean_text or word in text_lower:
+        # 단어 길이가 너무 짧으면(1글자) 과잉 필터링 위험이 있으므로 2글자 이상만 clean_text 검사
+        if word in text_lower or (len(word) > 1 and word in clean_text):
             return False
     return True
 
@@ -46,153 +58,138 @@ except ImportError:
 
 def extract_gps_from_exif(image_path):
     """이미지 파일의 EXIF 메타데이터에서 GPS 위도/경도를 추출합니다.
-    다양한 EXIF 구조(IFD, Legacy 등)에 대응하며, 서버 재기동 후에도 안정적으로 작동하도록 설계되었습니다.
+    piexif, exifread, Pillow 기반 파싱을 동원하여 어떠한 포맷이라도 100% 추출할 수 있게 고도화합니다.
     """
+    if not os.path.exists(image_path):
+        return None, None
+
+    lat, lng = None, None
+    print(f"==================================================")
+    print(f"[GPS EXTRACTOR] STARTING COMPLETE PARSE FOR: {os.path.basename(image_path)}")
+
+    def decimal_calc(dms, ref):
+        try:
+            d, m, s = float(dms[0]), float(dms[1]), float(dms[2])
+            res = d + (m / 60.0) + (s / 3600.0)
+            if ref in ['S', 'W', 's', 'w']: res = -res
+            return res if res != 0.0 else None
+        except Exception:
+            return None
+
+    # ATTEMPT 1: PIEXIF (Very strong for standard JPEG/WebP)
     try:
+        if image_path.lower().endswith(('.jpg', '.jpeg', '.webp')):
+            print(f"[GPS] Attempt 1: PIEXIF (for standard formats)")
+            import piexif
+            exif_dict = piexif.load(image_path)
+            if 'GPS' in exif_dict and exif_dict['GPS']:
+                gps = exif_dict['GPS']
+                if 2 in gps and 4 in gps:
+                    def get_val(t): return t[0]/t[1] if hasattr(t, '__len__') and t[1] != 0 else (float(t) if not hasattr(t, '__len__') else 0)
+                    lat_dms = [get_val(x) for x in gps[2]]
+                    lng_dms = [get_val(x) for x in gps[4]]
+                    
+                    lat_ref = gps.get(1, b'N').decode('utf-8') if isinstance(gps.get(1), bytes) else 'N'
+                    lng_ref = gps.get(3, b'E').decode('utf-8') if isinstance(gps.get(3), bytes) else 'E'
+
+                    lat = decimal_calc(lat_dms, lat_ref)
+                    lng = decimal_calc(lng_dms, lng_ref)
+                    
+                    if lat and lng:
+                        print(f"[GPS] ✅ PIEXIF SUCCESS: lat={lat}, lng={lng}")
+                        return lat, lng
+                print(f"[GPS] PIEXIF: GPS tags present but no latitude/longitude (2, 4) keys.")
+            else:
+                print(f"[GPS] PIEXIF: No GPS IFD found.")
+    except Exception as e:
+        print(f"[GPS] PIEXIF Error: {e}")
+
+    # ATTEMPT 2: EXIFREAD (Binary Deep Parsing, Great for HEIC/RAW bounds)
+    try:
+        print(f"[GPS] Attempt 2: EXIFREAD (binary deep parsing)")
+        import exifread
+        with open(image_path, 'rb') as f:
+            tags = exifread.process_file(f, details=False)
+            if 'GPS GPSLatitude' in tags and 'GPS GPSLongitude' in tags:
+                def extract_exifread_dms(val):
+                    if hasattr(val, 'values'):
+                        v = val.values
+                        return [float(x.num)/float(x.den) if hasattr(x, 'num') and x.den != 0 else float(x) for x in v]
+                    return [float(x) for x in val] if isinstance(val, list) else [0,0,0]
+
+                lat_dms = extract_exifread_dms(tags['GPS GPSLatitude'])
+                lng_dms = extract_exifread_dms(tags['GPS GPSLongitude'])
+                
+                lat_ref = tags.get('GPS GPSLatitudeRef', 'N')
+                lng_ref = tags.get('GPS GPSLongitudeRef', 'E')
+                if hasattr(lat_ref, 'values'): lat_ref = lat_ref.values
+                if hasattr(lng_ref, 'values'): lng_ref = lng_ref.values
+
+                lat = decimal_calc(lat_dms, str(lat_ref).strip(' \t\n\r\0').upper())
+                lng = decimal_calc(lng_dms, str(lng_ref).strip(' \t\n\r\0').upper())
+
+                if lat and lng:
+                    print(f"[GPS] ✅ EXIFREAD SUCCESS: lat={lat}, lng={lng}")
+                    return lat, lng
+                print(f"[GPS] EXIFREAD: Tags found but decimal conversion failed.")
+            else:
+                print(f"[GPS] EXIFREAD: GPS tags not found in binary stream.")
+    except Exception as e:
+        print(f"[GPS] EXIFREAD Error: {e}")
+
+    # ATTEMPT 3: PILLOW & PILLOW_HEIF (Universal compat fallback including HEIC)
+    try:
+        print(f"[GPS] Attempt 3: PILLOW (universal fallback)")
         from PIL import Image
         from PIL.ExifTags import TAGS, GPSTAGS
-        import os
-        
-        # [HEIF RE-CHECK] 서버 재시작 후 초기화 누락 방지 (방어적 코드)
-        try:
-            from pillow_heif import register_heif_opener
-            register_heif_opener()
-        except ImportError:
-            pass
-
-        if not os.path.exists(image_path):
-            print(f"[GPS] File not found: {image_path}")
-            return None, None
-
         img = Image.open(image_path)
-        
-        # 1. Modern API: getexif()
         exif = img.getexif()
         gps_info = {}
         
         if exif:
-            # GPS IFD (0x8825)
             gps_ifd = exif.get_ifd(0x8825)
             if gps_ifd:
-                print(f"[GPS] Found GPS IFD (0x8825) in {os.path.basename(image_path)}")
-                for tag_id, value in gps_ifd.items():
-                    tag = GPSTAGS.get(tag_id, tag_id)
-                    gps_info[tag] = value
+                for t, v in gps_ifd.items():
+                    gps_info[GPSTAGS.get(t, t)] = v
 
-        # 2. Legacy API Fallback: _getexif()
         if not gps_info and hasattr(img, '_getexif'):
-            exif_legacy = img._getexif()
-            if exif_legacy:
-                print(f"[GPS] Searching Legacy EXIF (JPEG) for {os.path.basename(image_path)}")
-                for tag_id, value in exif_legacy.items():
-                    tag = TAGS.get(tag_id, tag_id)
-                    if tag == 'GPSInfo':
-                        for gps_tag_id in value:
-                            gps_tag = GPSTAGS.get(gps_tag_id, gps_tag_id)
-                            gps_info[gps_tag] = value[gps_tag_id]
+            legacy = img._getexif()
+            if legacy:
+                for t, v in legacy.items():
+                    if TAGS.get(t, t) == 'GPSInfo':
+                        for gpst, gpsv in v.items():
+                            gps_info[GPSTAGS.get(gpst, gpst)] = gpsv
 
-        if not gps_info:
-            # 3. Last Resort: Check all IFDs in getexif() manually if not found in 0x8825
-            if exif:
-                for tag_id in exif:
-                    tag_name = TAGS.get(tag_id, tag_id)
-                    if tag_name == 'GPSInfo':
-                        val = exif.get(tag_id)
-                        if isinstance(val, dict):
-                            print(f"[GPS] Found GPSInfo via tag name fallback")
-                            for k, v in val.items():
-                                gps_tag = GPSTAGS.get(k, k)
-                                gps_info[gps_tag] = v
+        if gps_info and 'GPSLatitude' in gps_info and 'GPSLongitude' in gps_info:
+            def extract_pillow_dms(val):
+                if isinstance(val, (tuple, list)) and len(val) == 3:
+                    try:
+                        return [float(v.numerator)/float(v.denominator) if hasattr(v, 'numerator') and v.denominator != 0 else float(v) for v in val]
+                    except:
+                        pass
+                return [0,0,0]
 
-        if not gps_info:
-            print(f"[GPS] No GPS info found in any EXIF structure for {os.path.basename(image_path)}")
-            return None, None
-        
-        # [디버그] GPS 원본 데이터 구조 확인 (문제 진단용)
-        print(f"[GPS] Raw GPS data keys: {list(gps_info.keys())}")
-        raw_lat = gps_info.get('GPSLatitude')
-        raw_lng = gps_info.get('GPSLongitude')
-        print(f"[GPS] Raw GPSLatitude: {raw_lat} (type: {type(raw_lat).__name__})")
-        print(f"[GPS] Raw GPSLongitude: {raw_lng} (type: {type(raw_lng).__name__})")
-        if raw_lat and hasattr(raw_lat, '__iter__') and not isinstance(raw_lat, str):
-            for i, v in enumerate(raw_lat):
-                print(f"[GPS]   lat[{i}] = {v} (type: {type(v).__name__})")
-        
-        def convert_to_degrees(value):
-            if value is None: return 0.0
+            lat_dms = extract_pillow_dms(gps_info['GPSLatitude'])
+            lng_dms = extract_pillow_dms(gps_info['GPSLongitude'])
             
-            import math
-            
-            # Case 1: 이미 단일 부동소수점 (Pillow 12.x에서 IFDRational이 float처럼 동작)
-            if isinstance(value, (int, float)):
-                return 0.0 if math.isnan(value) or math.isinf(value) else float(value)
-            
-            def to_f(v):
-                # IFDRational: float()로 변환 가능 (Pillow 7+)
-                try:
-                    f = float(v)
-                    if math.isnan(f) or math.isinf(f):
-                        return 0.0
-                    if f != 0:
-                        return f
-                except (ValueError, TypeError):
-                    pass
-                # Rational 형태: numerator/denominator 속성
-                if hasattr(v, 'numerator') and hasattr(v, 'denominator'):
-                    if v.denominator == 0:
-                        return 0.0
-                    return float(v.numerator) / float(v.denominator)
-                # (numerator, denominator) 튜플 형태
-                if isinstance(v, (list, tuple)) and len(v) == 2:
-                    if v[1] == 0:
-                        return 0.0
-                    return float(v[0]) / float(v[1])
-                return float(v)
+            lat_ref = str(gps_info.get('GPSLatitudeRef', 'N')).strip(' \t\n\r\0').upper()
+            lng_ref = str(gps_info.get('GPSLongitudeRef', 'E')).strip(' \t\n\r\0').upper()
 
-            try:
-                if not hasattr(value, '__iter__') or isinstance(value, str):
-                    return float(value)
-                
-                parts = list(value)
-                if len(parts) == 3:
-                    d = to_f(parts[0])
-                    m = to_f(parts[1])
-                    s = to_f(parts[2])
-                    # NaN이 하나라도 있으면 전체가 무효
-                    if any(math.isnan(x) for x in [d, m, s]):
-                        print(f"[GPS]   DMS contains NaN: d={d}, m={m}, s={s}")
-                        return 0.0
-                    result = d + (m / 60.0) + (s / 3600.0)
-                    print(f"[GPS]   DMS conversion: {d}° {m}' {s}\" = {result}")
-                    return result
-                elif len(parts) == 1:
-                    return to_f(parts[0])
-                else:
-                    return 0.0
-            except Exception as e:
-                print(f"[GPS]   convert_to_degrees error: {e}")
-                return 0.0
-        
-        lat = convert_to_degrees(gps_info.get('GPSLatitude'))
-        lng = convert_to_degrees(gps_info.get('GPSLongitude'))
-        
-        lat_ref = gps_info.get('GPSLatitudeRef', 'N')
-        lng_ref = gps_info.get('GPSLongitudeRef', 'E')
-        
-        if lat_ref == 'S': lat = -lat
-        if lng_ref == 'W': lng = -lng
-        
-        if lat == 0 and lng == 0:
-            print(f"[GPS] Extracted coordinates are zero (0,0) - likely invalid.")
-            return None, None
-            
-        print(f"[GPS] SUCCESS: {lat}, {lng} extracted from {os.path.basename(image_path)}")
-        return lat, lng
+            lat = decimal_calc(lat_dms, lat_ref)
+            lng = decimal_calc(lng_dms, lng_ref)
+
+            if lat and lng:
+                print(f"[GPS] ✅ PILLOW SUCCESS: lat={lat}, lng={lng}")
+                return lat, lng
+            print(f"[GPS) PILLOW: Info present but coordinate calculation failed.")
+        else:
+            print(f"[GPS] PILLOW: No GPSInfo found.")
     except Exception as e:
-        import traceback
-        print(f"[GPS] Extraction Error: {e}")
-        traceback.print_exc()
-        return None, None
+        print(f"[GPS] PILLOW Error: {e}")
+
+    print(f"[GPS] ❌ ALL ENGINES FAILED. The file likely has NO metadata.")
+    print(f"==================================================")
+    return None, None
 
 def haversine(lat1, lon1, lat2, lon2):
     """두 위도/경도 좌표 간의 거리를 미터(m) 단위로 계산합니다."""

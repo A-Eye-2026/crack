@@ -203,13 +203,26 @@
     } catch (e) { console.error(e); }
 
     // 이전에 정의된 함수들이 있으면 정리 (중복 실행 방지)
+    // 반려 사유 모달 통합 처리 (버그 수정: 중복 정의 제거 및 인자 정상화)
     window.showRejectReason = function (event, element) {
-        if (event) event.stopPropagation();
-        const reason = element.getAttribute('data-reason');
-        if (typeof showNoticeModal === 'function') {
-            showNoticeModal(reason || '상세 사유가 등록되지 않았습니다.');
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        const reason = element.getAttribute('data-reason') || '관리자가 사유를 기재하지 않았습니다.';
+        console.log("[Status] Showing reject reason:", reason);
+
+        const reasonText = document.getElementById('reject-reason-text');
+        const modal = document.getElementById('reject-modal-overlay');
+
+        if (reasonText && modal) {
+            reasonText.innerText = reason;
+            modal.style.display = 'flex';
+        } else if (typeof showNoticeModal === 'function') {
+            showNoticeModal(reason);
         } else {
-            alert(reason || '상세 사유가 등록되지 않았습니다.');
+            alert(reason);
         }
     }
 
@@ -371,17 +384,7 @@
         }
     }
 
-    window.showRejectReason = function (elem) {
-        const reason = elem.getAttribute('data-reason') || '관리자가 사유를 기재하지 않았습니다.';
-        const reasonText = document.getElementById('reject-reason-text');
-        const modal = document.getElementById('reject-modal-overlay');
-        if (reasonText && modal) {
-            reasonText.innerText = reason;
-            modal.style.display = 'flex';
-            // 클릭 이벤트 전파 방지 (혹시 모를 중복 방지)
-            if (event) event.stopPropagation();
-        }
-    }
+    // 중복 제거됨 (상단 통합 함수 사용)
 
     window.closeRejectModal = function () {
         const modal = document.getElementById('reject-modal-overlay');

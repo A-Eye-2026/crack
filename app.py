@@ -151,8 +151,8 @@ def haversine_m(lat1, lon1, lat2, lon2):
 def get_priority_score(report, now=None):
     if now is None: now = datetime.now()
     score = 0
-    # AI 신뢰도를 위험 점수로 활용
-    confidence = report.ai_result.confidence if report.ai_result else 0
+    # AI 신뢰도를 위험 점수로 활용 (None 방어 코드)
+    confidence = float(report.ai_result.confidence or 0) if report.ai_result else 0
     status = report.status
     created_at = report.created_at
 
@@ -267,7 +267,7 @@ def admin_dashboard():
     # 리포트 객체에 urgent_reason 속성 추가 (템플릿 호환용)
     for r in display_list:
         reasons = []
-        if (r.ai_result.confidence if r.ai_result else 0) >= 80: reasons.append('고위험')
+        if (float(r.ai_result.confidence or 0) if r.ai_result else 0) >= 80: reasons.append('고위험')
         if getattr(r, 'reporter_count', 1) >= 3: reasons.append('반복 제보')
         if r.status == '관리자 확인중' and (now - r.created_at).total_seconds() >= 86400: reasons.append('장기 미처리')
         # 반려된 신고일 경우 적절한 텍스트 표시
@@ -299,7 +299,7 @@ def admin_dashboard():
                 'lng': float(r.longitude),
                 'status': r.status or '관리자 확인중',
                 'address': r.address or '주소 없음',
-                'confidence': float(r.ai_result.confidence) if r.ai_result else 0
+                'confidence': float(r.ai_result.confidence or 0) if r.ai_result else 0
             })
 
     return render_template('admin_dashboard.html', 

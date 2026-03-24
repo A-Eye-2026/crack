@@ -23,7 +23,9 @@
                 onmouseout="this.style.borderColor='rgba(0,0,0,0.1)'">
 
             <div style="position: relative; display: flex; align-items: center; width: 100%;">
-                <input type="text" name="username" id="uid" placeholder="아이디" required
+                <input type="text" name="username" id="uid" placeholder="아이디(영문, 숫자)" required pattern="[a-zA-Z0-9]+"
+                    title="영문 대소문자와 숫자만 입력 가능합니다."
+                    oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '')"
                     style="width: 100%; padding: 14px 105px 14px 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.95rem; outline: none; transition: 0.2s; background: white;"
                     onmouseover="this.style.borderColor='var(--point-orange)'"
                     onmouseout="this.style.borderColor='rgba(0,0,0,0.1)'">
@@ -35,11 +37,15 @@
             <div id="id-check-msg" style="font-size: 0.8rem; margin-left: 5px; min-height: 14px; margin-top: -4px;">
             </div>
 
-            <input type="password" name="password" id="password" placeholder="비밀번호" required
+
+           <input type="password" name="password" id="password" placeholder="비밀번호" required pattern="[a-zA-Z0-9!@#$%^&*]+"
+                title="영문, 숫자, 특수문자만 입력 가능합니다."
+                oninput="this.value = this.value.replace(/[^a-zA-Z0-9!@#$%^&*]/g, '')"
                 style="padding: 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.95rem; outline: none; transition: 0.2s; background: white;"
                 onmouseover="this.style.borderColor='var(--point-orange)'"
                 onmouseout="this.style.borderColor='rgba(0,0,0,0.1)'">
-            <input type="password" name="password_confirm" id="password_check" placeholder="비밀번호 재확인" required
+
+           <input type="password" name="password_confirm" id="password_check" placeholder="비밀번호 재확인" required oninput="this.value = this.value.replace(/[^a-zA-Z0-9!@#$%^&*]/g, '')"
                 style="padding: 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.95rem; outline: none; transition: 0.2s; margin-bottom: 2px; background: white;"
                 onmouseover="this.style.borderColor='var(--point-orange)'"
                 onmouseout="this.style.borderColor='rgba(0,0,0,0.1)'">

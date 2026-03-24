@@ -28,30 +28,24 @@
         min-height: calc(100vh - 150px);
     }
 
-    /* [추가] PPT 모드 최적화: 헤더 숨김 및 여백 조정 */
+    /* [추가] PPT 모드 최적화: 헤더 숨김 및 여백 조정 (ppt=1 파라미터가 있는 경우에만 작동) */
     body.ppt-mode header,
     body.ppt-mode nav,
     body.ppt-mode .page-header,
     body.ppt-mode .admin-pc-btn,
     body.ppt-mode .bottom-nav,
-    body.ppt-mode footer,
-    html.ppt-mode-active body header,
-    html.ppt-mode-active body nav,
-    html.ppt-mode-active body .page-header,
-    html.ppt-mode-active body .admin-pc-btn,
-    html.ppt-mode-active body .bottom-nav,
-    html.ppt-mode-active body footer {
+    body.ppt-mode footer {
         display: none !important;
     }
 
     body.ppt-mode {
-        background: #fff !important;
+        background: transparent !important;
+        /* 배경 투명화 */
         overflow: hidden !important;
         height: 100vh !important;
         position: fixed !important;
         width: 100vw !important;
         overscroll-behavior: none !important;
-        /* [추가] 브라우저 바운스 및 흔들림 방지 */
     }
 
     body.ppt-mode .dashboard-container {
@@ -61,13 +55,15 @@
         width: 100% !important;
         max-width: none !important;
         height: 100vh !important;
-        padding: 5px 15px !important;
-        /* 여백 최소화 */
+        padding: 0 !important;
+        /* 여백 완전 제거 */
         border-radius: 0 !important;
         overflow: hidden !important;
         display: flex;
         flex-direction: column;
         position: relative;
+        background: transparent !important;
+        /* 컨테이너 배경도 투명 */
     }
 
     body.ppt-mode .summary-grid {
@@ -79,16 +75,20 @@
     }
 
     body.ppt-mode .summary-card {
-        padding: 15px 10px !important;
+        padding: 12px 8px !important;
         height: auto !important;
     }
 
     body.ppt-mode .summary-value {
-        font-size: 20px !important;
+        font-size: 18px !important;
     }
 
     body.ppt-mode .summary-value strong {
-        font-size: 24px !important;
+        font-size: 22px !important;
+    }
+
+    body.ppt-mode .summary-meta {
+        font-size: 9px !important;
     }
 
     body.ppt-mode .main-split {
@@ -828,7 +828,12 @@
                         </div>
                     </div>
                     <div class="card-reason">
-                        {% if report.urgent_reason %}{{ report.urgent_reason }}{% endif %}
+                        {% if report.status == '반려' %}
+                        <span style="color: #ef4444; font-weight: 800;"><i class="bi bi-chat-dots-fill"></i> 사유: {{
+                            (report.reject_reason if report.reject_reason else '사유 미기재') }}</span>
+                        {% elif report.urgent_reason %}
+                        {{ report.urgent_reason }}
+                        {% endif %}
                     </div>
                     <div class="card-bottom">
                         <div class="card-time"><i class="bi bi-clock"></i> {{ report.created_at.strftime('%m-%d %H:%M')

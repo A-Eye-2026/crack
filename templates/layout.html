@@ -393,10 +393,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100%;
+            justify-content: flex-start;
+            min-height: 100%;
             padding: 40px 20px;
             text-align: center;
+            overflow-y: auto;
         }
 
         .auth-brand {
@@ -1013,11 +1014,14 @@
         display: none !important;
     }
 
-    /* 공통: 발표 시 상단 헤더 숨김 */
-    body.ppt-mode header,
-    html.ppt-mode-active body header,
+    /* 공통: 발표 시 관리자 전환 버튼 숨김 */
     body.ppt-mode .admin-pc-btn,
     html.ppt-mode-active body .admin-pc-btn {
+        display: none !important;
+    }
+
+    /* 관리자 대시보드 전용: PPT 모드(ppt=1 파라미터 존재 시)에서만 상단바 완전 차단 */
+    body.ppt-mode.admin-dashboard-page header {
         display: none !important;
     }
 
