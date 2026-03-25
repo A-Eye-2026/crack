@@ -36,6 +36,7 @@ db_port = os.getenv('DB_PORT')
 db_name = os.getenv('DB_NAME')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?ssl_ca={certifi.where()}"
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True, 
@@ -57,7 +58,11 @@ for d in [UPLOAD_IMAGE_DIR, UPLOAD_VIDEO_DIR]:
         os.makedirs(d)
 
 # DB 초기화
-db.init_app(app)
+# app.py 60~62라인쯤에 추가
+print("DEBUG: SQLALCHEMY_DATABASE_URI =", app.config.get('SQLALCHEMY_DATABASE_URI'))
+
+db.init_app(app) # 63라인
+
 
 # AI 모델 로드
 try:

@@ -10,6 +10,7 @@ class Member(db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     points = db.Column(db.Integer, default=0) # 크래커 포인트
     created_at = db.Column(db.DateTime, default=get_now_kst)
+    email = db.Column(db.String(120), unique=True, nullable=False)
 
 class Report(db.Model):
     __tablename__ = 'report'

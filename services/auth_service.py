@@ -30,33 +30,57 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
+
+# ... 기존 import 생략
+
 @auth_bp.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         nickname = request.form.get('nickname')
-        
-        # 닉네임 정책 검증 (20자 제한 + 비속어 필터링)
+        email = request.form.get('email')  # 이메일 추가
+
+        # 기본 검증
         if not nickname or len(nickname) > 20:
             return render_template('signup.html', error="닉네임은 1자 이상 20자 이하로 입력해주세요.")
-            
-        if not check_profanity(nickname):
-            return render_template('signup.html', error="닉네임에 부적절한 단어가 포함되어 있습니다. 바른 말을 사용해 주세요.")
 
+        if not check_profanity(nickname):
+            return render_template('signup.html', error="닉네임에 부적절한 단어가 포함되어 있습니다.")
+
+        # 중복 검사 (아이디 & 이메일)
         if Member.query.filter_by(username=username).first():
             return render_template('signup.html', error="이미 존재하는 아이디입니다.")
-            
+
+        if Member.query.filter_by(email=email).first():  # 이메일 중복 체크 추가
+            return render_template('signup.html', error="이미 등록된 이메일입니다.")
+
         hashed_pw = generate_password_hash(password)
-        new_user = Member(username=username, password_hash=hashed_pw, nickname=nickname, points=0)
+        # DB 모델에 email 필드가 있다고 가정 (new_user 생성 시 추가)
+        new_user = Member(username=username, password_hash=hashed_pw, nickname=nickname, email=email, points=0)
         db.session.add(new_user)
         db.session.commit()
-        
+
         return redirect(url_for('auth.login'))
-        
-        return redirect(url_for('auth.login'))
-        
+
     return render_template('signup.html')
+
+
+# 이메일 중복 확인 API 추가
+@auth_bp.route('/api/check_email', methods=['POST'])
+def check_email():
+    data = request.get_json()
+    email = data.get('email')
+
+    if not email:
+        return jsonify({'available': False, 'message': '이메일을 입력해주세요.'}), 409
+
+    user = Member.query.filter_by(email=email).first()
+    if user:
+        return jsonify({'available': False, 'message': '이미 사용 중인 이메일입니다.'})
+    else:
+        return jsonify({'available': True, 'message': '사용 가능한 이메일입니다.'})
+
 
 @auth_bp.route('/api/check_id', methods=['POST'])
 def check_id():
@@ -71,3 +95,64 @@ def check_id():
         return jsonify({'available': False, 'message': '이미 존재하는 아이디입니다.'})
     else:
         return jsonify({'available': True, 'message': '사용 가능한 아이디입니다.'})
+
+
+@auth_bp.route('/api/find-id', methods=['POST'])
+def find_id():
+    data = request.get_json()
+    nickname = data.get('name')
+    email = data.get('email')
+
+    # DB에서 이름(nickname)과 이메일이 모두 일치하는 사용자 검색
+    user = Member.query.filter_by(nickname=nickname, email=email).first()
+
+    if user:
+        return jsonify({
+            'success': True,
+            'username': user.username,
+            'message': f"찾으시는 아이디는 '{user.username}' 입니다."
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': "일치하는 회원 정보가 없습니다."
+        })
+
+
+@auth_bp.route('/api/find-pw', methods=['POST'])
+def find_password():
+    data = request.get_json()
+    username = data.get('username')
+    email = data.get('email')
+
+    # 아이디와 이메일이 모두 일치하는 유저 찾기
+    user = Member.query.filter_by(username=username, email=email).first()
+
+    if user:
+        # 보안상 실제 비밀번호를 보여줄 순 없으므로, 확인되었다는 메시지만 전달
+        # 실제 서비스라면 여기서 비밀번호 재설정 페이지로 유도하거나 임시 비번을 보냅니다.
+        return jsonify({
+            'success': True,
+            'message': "사용자 정보가 확인되었습니다. 비밀번호를 재설정하시겠습니까?"
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': "일치하는 회원 정보가 없습니다."
+        })
+
+
+@auth_bp.route('/api/reset-pw', methods=['POST'])
+def reset_pw():
+    data = request.get_json()
+    username = data.get('username')
+    new_password = data.get('password')
+
+    user = Member.query.filter_by(username=username).first()
+    if user:
+        # 새로운 비밀번호 해싱 후 저장
+        user.password_hash = generate_password_hash(new_password)
+        db.session.commit()
+        return jsonify({'success': True, 'message': '비밀번호가 성공적으로 변경되었습니다.'})
+
+    return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
