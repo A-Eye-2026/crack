@@ -40,11 +40,29 @@ if not exist "%~dp0.venv" (
     "%PYTHON_EXE%" -m venv "%~dp0.venv"
 )
 
-:: 4. 필수 라이브러리 설치
-echo [*] Installing libraries (this may take a few minutes)...
-call "%~dp0.venv\Scripts\activate.bat"
-python -m pip install --upgrade pip >nul 2>&1
-pip install -r "%~dp0requirements.txt"
+:: 4. 필수 라이브러리 설치 (변경 시에만 실행)
+set "REQ_FILE=%~dp0requirements.txt"
+set "INSTALLED_FLAG=%~dp0.venv\installed_requirements.txt"
+
+echo [*] Checking libraries...
+set "NEED_INSTALL=no"
+if not exist "%INSTALLED_FLAG%" (
+    set "NEED_INSTALL=yes"
+) else (
+    fc "%REQ_FILE%" "%INSTALLED_FLAG%" >nul 2>&1
+    if errorlevel 1 set "NEED_INSTALL=yes"
+)
+
+if "%NEED_INSTALL%"=="yes" (
+    echo [*] Installing/Updating libraries (this may take a few minutes)...
+    call "%~dp0.venv\Scripts\activate.bat"
+    python -m pip install --upgrade pip >nul 2>&1
+    pip install -r "%REQ_FILE%"
+    copy /y "%REQ_FILE%" "%INSTALLED_FLAG%" >nul
+) else (
+    echo [*] All libraries are up to date. Skipping install.
+    call "%~dp0.venv\Scripts\activate.bat"
+)
 
 :: 5. 서버 실행
 cls

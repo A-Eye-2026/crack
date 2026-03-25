@@ -522,16 +522,14 @@
 
         #custom-toast {
             position: fixed;
-            top: 80px;
-            /* PWA 상단바/헤더에 가려지지 않도록 하향 조정 */
+            top: 70px;
             left: 50%;
-            transform: translate(-50%, -150%);
+            transform: translateX(-50%) translateY(-200%);
             background: #2D2D2D;
             color: #fff;
             padding: 14px 28px;
             border-radius: 16px;
             z-index: 999999 !important;
-            /* 그 어떤 레이어보다 앞에 보이도록 */
             transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             opacity: 0;
             display: flex;
@@ -540,16 +538,17 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
             pointer-events: none;
             width: auto;
-            max-width: 90vw;
+            max-width: calc(100vw - 32px);
             min-width: 250px;
             white-space: normal;
             word-break: keep-all;
             line-height: 1.4;
             text-align: center;
+            box-sizing: border-box;
         }
 
         #custom-toast.active {
-            transform: translate(-50%, 0);
+            transform: translateX(-50%) translateY(0);
             opacity: 1;
         }
 

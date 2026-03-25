@@ -45,7 +45,7 @@
         <button type="button" class="btn-auth-outline"
             style="flex: 1; padding: 12px; font-size: 0.9rem; color: #ef4444; border-color: #ef4444; display: flex; align-items: center; justify-content: center; gap: 6px;"
             onclick="removeImage()">
-            <i class="bi bi-trash3-fill"></i> 이미지 삭제
+            <i class="bi bi-trash3-fill"></i> 첨부파일 삭제
         </button>
     </div>
 
@@ -234,6 +234,9 @@
     // 글로벌 범위에서 크로퍼 인스턴스 관리 (SPA 재진입 시 상태 유지/초기화 대응)
     if (typeof window.cropper === 'undefined') window.cropper = null;
     var selectedFile = null;
+    var originalFileForGPS = null; // [핵심] 크롭 전 원본 파일 참조 보관 (GPS 보존용)
+    var gpsExtractionDone = false; // GPS 추출 완료 여부 플래그
+    var gpsExtractionPromise = null; // GPS 추출 Promise (제출 시 대기용)
 
     // [신규] DMS(도/분/초) 배열을 십진수 좌표로 변환하는 헬퍼 함수
     function toNum(val) {
@@ -264,10 +267,14 @@
 
         const originalFile = input.files[0];
         selectedFile = originalFile;
+        originalFileForGPS = originalFile; // [핵심] 원본 파일 참조를 별도 변수에 보관
+        gpsExtractionDone = false; // 새 파일 선택 시 GPS 추출 상태 초기화
 
         const fileNameDisplay = document.getElementById('selected-file-name');
+        const isVideo = originalFile.type.startsWith('video/') || /\.(mp4|mov|avi|wmv|mkv)$/i.test(originalFile.name);
         if (fileNameDisplay) {
-            fileNameDisplay.innerText = originalFile.name;
+            // [수정] 동영상은 파일명 대신 안내 문구, 이미지만 파일명 표시
+            fileNameDisplay.innerText = isVideo ? '동영상이 첨부되었습니다' : originalFile.name;
             fileNameDisplay.style.color = "var(--point-orange)";
         }
 
@@ -285,12 +292,67 @@
             // [수정] 브라우저 GPS 자동 폴백 삭제 (사용자 요청: 사진 메타데이터 우선순위 강제)
             // 지도가 필요한 경우에만 사용자가 직접 '내 위치' 버튼을 누르도록 함
 
-            // EXIF 추출 시도 (기존 로직 유지)
-            if (typeof exifr !== 'undefined') {
-                processExif(originalFile);
-            }
+            // [핵심 수정] GPS 추출을 Promise로 관리하여 제출 시 대기 가능하게 함
+            gpsExtractionPromise = new Promise(async (resolveGPS) => {
+                let gpsFound = false;
 
-            // 미리보기 로드 (Cropper)
+                // 시도 1: 프론트엔드 exifr 라이브러리로 추출
+                if (typeof exifr !== 'undefined') {
+                    try {
+                        await processExif(originalFile);
+                        if (document.getElementById('report-lat').value) {
+                            gpsFound = true;
+                            console.log('[GPS Pipeline] ✅ Frontend exifr succeeded');
+                        }
+                    } catch (e) {
+                        console.warn('[GPS Pipeline] Frontend exifr failed:', e);
+                    }
+                }
+
+                // 시도 2: 서버 측 GPS 추출 (프론트 실패 시 또는 병렬 보완)
+                // [속도 최적화] 동영상은 GPS 추출 지원이 안되므로 100MB 임시 업로드 스킵
+                if (!gpsFound && !isVideo) {
+                    try {
+                        const tempFormData = new FormData();
+                        tempFormData.append('file', originalFile);
+                        console.log(`[Server Fallback] Uploading original file: name='${originalFile.name}', size=${originalFile.size}, type='${originalFile.type}'`);
+
+                        const res = await fetch('/api/upload', { method: 'POST', body: tempFormData });
+                        const data = await res.json();
+                        console.log('[Server Fallback] Full response:', JSON.stringify(data));
+
+                        if (data.gps && data.gps.lat && !isNaN(data.gps.lat)) {
+                            console.info(`[Server Fallback] ✅ GPS FOUND: lat=${data.gps.lat}, lng=${data.gps.lng}`);
+                            const currentLat = document.getElementById('report-lat').value;
+                            if (!currentLat) {
+                                processGpsData(data.gps.lat, data.gps.lng);
+                            }
+                            if (data.address) {
+                                document.getElementById('report-address').value = data.address;
+                                document.getElementById('report-location-text').value = data.address;
+                            }
+                            gpsFound = true;
+                        } else {
+                            console.warn('[Server Fallback] ❌ No GPS from server.');
+                        }
+                    } catch (err) {
+                        console.error('[Server Fallback] Temp upload failed:', err);
+                    }
+                }
+
+                // 최종 실패 시 수동 위치 안내
+                if (!gpsFound) {
+                    const currentLat = document.getElementById('report-lat').value;
+                    if (!currentLat) {
+                        restoreMapState('사진에서 위치 정보를 자동 추출할 수 없습니다. 직접 지도에서 위치를 지정해 주세요.');
+                    }
+                }
+
+                gpsExtractionDone = true;
+                resolveGPS();
+            });
+
+            // 미리보기 로드 (Cropper) - GPS 추출과 병렬 진행
             const reader = new FileReader();
             reader.onload = function (e) {
                 const img = document.getElementById('crop-image');
@@ -318,46 +380,6 @@
             };
             reader.readAsDataURL(originalFile);
 
-            // [서버 이중화] 파일 선택 즉시 서버로 임시 업로드하여 백엔드 GPS 추출 유도
-            const tempFormData = new FormData();
-            tempFormData.append('file', originalFile);
-            console.log(`[Server Fallback] Uploading original file: name='${originalFile.name}', size=${originalFile.size}, type='${originalFile.type}'`);
-
-            fetch('/api/upload', {
-                method: 'POST',
-                body: tempFormData
-            })
-                .then(res => {
-                    console.log(`[Server Fallback] HTTP Status: ${res.status}`);
-                    return res.json();
-                })
-                .then(data => {
-                    console.log("[Server Fallback] Full response:", JSON.stringify(data));
-                    if (data.gps && data.gps.lat && !isNaN(data.gps.lat)) {
-                        console.info(`[Server Fallback] ✅ GPS FOUND: lat=${data.gps.lat}, lng=${data.gps.lng}`);
-                        // 프론트엔드 추출이 아직 좌표를 못 잡았으면 서버 데이터 적용
-                        const currentLat = document.getElementById('report-lat').value;
-                        if (!currentLat) {
-                            processGpsData(data.gps.lat, data.gps.lng);
-                        }
-                        // 서버 역지오코딩 주소가 있으면 직접 세팅
-                        if (data.address) {
-                            document.getElementById('report-address').value = data.address;
-                            document.getElementById('report-location-text').value = data.address;
-                        }
-                    } else {
-                        console.warn('[Server Fallback] ❌ No GPS from server. Response:', data.message);
-                        // 서버도 실패 → 사용자에게 수동 위치 안내
-                        const currentLat = document.getElementById('report-lat').value;
-                        if (!currentLat) {
-                            restoreMapState('사진에서 위치 정보를 자동 추출할 수 없습니다. 직접 지도에서 위치를 지정해 주세요.');
-                        }
-                    }
-                })
-                .catch(err => {
-                    console.error("[Server Fallback] Temp upload failed:", err);
-                });
-
         }
         // 2. 영상(video/* 또는 MP4/MOV 확장자)인 경우
         const isVid = originalFile.type.startsWith('video/') || /\.(mp4|mov|avi|wmv|mkv)$/i.test(originalFile.name);
@@ -366,13 +388,18 @@
             // 즉시 안내 문구 노출 시도
             setTimeout(() => {
                 restoreMapState('동영상은 위치 정보 자동 추출을 지원하지 않습니다. 지도에서 직접 핀을 지정해 주세요.');
+                // [수정] 동영상은 삭제 버튼만 표시하고 사진 자르기 버튼은 숨김
                 document.getElementById('crop-controls').style.display = "flex";
+                const cropBtns = document.querySelectorAll('#crop-controls button');
+                if (cropBtns[0]) cropBtns[0].style.display = 'none'; // 사진 자르기 숨김
+                if (cropBtns[1]) cropBtns[1].style.flex = '1';       // 삭제 버튼 전체 너비
             }, 500);
 
             const previewImg = document.getElementById('final-preview-image');
             previewImg.style.display = "block";
             previewImg.src = ""; // 초기화
 
+            // 동영상 첫 프레임 썸네일 추출
             const video = document.createElement('video');
             video.src = URL.createObjectURL(originalFile);
             video.preload = 'metadata';
@@ -390,6 +417,8 @@
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 previewImg.src = canvas.toDataURL('image/jpeg');
                 URL.revokeObjectURL(video.src);
+                // 플레이스홀더 숨기고 썸네일 표시
+                document.getElementById('upload-placeholder').style.display = 'none';
             };
         }
         // 3. 기타 파일
@@ -609,6 +638,12 @@
     }
 
     async function submitReport() {
+        // [핵심 수정] GPS 추출이 아직 진행 중이면 완료될 때까지 대기
+        if (gpsExtractionPromise && !gpsExtractionDone) {
+            showToastMsg('위치 정보 분석 중... 잠시만 기다려주세요.');
+            await gpsExtractionPromise;
+        }
+
         const title = document.getElementById('report-title')?.value || '';
         const content = document.getElementById('report-content')?.value || '';
         const lat = document.getElementById('report-lat')?.value || '';
@@ -629,10 +664,10 @@
         formData.append('address', address);
 
         if (selectedFile && selectedFile.size > 0) {
-            showToastMsg('사진 처리 중...');
+            showToastMsg('파일 확인 중...');
             const finalFile = await getCroppedBlob();
             if (!finalFile || finalFile.size === 0) {
-                showToastMsg('사진 처리에 실패했습니다. 다시 첨부해주세요.');
+                showToastMsg('파일 처리에 실패했습니다. 다시 첨부해주세요.');
                 return;
             }
             formData.append('file', finalFile);
@@ -641,9 +676,11 @@
             return;
         }
 
-        showToastMsg('제보 제출 중...');
         const submitBtn = document.getElementById('submit-btn');
         if (submitBtn) submitBtn.disabled = true;
+
+        // [강력 적용] 동영상 전송 등 시간이 소요될 수 있으므로 전송 시작 직후 로딩창 활성화
+        showPremiumLoader('파일을 업로드하고 있습니다...\n화면을 벗어나지 마세요.');
 
         try {
             const response = await fetch('/api/report', {
@@ -653,28 +690,14 @@
             const result = await response.json();
 
             if (result.success) {
-                const reportId = result.report_id;
-                showPremiumLoader('AI가 도로 파손 여부를 분석 중입니다...\n잠시만 기다려 주세요.');
-
-                // AI 분석 상태 폴링
-                const pollInterval = setInterval(async () => {
-                    try {
-                        const statusResp = await fetch(`/api/report/status/${reportId}`);
-                        const statusData = await statusResp.json();
-
-                        if (statusData.status !== 'AI 분석중') {
-                            clearInterval(pollInterval);
-                            showToastMsg('AI 분석 완료! 내 신고 내역으로 이동합니다.');
-                            setTimeout(() => {
-                                hidePremiumLoader();
-                                window.location.href = '/status';
-                            }, 800);
-                        }
-                    } catch (e) {
-                        console.error("Polling Error:", e);
-                    }
-                }, 2000); // 2초 간격 확인
+                // 업로드 완료 후 로딩 문구 변경
+                showPremiumLoader('업로드 완료! AI 분석을 시작합니다...');
+                showToastMsg('제보가 접수되었습니다!');
+                setTimeout(() => {
+                    window.location.href = '/status';
+                }, 1000);
             } else {
+                hidePremiumLoader();
                 showToastMsg('제출 실패: ' + result.message);
                 if (submitBtn) submitBtn.disabled = false;
             }

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, session, request, jsonify
 from database import db
-from models import Report, AiResult, Member, Notice, PointLog
+from models import Report, AiResult, Member, Notice, PointLog, VideoDetection
 from utils import haversine, get_now_kst
 from datetime import timedelta
 import re
@@ -114,7 +114,8 @@ def alert():
             'address': simplified_address,
             'full_address': rpt.address,
             'time': rpt.created_at.strftime('%Y-%m-%d %H:%M:%S') if rpt.created_at else '알 수 없음',
-            'file_path': rpt.file_path,
+            'file_path': rpt.thumbnail_path if rpt.thumbnail_path else rpt.file_path, # 썸네일 우선 노출
+            'original_file_path': rpt.file_path,
             'file_type': rpt.file_type,
             'lat': rpt.latitude,
             'lng': rpt.longitude,
@@ -187,7 +188,8 @@ def alert_view(report_id):
         'address': rpt.address,
         'lat': rpt.latitude,
         'lng': rpt.longitude,
-        'file_path': rpt.file_path,
+        'file_path': rpt.file_path,  # 원본 경로 (상세 페이지 재생용)
+        'thumbnail_path': rpt.thumbnail_path, # 썸네일 경로
         'file_type': rpt.file_type,
         'reporter_name': reporter_name,
         'confidence': ai_res.confidence if ai_res else 0,
@@ -222,3 +224,15 @@ def add_notice():
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@alert_bp.route('/api/report/<int:report_id>/detections')
+def get_video_detections(report_id):
+    """동영상 프레임별 AI 검출 결과 API"""
+    detections = VideoDetection.query.filter_by(report_id=report_id).order_by(VideoDetection.frame_time).all()
+    return jsonify([{
+        'time': d.frame_time,
+        'class': d.class_name,
+        'conf': round(d.confidence * 100, 1),
+        'x1': d.x1, 'y1': d.y1,
+        'x2': d.x2, 'y2': d.y2
+    } for d in detections])

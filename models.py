@@ -22,6 +22,7 @@ class Report(db.Model):
     address = db.Column(db.String(255), nullable=True)
     file_path = db.Column(db.String(512), nullable=True)
     file_type = db.Column(db.String(50), nullable=True)
+    thumbnail_path = db.Column(db.String(512), nullable=True) # AI가 생성한 썸네일 경로
     status = db.Column(db.String(20), default='담당자 확인중')
     reject_reason = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, default=get_now_kst)
@@ -64,6 +65,21 @@ class Notice(db.Model):
     created_at = db.Column(db.DateTime, default=get_now_kst)
     created_at = db.Column(db.DateTime, default=get_now_kst)
     author = db.relationship('Member', backref=db.backref('notices', lazy=True))
+
+class VideoDetection(db.Model):
+    """동영상 프레임별 AI 검출 결과"""
+    __tablename__ = 'video_detections'
+    id = db.Column(db.Integer, primary_key=True)
+    report_id = db.Column(db.Integer, db.ForeignKey('report.id', ondelete='CASCADE'), nullable=False)
+    frame_time = db.Column(db.Float, nullable=False)        # 검출 시점 (초)
+    class_name = db.Column(db.String(100), nullable=False)   # 검출 클래스명
+    confidence = db.Column(db.Float, nullable=False)          # 신뢰도 (0~1)
+    x1 = db.Column(db.Float, nullable=False)                  # 바운딩박스 좌상단 x (비율 0~1)
+    y1 = db.Column(db.Float, nullable=False)                  # 바운딩박스 좌상단 y
+    x2 = db.Column(db.Float, nullable=False)                  # 바운딩박스 우하단 x
+    y2 = db.Column(db.Float, nullable=False)                  # 바운딩박스 우하단 y
+    created_at = db.Column(db.DateTime, default=get_now_kst)
+    report = db.relationship('Report', backref=db.backref('video_detections', lazy=True, cascade='all, delete-orphan'))
 
 class CrackTalk(db.Model):
     __tablename__ = 'crack_talk'

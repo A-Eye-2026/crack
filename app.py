@@ -11,7 +11,7 @@ import cv2
 
 # 내부 모듈 임포트
 from database import db
-from models import Report, AiResult, Member
+from models import Report, AiResult, Member, VideoDetection
 from utils import reverse_geocode
 
 # 서비스 Blueprint 임포트
@@ -21,9 +21,18 @@ from services.report_service import report_bp
 from services.status_service import status_bp
 from services.my_service import my_bp
 
-# .env 파일 로드
+# .env 파일 로드 (secrets 폴더 확인)
 base_dir = os.path.dirname(__file__)
-load_dotenv(os.path.join(base_dir, 'secrets', '.env'))
+env_path = os.path.join(base_dir, 'secrets', '.env')
+
+if not os.path.exists(env_path):
+    print("\n" + "!"*50)
+    print("⚠️  CRITICAL ERROR: 'secrets/.env' FILE NOT FOUND!")
+    print("팀원들은 'secrets.example' 폴더의 내용을 참고하여 'secrets' 폴더를 생성하고")
+    print("필요한 설정 파일들을 직접 만들어야 합니다.")
+    print("!"*50 + "\n")
+else:
+    load_dotenv(env_path)
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key_12345')
@@ -32,10 +41,16 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key_12345')
 db_user = os.getenv('DB_USER')
 db_password = os.getenv('DB_PASSWORD')
 db_host = os.getenv('DB_HOST')
-db_port = os.getenv('DB_PORT')
+db_port = os.getenv('DB_PORT', '3306')
 db_name = os.getenv('DB_NAME')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?ssl_ca={certifi.where()}"
+if not all([db_user, db_password, db_host, db_name]):
+    print("⚠️  Warning: Database environment variables are missing.")
+    # 기본값 설정을 통해 최소한의 구성은 유지하거나 에러 처리 필요
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///temp_debug.db'
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?ssl_ca={certifi.where()}"
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True, 
@@ -83,6 +98,32 @@ try:
         kakao_js_key = f.read().strip()
 except Exception as e:
     print(f"Error loading kakao js key: {e}")
+
+@app.route('/api/admin/reanalyze/<int:report_id>', methods=['POST'])
+def admin_reanalyze(report_id):
+    """지정된 제보에 대해 AI 재분석을 실행합니다."""
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+    
+    try:
+        rpt = Report.query.get_or_404(report_id)
+        
+        # 1. 기존 분석 결과물 삭제
+        AiResult.query.filter_by(report_id=report_id).delete()
+        VideoDetection.query.filter_by(report_id=report_id).delete()
+        
+        # 2. 상태 변경
+        rpt.status = 'AI 분석중'
+        db.session.commit()
+        
+        # 3. 비동기 분석 시작
+        thread = threading.Thread(target=run_ai_analysis, args=(rpt.id, rpt.file_path, rpt.file_type))
+        thread.start()
+        
+        return jsonify({'success': True, 'message': 'AI 재분석이 성공적으로 시작되었습니다.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.context_processor
 def inject_global_vars():
@@ -358,6 +399,30 @@ def update_report_status():
     db.session.commit()
     return jsonify({'success': True})
 
+@app.route('/api/admin/reanalyze/<int:report_id>', methods=['POST'])
+def reanalyze_report(report_id):
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+    
+    report = Report.query.get(report_id)
+    if not report:
+        return jsonify({'success': False, 'message': '신고를 찾을 수 없습니다.'}), 404
+        
+    try:
+        # 기존 AI 결과 및 비디오 검출 데이터 삭제
+        from models import AiResult, VideoDetection
+        AiResult.query.filter_by(report_id=report_id).delete()
+        VideoDetection.query.filter_by(report_id=report_id).delete()
+        db.session.commit()
+        
+        # 새로운 스레드에서 분석 시작
+        threading.Thread(target=run_ai_analysis, args=(report.id, report.file_path, report.file_type)).start()
+        
+        return jsonify({'success': True, 'message': 'AI 재분석을 시작했습니다. 잠시 후 새로고침 해주세요.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/admin/ppt')
 def admin_ppt():
     if not session.get('is_admin'):
@@ -369,35 +434,147 @@ def run_ai_analysis(report_id, file_path, file_type):
     if not model: return
     abs_path = os.path.join(base_dir, file_path.lstrip('/'))
     try:
-        results = model(abs_path, verbose=False)
         is_damaged, max_conf, pothole_count, pothole_max_conf, damage_type = False, 0.0, 0, 0.0, "없음"
-        
-        for r in results:
-            if len(r.boxes) > 0:
-                for box in r.boxes:
-                    cls_name = r.names[int(box.cls[0])]
-                    conf = float(box.conf[0])
-                    # 클래스 명칭에 'pothole'이 포함되어 있으면 포트홀로 인식 (예: Pothole_Damage)
-                    if 'pothole' in cls_name.lower():
-                        is_damaged, pothole_count = True, pothole_count + 1
-                        if conf > pothole_max_conf: pothole_max_conf = conf
-                    if conf > max_conf: max_conf, damage_type = conf, cls_name
-        
         annotated_path = None
-        if (is_damaged or (len(results) > 0 and len(results[0].boxes) > 0)) and file_type == 'image':
-            name = os.path.splitext(os.path.basename(abs_path))[0]
-            # [수정] 확장자를 항상 .jpg로 하여 OpenCV 호환성 확보 및 브라우저 지원 보장
-            annotated_filename = f"{name}_ai.jpg"
-            annotated_abs = os.path.join(os.path.dirname(abs_path), annotated_filename)
-            cv2.imwrite(annotated_abs, results[0].plot())
-            annotated_path = f'/uploads/images/{annotated_filename}'
+
+        if file_type == 'video':
+            # === 동영상 분석: 프레임 추출 후 YOLO 분석 및 박스 오버레이 인코딩 ===
+            print(f"[AI Video] Starting video analysis: {abs_path}")
+            cap = cv2.VideoCapture(abs_path)
+            if not cap.isOpened():
+                print(f"[AI Video] ERROR: Cannot open video file")
+                return
+            
+            fps = cap.get(cv2.CAP_PROP_FPS) or 30
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            
+            # 출력 파일 설정 (H.264 코덱 사용)
+            name, ext = os.path.splitext(os.path.basename(abs_path))
+            output_filename = f"res_{name}.mp4"
+            output_abs_path = os.path.join(os.path.dirname(abs_path), output_filename)
+            fourcc = cv2.VideoWriter_fourcc(*'avc1')
+            out = cv2.VideoWriter(output_abs_path, fourcc, fps, (width, height))
+            
+            best_frame = None
+            best_result = None
+            best_conf = 0.0
+            frame_idx = 0
+            frame_detections = [] 
+            
+            sample_interval = max(int(fps // 5), 1)
+            
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                
+                frame_h, frame_w = frame.shape[:2]
+                current_time_sec = frame_idx / fps
+                
+                results = model(frame, verbose=False)
+                # 현재 프레임에 CV 박스 그리기
+                annotated_frame = results[0].plot()
+                out.write(annotated_frame)
+                
+                # DB 저장용 데이터 추출 (초당 약 5번만 기록)
+                if frame_idx % sample_interval == 0:
+                    for r in results:
+                        if len(r.boxes) > 0:
+                            for box in r.boxes:
+                                cls_name = r.names[int(box.cls[0])]
+                                conf = float(box.conf[0])
+                                xyxy = box.xyxy[0].tolist()
+                                nx1, ny1, nx2, ny2 = xyxy[0]/frame_w, xyxy[1]/frame_h, xyxy[2]/frame_w, xyxy[3]/frame_h
+                                
+                                frame_detections.append({
+                                    'frame_time': round(current_time_sec, 2),
+                                    'class_name': cls_name,
+                                    'confidence': round(conf, 4),
+                                    'x1': round(nx1, 4), 'y1': round(ny1, 4),
+                                    'x2': round(nx2, 4), 'y2': round(ny2, 4)
+                                })
+                                
+                                if 'pothole' in cls_name.lower():
+                                    is_damaged = True
+                                    pothole_count += 1
+                                    if conf > pothole_max_conf:
+                                        pothole_max_conf = conf
+                                if conf > max_conf:
+                                    max_conf, damage_type = conf, cls_name
+                                if conf > best_conf:
+                                    best_conf = conf
+                                    best_frame = frame.copy()
+                                    best_result = results[0]
+
+                frame_idx += 1
+                # 혹시 너무 길어지는걸 방지하기 위해 1.5분(2700프레임) 단위로 자르기
+                if frame_idx >= 2700:
+                    break
+            
+            cap.release()
+            out.release()
+            print(f"[AI Video] Analyzed {frame_idx} frames. Detections={len(frame_detections)}, Pothole={pothole_count}")
+            print(f"[AI Video] Output video saved to {output_abs_path}")
+            
+            encoded_video_path = f'/uploads/videos/{output_filename}'
+            
+            # 프레임별 검출 결과를 DB에 일괄 저장
+            if frame_detections:
+                with app.app_context():
+                    from models import VideoDetection
+                    for det in frame_detections:
+                        db.session.add(VideoDetection(
+                            report_id=report_id,
+                            frame_time=det['frame_time'],
+                            class_name=det['class_name'],
+                            confidence=det['confidence'],
+                            x1=det['x1'], y1=det['y1'],
+                            x2=det['x2'], y2=det['y2']
+                        ))
+                    db.session.commit()
+                    print(f"[AI Video] Saved {len(frame_detections)} detections to DB")
+            
+            # 가장 높은 신뢰도 프레임을 AI 결과 썸네일로 저장
+            if best_result is not None and best_frame is not None:
+                annotated_filename = f"{name}_ai.jpg"
+                annotated_abs = os.path.join(base_dir, 'uploads', 'images', annotated_filename)
+                os.makedirs(os.path.dirname(annotated_abs), exist_ok=True)
+                cv2.imwrite(annotated_abs, best_result.plot())
+                annotated_path = f'/uploads/images/{annotated_filename}'
+                print(f"[AI Video] Best frame saved: {annotated_path}")
+        
+        else:
+            # === 이미지 분석 (기존 로직) ===
+            results = model(abs_path, verbose=False)
+            
+            for r in results:
+                if len(r.boxes) > 0:
+                    for box in r.boxes:
+                        cls_name = r.names[int(box.cls[0])]
+                        conf = float(box.conf[0])
+                        if 'pothole' in cls_name.lower():
+                            is_damaged, pothole_count = True, pothole_count + 1
+                            if conf > pothole_max_conf: pothole_max_conf = conf
+                        if conf > max_conf: max_conf, damage_type = conf, cls_name
+            
+            if (is_damaged or (len(results) > 0 and len(results[0].boxes) > 0)):
+                name = os.path.splitext(os.path.basename(abs_path))[0]
+                annotated_filename = f"{name}_ai.jpg"
+                annotated_abs = os.path.join(os.path.dirname(abs_path), annotated_filename)
+                cv2.imwrite(annotated_abs, results[0].plot())
+                annotated_path = f'/uploads/images/{annotated_filename}'
 
         with app.app_context():
             rpt = Report.query.get(report_id)
             if rpt:
                 db.session.add(AiResult(report_id=report_id, is_damaged=is_damaged, confidence=round(max_conf * 100, 1), damage_type=damage_type))
                 if annotated_path:
-                    rpt.file_path = annotated_path
+                    rpt.thumbnail_path = annotated_path # 원본 경로는 보존하되 새로 갱신
+                
+                # 핵심: CV 박스가 그려져 재인코딩된 영상이 있다면 원본을 덮어써서 프론트에서 재생하게 함
+                if file_type == 'video' and 'encoded_video_path' in locals():
+                    rpt.file_path = encoded_video_path
                 # AI 분석 승인 조건: 포트홀이 1개라도 있고(pothole_count > 0) 최대 신뢰도가 60% 이상인 경우
                 if pothole_count > 0 and pothole_max_conf >= 0.6:
                     rpt.status = '관리자 확인중'

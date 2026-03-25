@@ -19,13 +19,19 @@ def check_profanity(text):
     if _banned_words_cache is None:
         try:
             base_dir = os.path.dirname(os.path.abspath(__file__))
-            profanity_file = os.path.join(base_dir, 'secrets', 'profanity.json')
+            secrets_dir = os.path.join(base_dir, 'secrets')
+            profanity_file = os.path.join(secrets_dir, 'profanity.json')
+            
             if os.path.exists(profanity_file):
                 with open(profanity_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     banned_hex = data.get('ko', []) + data.get('en', [])
                     _banned_words_cache = [bytes.fromhex(w).decode('utf-8') for w in banned_hex]
             else:
+                if not os.path.exists(secrets_dir):
+                    print("⚠️  Warning: 'secrets' directory is missing. Profanity filter disabled.")
+                else:
+                    print(f"⚠️  Warning: '{profanity_file}' not found. Profanity filter disabled.")
                 _banned_words_cache = []
         except Exception as e:
             print(f"Profanity load error: {e}")

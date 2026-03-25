@@ -127,17 +127,26 @@ def submit_report():
 
         if allowed_file(filename, ALLOWED_IMAGE_EXTENSIONS):
             save_path = os.path.join(os.getcwd(), UPLOAD_IMAGE_DIR, filename)
-            
-            # [수정] 원본 이미지를 우선 저장하여 메타데이터 보존 후 정보 추출
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
             file.save(save_path)
             
-            # 프론트엔드에서 GPS 좌표를 올리지 못한 경우 백엔드에서 다시금 EXIF 추출 시도
-            if not latitude or not longitude:
+            # [핵심 수정] 프론트엔드에서 GPS를 이미 전달했는지 확인
+            # 크롭된 이미지에는 EXIF가 없으므로 프론트 GPS가 있으면 해당 값을 우선 사용
+            front_has_gps = bool(latitude and longitude)
+            
+            # 프론트에서 GPS를 못 보낸 경우에만 원본 파일에서 EXIF 추출 시도
+            if not front_has_gps:
+                print(f"[SUBMIT] Frontend didn't provide GPS. Attempting server-side extraction from uploaded file...")
                 from utils import extract_gps_from_exif
                 exif_lat, exif_lng = extract_gps_from_exif(save_path)
                 if exif_lat and exif_lng:
                     latitude = exif_lat
                     longitude = exif_lng
+                    print(f"[SUBMIT] ✅ Server-side GPS extraction succeeded: lat={latitude}, lng={longitude}")
+                else:
+                    print(f"[SUBMIT] ❌ Server-side GPS extraction also failed (file may be cropped/stripped)")
+            else:
+                print(f"[SUBMIT] ✅ Using GPS from frontend: lat={latitude}, lng={longitude}")
             
             # [개인정보 보호] 모든 이미지의 EXIF 메타데이터를 파기하고 재저장
             try:
