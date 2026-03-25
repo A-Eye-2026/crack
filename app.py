@@ -72,7 +72,11 @@ for d in [UPLOAD_IMAGE_DIR, UPLOAD_VIDEO_DIR]:
         os.makedirs(d)
 
 # DB 초기화
-db.init_app(app)
+# app.py 60~62라인쯤에 추가
+print("DEBUG: SQLALCHEMY_DATABASE_URI =", app.config.get('SQLALCHEMY_DATABASE_URI'))
+
+db.init_app(app) # 63라인
+
 
 # AI 모델 로드
 try:

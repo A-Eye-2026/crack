@@ -40,11 +40,12 @@
         <button class="modal-close" onclick="closeModal('findIdModal')">&times;</button>
         <h3>아이디 찾기</h3>
         <p class="modal-desc">가입할 때 사용한 정보를 입력해주세요.</p>
-        <p class="modal-message" style="min-height: 18px; font-size: 0.85rem; color: red;"></p>
 
-        <form method="POST" action="/find-id" class="modal-form">
-            <input type="text" name="name" placeholder="이름" required>
-            <input type="email" name="email" placeholder="이메일" required>
+        <div id="find-id-result" style="margin-bottom: 15px; font-size: 0.9rem; font-weight: 600; text-align: center; min-height: 20px;"></div>
+
+        <form id="find-id-form" class="modal-form">
+            <input type="text" id="find-name" name="name" placeholder="이름" required>
+            <input type="email" id="find-email" name="email" placeholder="이메일" required>
             <button type="submit" class="auth-btn">아이디 찾기</button>
         </form>
     </div>
@@ -57,10 +58,28 @@
         <h3>비밀번호 찾기</h3>
         <p class="modal-desc">가입한 아이디와 이메일을 입력해주세요.</p>
 
-        <form method="POST" action="/find-password" class="modal-form">
-            <input type="text" name="username" placeholder="아이디" required>
-            <input type="email" name="email" placeholder="이메일" required>
+        <div id="find-pw-result" style="margin-bottom: 15px; font-size: 0.9rem; font-weight: 600; text-align: center; min-height: 20px;"></div>
+
+        <form id="find-pw-form" class="modal-form">
+            <input type="text" id="find-pw-username" name="username" placeholder="아이디" required>
+            <input type="email" id="find-pw-email" name="email" placeholder="이메일" required>
             <button type="submit" class="auth-btn">비밀번호 찾기</button>
+        </form>
+    </div>
+</div>
+
+<div id="resetPwModal" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal('resetPwModal')">&times;</button>
+        <h3>비밀번호 재설정</h3>
+        <p class="modal-desc">새로운 비밀번호를 입력해주세요.</p>
+
+        <div id="reset-pw-msg" style="margin-bottom: 15px; font-size: 0.85rem; text-align: center;"></div>
+
+        <form id="reset-pw-form" class="modal-form">
+            <input type="hidden" id="reset-username"> <input type="password" id="new-password" placeholder="새로운 비밀번호" required>
+            <input type="password" id="confirm-password" placeholder="새로운 비밀번호 확인" required>
+            <button type="submit" class="auth-btn" style="background: #ff8a00;">비밀번호 변경하기</button>
         </form>
     </div>
 </div>
@@ -170,6 +189,7 @@
     }
 </style>
 
+
 <script>
     function openModal(modalId) {
         resetModal(modalId);
@@ -199,6 +219,151 @@
             msg.removeAttribute('style');
         });
     }
+
+    // 아이디 찾기 폼 제출 이벤트
+document.getElementById('find-id-form').addEventListener('submit', function(e) {
+    e.preventDefault(); // 페이지 새로고침 방지
+
+    const name = document.getElementById('find-name').value;
+    const email = document.getElementById('find-email').value;
+    const resultDiv = document.getElementById('find-id-result');
+
+    fetch('/api/find-id', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 'name': name, 'email': email })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // 성공 시: 파란색/녹색 톤으로 아이디 표시
+            resultDiv.innerHTML = `<span style="color: #2D63FF;">${data.message}</span>`;
+            // 성공 후 입력창 초기화 (선택사항)
+            // document.getElementById('find-id-form').reset();
+        } else {
+            // 실패 시: 빨간색으로 에러 표시
+            resultDiv.innerHTML = `<span style="color: #FF4D4D;">${data.message}</span>`;
+        }
+    })
+    .catch(err => {
+        resultDiv.innerHTML = `<span style="color: #FF4D4D;">서버 통신 중 오류가 발생했습니다.</span>`;
+    });
+});
+
+// 기존 openModal 함수 수정 (결과창 초기화 로직 추가)
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.style.display = 'flex';
+
+    // 결과 메시지 및 폼 초기화
+    if (modalId === 'findIdModal') {
+        document.getElementById('find-id-result').innerText = '';
+        document.getElementById('find-id-form').reset();
+    }
+
+    const firstInput = modal.querySelector('input');
+    if (firstInput) firstInput.focus();
+}
+
+
+document.getElementById('find-pw-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const username = document.getElementById('find-pw-username').value;
+    const email = document.getElementById('find-pw-email').value;
+    const resultDiv = document.getElementById('find-pw-result');
+
+    fetch('/api/find-pw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 'username': username, 'email': email })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            resultDiv.innerHTML = `<span style="color: #2D63FF;">${data.message}</span>`;
+            // 여기에 나중에 "비밀번호 재설정" 버튼을 추가로 띄울 수도 있습니다.
+        } else {
+            resultDiv.innerHTML = `<span style="color: #FF4D4D;">${data.message}</span>`;
+        }
+    })
+    .catch(err => {
+        resultDiv.innerHTML = `<span style="color: #FF4D4D;">서버 통신 중 오류가 발생했습니다.</span>`;
+    });
+});
+// 비밀번호 찾기(확인) 단계
+document.getElementById('find-pw-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const username = document.getElementById('find-pw-username').value;
+    const email = document.getElementById('find-pw-email').value;
+    const resultDiv = document.getElementById('find-pw-result');
+
+    // [중요] 본인의 Blueprint 설정에 따라 '/api/find-pw' 또는 '/auth/api/find-pw'로 수정하세요.
+    fetch('/api/find-pw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 'username': username, 'email': email })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // 1. 성공 시 기존 모달('findPwModal')을 먼저 닫습니다.
+            closeModal('findPwModal');
+
+            // 2. 잠시 후에(0.1초) 새 모달을 띄웁니다. (애니메이션 충돌 방지)
+            setTimeout(() => {
+                // 새 비밀번호 창에서 사용할 아이디값을 미리 입력해둡니다.
+                const resetUsernameInput = document.getElementById('reset-username');
+                if(resetUsernameInput) resetUsernameInput.value = username;
+
+                // 비밀번호 재설정 모달 열기
+                openModal('resetPwModal');
+            }, 100);
+
+        } else {
+            // 실패 시 에러 메시지 출력
+            resultDiv.innerHTML = `<span style="color: #FF4D4D;">${data.message}</span>`;
+        }
+    })
+    .catch(err => {
+        console.error("Error:", err);
+        resultDiv.innerHTML = `<span style="color: #FF4D4D;">서버 통신 오류가 발생했습니다.</span>`;
+    });
+});
+
+// 2. 실제 비밀번호 변경 실행 단계
+document.getElementById('reset-pw-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const username = document.getElementById('reset-username').value;
+    const password = document.getElementById('new-password').value;
+    const confirm = document.getElementById('confirm-password').value;
+    const msgDiv = document.getElementById('reset-pw-msg');
+
+    if (password !== confirm) {
+        msgDiv.innerText = "비밀번호가 일치하지 않습니다.";
+        msgDiv.style.color = "red";
+        return;
+    }
+
+    fetch('/api/reset-pw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 'username': username, 'password': password })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
+            location.reload(); // 페이지 새로고침하여 로그인 유도
+        } else {
+            msgDiv.innerText = data.message;
+            msgDiv.style.color = "red";
+        }
+    });
+});
+
 </script>
 
 {% endblock %}

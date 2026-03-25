@@ -4,9 +4,7 @@
 
 {% block content %}
 <div class="auth-container">
-    <div class="auth-brand">
-        <i class="bi bi-lightning-charge-fill"></i> CRACK
-    </div>
+
 
     <div class="auth-card">
         <h2 style="margin-bottom: 8px; font-size: 1.5rem;">회원가입</h2>
@@ -52,6 +50,21 @@
             <div id="pw-match-msg" style="font-size: 0.8rem; margin-left: 5px; min-height: 18px; margin-bottom: 8px;">
             </div>
 
+
+
+            <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                <input type="email" name="email" id="email" placeholder="이메일 주소" required
+                    style="width: 100%; padding: 14px 105px 14px 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 0.95rem; outline: none; transition: 0.2s; background: white;"
+                    onmouseover="this.style.borderColor='var(--point-orange)'"
+                    onmouseout="this.style.borderColor='rgba(0,0,0,0.1)'">
+                <button type="button" id="check-email-btn"
+                    style="position: absolute; right: 6px; padding: 8px 14px; border-radius: 9px; border: none; background: #f0f0f0; font-size: 0.8rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: var(--transition);"
+                    onmouseover="this.style.background='#e5e5e5'"
+                    onmouseout="this.style.background='#f0f0f0'">중복확인</button>
+            </div>
+            <div id="email-check-msg" style="font-size: 0.8rem; margin-left: 5px; min-height: 14px; margin-top: -4px; margin-bottom: 10px;">
+            </div>
+
             <button type="submit" id="submit-btn" class="auth-btn" style="margin-bottom: 0;">
                 <i class="bi bi-person-plus-fill"></i> 가입하기
             </button>
@@ -59,56 +72,81 @@
 
         <script>
             let isIdChecked = false;
+            let isEmailChecked = false; // 이메일 체크 상태 추가
 
-            // 아이디 중복 확인 로직
+            // 아이디 중복 확인 (기존 로직 유지)
             document.getElementById('check-id-btn').addEventListener('click', function () {
                 const uid = document.getElementById('uid').value;
                 const msgElement = document.getElementById('id-check-msg');
-
                 if (!uid.trim()) {
                     msgElement.innerText = "아이디를 입력해주세요.";
                     msgElement.style.color = "red";
                     return;
                 }
-
                 fetch('/api/check_id', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 'username': uid })
                 })
-                    .then(res => res.json())
-                    .then(data => {
-                        msgElement.innerText = data.message;
-                        if (data.available) {
-                            msgElement.style.color = "green";
-                            isIdChecked = true;
-                        } else {
-                            msgElement.style.color = "red";
-                            isIdChecked = false;
-                        }
-                    })
-                    .catch(err => {
-                        msgElement.innerText = "통신 오류가 발생했습니다.";
+                .then(res => res.json())
+                .then(data => {
+                    msgElement.innerText = data.message;
+                    if (data.available) {
+                        msgElement.style.color = "green";
+                        isIdChecked = true;
+                    } else {
                         msgElement.style.color = "red";
-                    });
+                        isIdChecked = false;
+                    }
+                });
             });
 
-            document.getElementById('uid').addEventListener('input', function () {
-                isIdChecked = false;
-                document.getElementById('id-check-msg').innerText = "아이디 중복 확인을 다시 해주세요.";
-                document.getElementById('id-check-msg').style.color = "#999";
+            // 이메일 중복 확인 추가
+            document.getElementById('check-email-btn').addEventListener('click', function () {
+                const email = document.getElementById('email').value;
+                const msgElement = document.getElementById('email-check-msg');
+
+                if (!email.trim() || !email.includes('@')) {
+                    msgElement.innerText = "올바른 이메일 형식을 입력해주세요.";
+                    msgElement.style.color = "red";
+                    return;
+                }
+
+                fetch('/api/check_email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 'email': email })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    msgElement.innerText = data.message;
+                    if (data.available) {
+                        msgElement.style.color = "green";
+                        isEmailChecked = true;
+                    } else {
+                        msgElement.style.color = "red";
+                        isEmailChecked = false;
+                    }
+                })
+                .catch(err => {
+                    msgElement.innerText = "통신 오류가 발생했습니다.";
+                    msgElement.style.color = "red";
+                });
             });
 
-            // 비밀번호 일치 확인 로직
+            // 입력 변경 시 중복확인 초기화
+            document.getElementById('uid').addEventListener('input', () => { isIdChecked = false; });
+            document.getElementById('email').addEventListener('input', () => {
+                isEmailChecked = false;
+                document.getElementById('email-check-msg').innerText = "";
+            });
+
+            // 비밀번호 확인 로직 (기존 유지)
             const pwInput = document.getElementById('password');
             const pwCheckInput = document.getElementById('password_check');
             const pwMsg = document.getElementById('pw-match-msg');
-
             function checkPasswordMatch() {
-                if (!pwCheckInput.value) {
-                    pwMsg.innerText = "";
-                    return;
-                }
+                if (!pwCheckInput.value) { pwMsg.innerText = ""; return; }
                 if (pwInput.value === pwCheckInput.value) {
                     pwMsg.innerText = "✅ 일치합니다.";
                     pwMsg.style.color = "green";
@@ -117,22 +155,28 @@
                     pwMsg.style.color = "red";
                 }
             }
-
             pwInput.addEventListener('input', checkPasswordMatch);
             pwCheckInput.addEventListener('input', checkPasswordMatch);
 
-            // 폼 제출 방어 로직
+            // 폼 제출 방어 로직 수정
             document.getElementById('join-form').addEventListener('submit', function (e) {
                 if (!isIdChecked) {
                     e.preventDefault();
-                    showToast("아이디 중복 확인을 해주세요.");
+                    alert("아이디 중복 확인을 해주세요.");
                     document.getElementById('uid').focus();
                     return;
                 }
                 if (pwInput.value !== pwCheckInput.value) {
                     e.preventDefault();
-                    showToast("비밀번호 재확인이 일치하지 않습니다.");
+                    alert("비밀번호 재확인이 일치하지 않습니다.");
                     pwCheckInput.focus();
+                    return;
+                }
+                if (!isEmailChecked) { // 이메일 체크 검증 추가
+                    e.preventDefault();
+                    alert("이메일 중복 확인을 해주세요.");
+                    document.getElementById('email').focus();
+                    return;
                 }
             });
         </script>
