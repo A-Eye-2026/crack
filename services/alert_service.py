@@ -10,6 +10,15 @@ alert_bp = Blueprint('alert', __name__)
 @alert_bp.route('/alert')
 def alert():
     is_admin = session.get('is_admin', False)
+    user_id = session.get('user_id')
+    
+    current_user_region_city = ''
+    current_user_region_district = ''
+    if user_id:
+        member = Member.query.get(user_id)
+        if member:
+            current_user_region_city = member.region_city or ''
+            current_user_region_district = member.region_district or ''
     
     one_day_ago = get_now_kst() - timedelta(hours=24)
     # 1. 1차 전체 유효 데이터 로드
@@ -112,8 +121,9 @@ def alert():
             'title': rpt.title or '도로 파손 신고',
             'location': f'{rpt.latitude:.4f}, {rpt.longitude:.4f}' if rpt.latitude else '위치 정보 없음',
             'address': simplified_address,
-            'full_address': rpt.address,
+            'full_address': rpt.address or '',
             'time': rpt.created_at.strftime('%Y-%m-%d %H:%M:%S') if rpt.created_at else '알 수 없음',
+            'created_at_obj': rpt.created_at, # 정렬용
             'file_path': rpt.thumbnail_path if rpt.thumbnail_path else rpt.file_path, # 썸네일 우선 노출
             'original_file_path': rpt.file_path,
             'file_type': rpt.file_type,
@@ -122,6 +132,31 @@ def alert():
             'reporter_name': reporter_name,
             'reporter_count': reporter_count
         })
+
+    # 4. 일반 유저 피드 정렬: 관심지역 우선 -> 최신순
+    if not is_admin and (current_user_region_city or current_user_region_district):
+        def sort_key(item):
+            addr = item.get('full_address', '')
+            is_region_match = False
+            # 주소에 설정한 시/도와 군/구가 모두 포함되어 있는지 확인 (우선 시/도부터)
+            if current_user_region_city and current_user_region_city in addr:
+                if current_user_region_district:
+                    if current_user_region_district in addr:
+                        is_region_match = True
+                else:
+                    is_region_match = True
+            
+            # Sort 튜플 생성 (매치여부 역순(False가 작으므로 0, True가 1 -> 내림차순 위해 변환), 시간 내림차순)
+            # return 값은 기본 정렬(오름차순) 기준이므로 매치된 것을 맨 앞으로 보내려면 매치값이 작아야 함
+            match_score = 0 if is_region_match else 1
+            timestamp = item['created_at_obj'].timestamp() if item['created_at_obj'] else 0
+            # 마이너스 timestamp로 최신순(내림차순) 구현
+            return (match_score, -timestamp)
+            
+        alerts_result.sort(key=sort_key)
+    else:
+        # 관심지역 설정이 없거나 어드민인 경우, 또는 그 외에는 기본 최신순
+        alerts_result.sort(key=lambda x: -x['created_at_obj'].timestamp() if x['created_at_obj'] else 0)
 
     notices_query = Notice.query.order_by(Notice.created_at.desc()).all()
     notices = []

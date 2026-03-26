@@ -438,7 +438,13 @@ def run_ai_analysis(report_id, file_path, file_type):
     if not model: return
     abs_path = os.path.join(base_dir, file_path.lstrip('/'))
     try:
-        is_damaged, max_conf, pothole_count, pothole_max_conf, damage_type = False, 0.0, 0, 0.0, "없음"
+        is_damaged = False
+        max_conf = 0.0
+        pothole_max_conf = 0.0
+        max_pothole_in_frame = 0
+        total_pothole_count = 0
+        sinkhole_count = 0
+        damage_type = "없음"
         annotated_path = None
 
         if file_type == 'video':
@@ -485,6 +491,7 @@ def run_ai_analysis(report_id, file_path, file_type):
                 if frame_idx % sample_interval == 0:
                     for r in results:
                         if len(r.boxes) > 0:
+                            frame_pothole_count = 0
                             for box in r.boxes:
                                 cls_name = r.names[int(box.cls[0])]
                                 conf = float(box.conf[0])
@@ -501,15 +508,23 @@ def run_ai_analysis(report_id, file_path, file_type):
                                 
                                 if 'pothole' in cls_name.lower():
                                     is_damaged = True
-                                    pothole_count += 1
+                                    total_pothole_count += 1
+                                    frame_pothole_count += 1
                                     if conf > pothole_max_conf:
                                         pothole_max_conf = conf
+                                elif 'sinkhole' in cls_name.lower():
+                                    is_damaged = True
+                                    sinkhole_count += 1
+                                    
                                 if conf > max_conf:
                                     max_conf, damage_type = conf, cls_name
                                 if conf > best_conf:
                                     best_conf = conf
                                     best_frame = frame.copy()
                                     best_result = results[0]
+                                    
+                            if frame_pothole_count > max_pothole_in_frame:
+                                max_pothole_in_frame = frame_pothole_count
 
                 frame_idx += 1
                 # 혹시 너무 길어지는걸 방지하기 위해 1.5분(2700프레임) 단위로 자르기
@@ -518,7 +533,7 @@ def run_ai_analysis(report_id, file_path, file_type):
             
             cap.release()
             out.release()
-            print(f"[AI Video] Analyzed {frame_idx} frames. Detections={len(frame_detections)}, Pothole={pothole_count}")
+            print(f"[AI Video] Analyzed {frame_idx} frames. Detections={len(frame_detections)}, Pothole={total_pothole_count}, Sinkhole={sinkhole_count}")
             print(f"[AI Video] Output video saved to {output_abs_path}")
             
             encoded_video_path = f'/uploads/videos/{output_filename}'
@@ -554,13 +569,23 @@ def run_ai_analysis(report_id, file_path, file_type):
             
             for r in results:
                 if len(r.boxes) > 0:
+                    frame_pothole_count = 0
                     for box in r.boxes:
                         cls_name = r.names[int(box.cls[0])]
                         conf = float(box.conf[0])
                         if 'pothole' in cls_name.lower():
-                            is_damaged, pothole_count = True, pothole_count + 1
+                            is_damaged = True
+                            total_pothole_count += 1
+                            frame_pothole_count += 1
                             if conf > pothole_max_conf: pothole_max_conf = conf
+                        elif 'sinkhole' in cls_name.lower():
+                            is_damaged = True
+                            sinkhole_count += 1
+                            
                         if conf > max_conf: max_conf, damage_type = conf, cls_name
+                    
+                    if frame_pothole_count > max_pothole_in_frame:
+                        max_pothole_in_frame = frame_pothole_count
             
             if (is_damaged or (len(results) > 0 and len(results[0].boxes) > 0)):
                 name = os.path.splitext(os.path.basename(abs_path))[0]
@@ -579,8 +604,11 @@ def run_ai_analysis(report_id, file_path, file_type):
                 # 핵심: CV 박스가 그려져 재인코딩된 영상이 있다면 원본을 덮어써서 프론트에서 재생하게 함
                 if file_type == 'video' and 'encoded_video_path' in locals():
                     rpt.file_path = encoded_video_path
-                # AI 분석 승인 조건: 포트홀이 1개라도 있고(pothole_count > 0) 최대 신뢰도가 60% 이상인 경우
-                if pothole_count > 0 and pothole_max_conf >= 0.6:
+                
+                # AI 분석 승인 조건: (포트홀 60% 이상) OR (단일 프레임 포트홀 3개 이상) OR (싱크홀 1개 이상)
+                is_valid_report = (pothole_max_conf >= 0.6) or (max_pothole_in_frame >= 3) or (sinkhole_count > 0)
+                
+                if is_valid_report:
                     rpt.status = '관리자 확인중'
                     # AI 분석 통과 보상 (+10점)
                     from models import PointLog
@@ -590,10 +618,10 @@ def run_ai_analysis(report_id, file_path, file_type):
                         db.session.add(PointLog(user_id=rpt.user_id, amount=10, reason='AI 분석 통과 (유효한 제보)'))
                 else:
                     rpt.status = '반려'
-                    if pothole_count == 0:
-                        rpt.reject_reason = 'AI 분석 결과 도로 파손(포트홀)이 감지되지 않았습니다. 다시 정확하게 촬영해주세요.'
+                    if total_pothole_count == 0 and sinkhole_count == 0:
+                        rpt.reject_reason = 'AI 분석 결과 도로 파손(포트홀/싱크홀)이 감지되지 않았습니다. 다시 정확하게 촬영해주세요.'
                     else:
-                        rpt.reject_reason = 'AI 분석 결과 신뢰도가 낮습니다(60% 미만). 더 가까이서 명확하게 촬영해주세요.'
+                        rpt.reject_reason = 'AI 분석 결과 도로 파손 유효성 기준(포트홀 신뢰도 60% 미만 등)에 미달했습니다. 명확하게 다시 촬영해주세요.'
                 db.session.commit()
     except Exception as e:
         print(f"AI Analysis Error: {e}")

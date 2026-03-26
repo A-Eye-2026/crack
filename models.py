@@ -11,6 +11,8 @@ class Member(db.Model):
     points = db.Column(db.Integer, default=0) # 크래커 포인트
     created_at = db.Column(db.DateTime, default=get_now_kst)
     email = db.Column(db.String(120), unique=True, nullable=False)
+    region_city = db.Column(db.String(50), nullable=True)
+    region_district = db.Column(db.String(50), nullable=True)
 
 class Report(db.Model):
     __tablename__ = 'report'

@@ -66,6 +66,17 @@ def update_profile():
         member.password_hash = generate_password_hash(new_pw)
         db.session.commit()
         return jsonify({'success': True, 'message': '비밀번호가 변경되었습니다.'})
+    
+    # 관심지역 변경 로직
+    if 'region_city' in data and 'region_district' in data:
+        try:
+            member.region_city = data['region_city']
+            member.region_district = data['region_district']
+            db.session.commit()
+            return jsonify({'success': True, 'message': '관심지역이 저장되었습니다.'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'message': f'DB 저장 오류: {str(e)}'}), 500
         
     return jsonify({'success': False, 'message': '잘못된 요청입니다.'}), 400
 
