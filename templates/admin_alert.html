@@ -1,0 +1,1744 @@
+{% extends "layout.html" %}
+
+{% block title %}Admin Alerts - Crack{% endblock %}
+
+{% block extra_style %}
+<style>
+  main {
+    overflow: hidden !important;
+  }
+
+  .alert-page {
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 0;
+  }
+
+  .alert-head {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: #F2F0EB;
+    padding: 18px 0 14px;
+    margin-bottom: 12px;
+    border-bottom: none;
+  }
+
+  .alert-head-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .alert-head h2 {
+    font-size: 1.42rem;
+    font-weight: 900;
+    color: #18212f;
+    line-height: 1.15;
+    letter-spacing: -0.45px;
+    margin: 0;
+  }
+
+  .alert-head p {
+    font-size: 0.9rem;
+    color: #667085;
+    line-height: 1.55;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .alert-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .alert-head-icon-btn {
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 999px;
+    background: #fff8f1;
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.18);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transform: translateY(-4px);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+
+  .alert-head-icon-btn:hover {
+    background: #fff1e6;
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.26);
+  }
+
+  .alert-head-icon-btn svg {
+    width: 19px;
+    height: 19px;
+    stroke: #f97316;
+    stroke-width: 2.2;
+  }
+
+  .alert-filter-row {
+    display: flex;
+    align-items: center;
+    margin-top: 4px;
+    gap: 10px;
+    overflow-x: auto;
+    padding-top: 2px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .alert-filter-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .alert-filter-chip {
+    border: none;
+    border-radius: 999px;
+    padding: 11px 18px;
+    font-size: 13px;
+    font-weight: 800;
+    background: #fffaf5;
+    color: #6b5f52;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.16);
+  }
+
+  .alert-filter-chip:hover {
+    background: #fff1e6;
+    color: #ea580c;
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.24);
+  }
+
+  .alert-filter-chip.active {
+    background: #ffe9d6;
+    color: #ea580c;
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.26);
+  }
+
+  .alert-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: visible;
+    padding-top: 2px;
+  }
+
+  .alert-list > .alert-card:first-of-type {
+    margin-top: 2px;
+  }
+
+  .alert-card {
+    background: #fff;
+    border-radius: 22px;
+    padding: 14px 16px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+
+  .alert-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
+    border-color: rgba(249, 115, 22, 0.22);
+  }
+
+  .alert-card.high-risk {
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    box-shadow: 0 12px 28px rgba(239, 68, 68, 0.08);
+  }
+
+  .alert-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .alert-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .alert-title {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #222;
+    line-height: 1.35;
+    word-break: keep-all;
+  }
+
+  .alert-location {
+    font-size: 0.9rem;
+    color: #555;
+    font-weight: 700;
+    line-height: 1.45;
+    word-break: keep-all;
+  }
+
+  .alert-meta {
+    font-size: 0.82rem;
+    color: #777;
+    line-height: 1.4;
+  }
+
+  .alert-status,
+  .alert-risk {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .alert-risk {
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: -0.2px;
+  }
+
+  .alert-head-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .region-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    min-height: 22px;
+  }
+
+  .region-toggle-label {
+    font-size: 12px;
+    font-weight: 800;
+    color: #555;
+    white-space: nowrap;
+  }
+
+  .switch {
+    position: relative;
+    width: 42px;
+    height: 22px;
+  }
+
+  .switch input {
+    display: none;
+  }
+
+  .slider {
+    position: absolute;
+    inset: 0;
+    background: #d1d5db;
+    border-radius: 999px;
+    transition: 0.2s;
+  }
+
+  .slider:before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 2px;
+    top: 2px;
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.2s;
+  }
+
+  .switch input:checked + .slider {
+    background: #f97316;
+  }
+
+  .switch input:checked + .slider:before {
+    transform: translateX(20px);
+  }
+
+  .risk-label {
+    font-size: 10px;
+    font-weight: 700;
+    opacity: 0.7;
+    margin-right: 4px;
+  }
+
+  .risk-value {
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: -0.2px;
+  }
+
+  .status-received {
+    background: #fff7ed;
+    color: #f97316;
+  }
+
+  .status-processing {
+    background: #fffbeb;
+    color: #d97706;
+  }
+
+  .status-done {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+
+  .status-rejected {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+
+  .status-review {
+    background: #eff6ff;
+    color: #2563eb;
+  }
+
+  .status-default {
+    background: #f8fafc;
+    color: #475569;
+  }
+
+  .risk-high {
+    background: #fff1f2;
+    color: #dc2626;
+  }
+
+  .risk-medium {
+    background: #fff7ed;
+    color: #ea580c;
+  }
+
+  .risk-low {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+
+  .alert-empty {
+    background: #fff;
+    border-radius: 22px;
+    padding: 30px 20px;
+    text-align: center;
+    color: #777;
+    border: 1px dashed rgba(0, 0, 0, 0.08);
+    font-weight: 700;
+  }
+
+  .alert-load-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 0 18px;
+    color: #7b8794;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  .alert-load-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(249, 115, 22, 0.18);
+    border-top-color: #f97316;
+    border-radius: 50%;
+    animation: alertSpin 0.8s linear infinite;
+  }
+
+  .alert-list {
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  .alert-list.fade-out {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  .alert-list.fade-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @keyframes alertSpin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .detail-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    padding: 20px;
+  }
+
+  .detail-modal-backdrop.show {
+    display: flex;
+  }
+
+  .detail-modal-card {
+    width: min(92vw, 460px);
+    background: #ffffff;
+    border-radius: 30px;
+    overflow: hidden;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.22);
+    border: 1px solid #dbe3ec;
+  }
+
+  .detail-thumb-box {
+    position: relative;
+    width: 100%;
+    background: #ffffff;
+    padding: 20px 20px 12px;
+  }
+
+  .detail-photo-frame {
+    position: relative;
+    width: 100%;
+    height: 430px;
+    border: 1px solid #cfd8e3;
+    border-radius: 24px;
+    background: #f3f4f6;
+    overflow: hidden;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.72),
+      0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+
+  .detail-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+  }
+
+  .detail-thumb-placeholder {
+    width: 100%;
+    height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    font-size: 16px;
+    color: #334155;
+    font-weight: 700;
+  }
+
+  .detail-content-box {
+    padding: 14px 20px 20px;
+    background: #fff;
+  }
+
+  .detail-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .detail-status-tool-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .detail-status-dropdown-wrap {
+    position: relative;
+  }
+
+  .detail-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+    background: #fff3e8;
+    color: #ff7a00;
+    box-shadow: inset 0 0 0 1px rgba(255, 122, 0, 0.10);
+  }
+
+  .detail-chip.status-received {
+    background: #fff7ed;
+    color: #f97316;
+  }
+
+  .detail-chip.status-processing {
+    background: #fffbeb;
+    color: #d97706;
+  }
+
+  .detail-chip.status-done {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+
+  .detail-chip.status-rejected {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+
+  .detail-status-trigger {
+    border: none;
+    cursor: pointer;
+  }
+
+  .detail-status-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 118px;
+    background: #fffaf5;
+    border: 1px solid #eadccf;
+    border-radius: 14px;
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 20;
+  }
+
+  .detail-status-menu.show {
+    display: flex;
+  }
+
+  .detail-status-option {
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #6b5f52;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+    padding: 0 12px;
+    cursor: pointer;
+  }
+
+  .detail-status-option:hover {
+    background: #fff1e6;
+    color: #ea580c;
+  }
+
+  .detail-status-apply-btn {
+    height: 40px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 12px;
+    background: #2f3744;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: none;
+  }
+
+  .detail-status-apply-btn:hover {
+    background: #232b36;
+    transform: translateY(-1px);
+  }
+
+  .detail-info-card {
+    position: relative;
+    background: #fafafa;
+    border: 1px solid #eceff3;
+    border-radius: 18px;
+    padding: 16px 16px 14px;
+    margin-bottom: 18px;
+  }
+
+  .detail-info-top-row {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0;
+  }
+
+  .detail-info-score-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .detail-ai-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0 13px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: -0.2px;
+    background: #fff1f2;
+    color: #dc2626;
+    box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.10);
+  }
+
+  .detail-ai-badge.medium {
+    background: #fff7ed;
+    color: #ea580c;
+    box-shadow: inset 0 0 0 1px rgba(234, 88, 12, 0.10);
+  }
+
+  .detail-ai-badge.low {
+    background: #f0fdf4;
+    color: #16a34a;
+    box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.10);
+  }
+
+  .detail-info-time {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 4px;
+  }
+
+  .detail-info-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .detail-info-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-right: 122px;
+  }
+
+  .detail-content-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: #111;
+    margin: 0 0 2px 0;
+    line-height: 1.18;
+    letter-spacing: -0.35px;
+  }
+
+  .detail-content-text {
+    font-size: 14px;
+    color: #444;
+    line-height: 1.36;
+    margin: 0;
+    white-space: normal;
+    word-break: keep-all;
+  }
+
+  .detail-reporter-text {
+    color: #c2410c;
+    font-weight: 900;
+    letter-spacing: -0.1px;
+  }
+
+  .detail-content-body {
+    color: #535862;
+  }
+
+  .detail-map-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 999px;
+    background: #fff4ea;
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.16);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+
+  .detail-map-btn:hover {
+    transform: translateY(-1px);
+    background: #ffedd5;
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.24), 0 8px 16px rgba(249, 115, 22, 0.12);
+  }
+
+  .detail-map-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: #f97316;
+  }
+
+  .detail-map-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    padding: 20px;
+  }
+
+  .detail-map-modal.show {
+    display: flex;
+  }
+
+  .detail-map-card {
+    position: relative;
+    width: min(92vw, 460px);
+    background: #fff;
+    border-radius: 24px;
+    border: 1px solid #dbe3ec;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+    overflow: hidden;
+  }
+
+  .detail-map-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .detail-map-canvas {
+    width: 100%;
+    height: 430px;
+    border-radius: 18px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .detail-map-floating-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(248, 250, 252, 0.95);
+    color: #475569;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  }
+
+  .detail-map-location-box {
+    width: 100%;
+    min-height: 54px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+  }
+
+  .detail-map-location {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #475569;
+    word-break: keep-all;
+  }
+
+  .detail-close-wrap {
+    margin-top: 0;
+  }
+
+  .detail-close-btn {
+    width: 100%;
+    height: 48px;
+    border: none;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #1f1f22, #2c2c30);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(34, 34, 34, 0.18);
+  }
+
+  /* 🔥 region toggle */
+  .switch {
+    position: relative;
+    width: 42px;
+    height: 22px;
+  }
+
+  .switch input {
+    display: none;
+  }
+
+  .slider {
+    position: absolute;
+    inset: 0;
+    background: #d1d5db;
+    border-radius: 999px;
+    transition: 0.2s;
+  }
+
+  .slider:before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 2px;
+    top: 2px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.2s;
+  }
+
+  input:checked + .slider {
+    background: #ff7a1a;
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(20px);
+  }
+
+  .search-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1002;
+    padding: 20px;
+  }
+
+  .search-modal-backdrop.show {
+    display: flex;
+  }
+
+  .search-modal-card {
+    width: min(92vw, 420px);
+    background: #fff;
+    border-radius: 24px;
+    border: 1px solid #dbe3ec;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+    overflow: hidden;
+  }
+
+  .search-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid #eef2f7;
+  }
+
+  .search-modal-title {
+    font-size: 16px;
+    font-weight: 900;
+    color: #222;
+  }
+
+  .search-modal-close {
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .search-modal-body {
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .search-input-wrap {
+    width: 100%;
+  }
+
+  .search-input {
+    width: 100%;
+    height: 46px;
+    border: 1px solid #dbe3ec;
+    border-radius: 14px;
+    padding: 0 14px;
+    font-size: 14px;
+    color: #222;
+    outline: none;
+    background: #fff;
+  }
+
+  .search-input:focus {
+    border-color: rgba(249, 115, 22, 0.45);
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.08);
+  }
+
+  .search-guide-text {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #64748b;
+  }
+
+  .status-confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: 20px;
+  }
+
+  .status-confirm-backdrop.show {
+    display: flex;
+  }
+
+  .status-confirm-card {
+    width: min(90vw, 360px);
+    background: #fff;
+    border-radius: 24px;
+    border: 1px solid #e7ecf3;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+  }
+
+  .status-confirm-title {
+    padding: 18px 18px 10px;
+    font-size: 18px;
+    font-weight: 900;
+    color: #1f2937;
+  }
+
+  .status-confirm-body {
+    padding: 0 18px 18px;
+  }
+
+  .status-confirm-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #475569;
+    margin: 0;
+  }
+
+  .status-confirm-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 18px 18px;
+  }
+
+  .status-confirm-ok,
+  .status-confirm-cancel {
+    height: 44px;
+    border: none;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .status-confirm-ok {
+    background: #1f2937;
+    color: #fff;
+  }
+
+  .status-confirm-cancel {
+    background: #fff4ea;
+    color: #ea580c;
+  }
+
+  @media (max-width: 640px) {
+    .detail-modal-backdrop {
+      padding: 16px;
+    }
+
+    .detail-modal-card {
+      width: min(94vw, 420px);
+      border-radius: 24px;
+    }
+
+    .detail-thumb-box {
+      padding: 16px 16px 8px;
+    }
+
+    .detail-photo-frame {
+      height: 380px;
+      border-radius: 22px;
+    }
+
+    .detail-content-box {
+      padding: 10px 16px 16px;
+    }
+
+    .detail-info-card {
+      padding: 14px 14px 12px;
+      margin-bottom: 16px;
+    }
+
+    .detail-close-btn {
+      height: 46px;
+    }
+
+    .detail-map-btn {
+      width: 36px;
+      height: 36px;
+    }
+
+    .detail-map-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .detail-map-card {
+      width: min(94vw, 420px);
+      border-radius: 22px;
+    }
+
+    .detail-map-canvas {
+      height: 380px;
+    }
+
+    .detail-map-location-box {
+      min-height: 52px;
+      padding: 10px 12px;
+    }
+
+    .alert-head-icon-btn {
+      width: 38px;
+      height: 38px;
+    }
+
+    .alert-head-icon-btn svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .search-modal-card {
+      width: min(94vw, 400px);
+      border-radius: 22px;
+    }
+
+    .search-modal-body {
+      padding: 16px;
+    }
+
+    .alert-card {
+      padding: 14px;
+      border-radius: 20px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="alert-page">
+  <div class="alert-list">
+    <div class="alert-head">
+      <div class="alert-head-top">
+        <h2>관리자 알림</h2>
+
+        <div class="alert-head-side">
+          <div class="alert-head-actions">
+            <button
+              class="alert-head-icon-btn"
+              type="button"
+              onclick="openSearchModal()"
+              aria-label="사건 검색"
+              title="사건 검색"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <circle cx="11" cy="11" r="6"></circle>
+                <path d="M20 20l-4.2-4.2"></path>
+              </svg>
+            </button>
+
+            <button
+              class="alert-head-icon-btn"
+              type="button"
+              onclick="scrollAlertsToTop()"
+              aria-label="맨 위로 이동"
+              title="맨 위로 이동"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <path d="M12 19V7"></path>
+                <path d="M6 13l6-6 6 6"></path>
+              </svg>
+            </button>
+          </div>
+
+          {% if current_role == 'manager' %}
+          <div class="region-toggle-row">
+            <span class="region-toggle-label">내 구역 우선 보기</span>
+            <label class="switch">
+              <input type="checkbox" id="regionToggle" {% if region_filter_on %}checked{% endif %}>
+              <span class="slider"></span>
+            </label>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <p>담당 구역 우선 순으로 보여줍니다.</p>
+      <div class="alert-filter-row" id="alertFilterRow">
+        <button type="button" class="alert-filter-chip active" data-status="all" onclick="filterByStatus('all', this)">전체</button>
+        <button type="button" class="alert-filter-chip" data-status="접수완료" onclick="filterByStatus('접수완료', this)">접수완료</button>
+        <button type="button" class="alert-filter-chip" data-status="처리중" onclick="filterByStatus('처리중', this)">처리중</button>
+        <button type="button" class="alert-filter-chip" data-status="처리완료" onclick="filterByStatus('처리완료', this)">처리완료</button>
+        <button type="button" class="alert-filter-chip" data-status="반려" onclick="filterByStatus('반려', this)">반려</button>
+      </div>
+    </div>
+
+    {% for item in alerts %}
+    <div
+      class="alert-card {% if item.risk_score >= 80 %}high-risk{% endif %}"
+      data-search-title="{{ item.title|default('', true)|e }}"
+      data-search-location="{{ item.location|default('', true)|e }}"
+      data-search-content="{{ item.content|default('', true)|e }}"
+      data-status="{{ item.status|default('', true)|e }}"
+      onclick="openAlertDetailModal(
+        '{{ item.title|default('', true)|e }}',
+        '{{ item.status|default('', true)|e }}',
+        '{{ item.status_class|default('', true)|e }}',
+        '{{ item.risk_score|default('', true) }}',
+        '{{ item.risk_class|default('', true)|e }}',
+        '{{ item.location|default('위치 정보 없음', true)|e }}',
+        '{{ item.created_at|default('', true)|e }}',
+        '{{ item.group_reporter_count|default(0, true) }}',
+        '{{ item.content|default('상세 설명이 없습니다.', true)|e }}',
+        '{{ item.image_path|default('', true)|e }}',
+        '{{ item.latitude|default('', true) }}',
+        '{{ item.longitude|default('', true) }}'
+      )"
+    >
+      <div class="alert-top">
+        <div class="alert-status {{ item.status_class }}">{{ item.status }}</div>
+        <div class="alert-risk {{ item.risk_class }}">
+          <span class="risk-label">AI</span>
+          <span class="risk-value">{{ item.risk_score }}%</span>
+        </div>
+      </div>
+
+      <div class="alert-main">
+        <div class="alert-title">{{ item.title }}</div>
+        <div class="alert-location">{{ item.location }}</div>
+        <div class="alert-meta">
+          {{ item.created_at }} · 반복 {{ item.group_reporter_count }}건
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    <div id="alertLoadMore" class="alert-load-more" style="display:none;">
+  <div class="alert-load-spinner"></div>
+    <span>불러오는 중...</span>
+  </div>
+    {% if alerts|length == 0 %}
+    <div class="alert-empty">표시할 신고가 없습니다.</div>
+    {% endif %}
+  </div>
+</div>
+<div id="alertSearchModal" class="search-modal-backdrop">
+  <div class="search-modal-card">
+    <div class="search-modal-head">
+      <div class="search-modal-title">사건 검색</div>
+      <button class="search-modal-close" type="button" onclick="closeSearchModal()">×</button>
+    </div>
+
+    <div class="search-modal-body">
+      <div class="search-input-wrap">
+        <input
+          id="alertSearchInput"
+          class="search-input"
+          type="text"
+          placeholder="제목, 위치, 설명으로 검색"
+          oninput="filterAlertCards()"
+        >
+      </div>
+
+      <div class="search-guide-text">
+        입력한 키워드가 포함된 사건만 화면에 남습니다.
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 지도 모달 -->
+<div class="detail-modal-backdrop" id="alertDetailModal">
+  <div class="detail-modal-card">
+    <div class="detail-thumb-box">
+      <div class="detail-photo-frame">
+        <img id="alertDetailImage" class="detail-thumb-img" src="" alt="신고 이미지">
+        <div id="alertDetailPlaceholder" class="detail-thumb-placeholder">사진</div>
+      </div>
+    </div>
+
+    <div class="detail-content-box">
+      <div class="detail-meta-row">
+        <div class="detail-status-tool-row">
+          <div class="detail-status-dropdown-wrap" id="detailStatusDropdownWrap">
+            <button
+              type="button"
+              id="alertDetailStatus"
+              class="detail-chip status-received detail-status-trigger"
+              onclick="toggleDetailStatusMenu(event)"
+            >
+              접수완료
+            </button>
+
+            <div id="alertDetailStatusMenu" class="detail-status-menu">
+              <button type="button" class="detail-status-option" onclick="selectDetailStatus(event, '접수완료')">접수완료</button>
+              <button type="button" class="detail-status-option" onclick="selectDetailStatus(event, '처리중')">처리중</button>
+              <button type="button" class="detail-status-option" onclick="selectDetailStatus(event, '처리완료')">처리완료</button>
+              <button type="button" class="detail-status-option" onclick="selectDetailStatus(event, '반려')">반려</button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="detail-status-apply-btn"
+            onclick="openStatusConfirmModal(event)"
+          >
+            확인
+          </button>
+        </div>
+        <button
+            id="detailMapBtn"
+            class="detail-map-btn"
+            type="button"
+            onclick="openDetailMapModal(event)"
+            aria-label="위치 지도 보기"
+            title="위치 지도 보기"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <path d="M9 18l-6 3V6l6-3m0 15l6 3m-6-18l6 3m0 15l6-3V3l-6 3m0 15V6"/>
+            </svg>
+          </button>
+      </div>
+
+      <div class="detail-info-card">
+        <div class="detail-info-top-row">
+          <div class="detail-info-score-stack">
+            <div id="alertDetailRisk" class="detail-ai-badge">AI 83%</div>
+            <span id="alertDetailTime" class="detail-info-time">00-00 00:00</span>
+          </div>
+        </div>
+
+        <div class="detail-info-head">
+          <div class="detail-info-main">
+            <div id="alertDetailTitle" class="detail-content-title">신고 제목</div>
+            <div id="alertDetailLocation" class="detail-content-text">위치 정보</div>
+            <div id="alertDetailReporter" class="detail-content-text detail-reporter-text">반복 제보 1건</div>
+            <div id="alertDetailContent" class="detail-content-text detail-content-body">상세 설명이 없습니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-close-wrap">
+        <button class="detail-close-btn" type="button" onclick="closeAlertDetailModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="detailMapModal" class="detail-map-modal">
+  <div class="detail-map-card">
+    <button class="detail-map-floating-close" type="button" onclick="closeDetailMapModal()">×</button>
+
+    <div class="detail-map-body">
+      <div id="detailMapCanvas" class="detail-map-canvas"></div>
+
+      <div class="detail-map-location-box">
+        <div id="detailMapLocation" class="detail-map-location">위치 정보</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="statusConfirmModal" class="status-confirm-backdrop">
+  <div class="status-confirm-card">
+    <div class="status-confirm-title">상태 변경 확인</div>
+
+    <div class="status-confirm-body">
+      <p id="statusConfirmText" class="status-confirm-text">
+        상태를 변경하시겠습니까?
+      </p>
+    </div>
+
+    <div class="status-confirm-actions">
+      <button type="button" class="status-confirm-ok" onclick="applyStatusChange()">확인</button>
+      <button type="button" class="status-confirm-cancel" onclick="closeStatusConfirmModal()">취소</button>
+    </div>
+  </div>
+</div>
+<script>
+  let detailLat = '';
+  let detailLng = '';
+  let detailMap = null;
+  let detailMarker = null;
+  let alertVisibleCount = 6;
+  const alertLoadStep = 6;
+  let alertIsLoading = false;
+  let alertAllCards = [];
+  let currentStatusFilter = 'all';
+  let currentDetailStatus = '';
+  let pendingDetailStatus = '';
+
+
+  function getDetailStatusClass(statusClass) {
+    if (statusClass === 'status-received') return 'status-received';
+    if (statusClass === 'status-processing') return 'status-processing';
+    if (statusClass === 'status-done') return 'status-done';
+    if (statusClass === 'status-rejected') return 'status-rejected';
+    return 'status-received';
+  }
+
+  function openAlertDetailModal(title, status, statusClass, riskScore, riskClass, location, createdAt, reporterCount, content, imagePath, latitude, longitude) {
+    document.getElementById('alertDetailTitle').textContent = title || '신고 상세';
+    document.getElementById('alertDetailLocation').textContent = location || '위치 정보 없음';
+    document.getElementById('alertDetailTime').textContent = createdAt || '-';
+    document.getElementById('alertDetailReporter').textContent = `반복 제보 ${reporterCount || 0}건`;
+    document.getElementById('alertDetailContent').textContent = content || '상세 설명이 없습니다.';
+    document.getElementById('detailMapLocation').textContent = location || '위치 정보 없음';
+
+    detailLat = latitude || '';
+    detailLng = longitude || '';
+
+    const detailMapBtn = document.getElementById('detailMapBtn');
+    const hasCoords = String(detailLat).trim() !== '' && String(detailLng).trim() !== '';
+    detailMapBtn.style.opacity = hasCoords ? '1' : '0.45';
+    detailMapBtn.style.pointerEvents = hasCoords ? 'auto' : 'none';
+
+    const statusEl = document.getElementById('alertDetailStatus');
+    const statusMenuEl = document.getElementById('alertDetailStatusMenu');
+
+    currentDetailStatus = status || '-';
+    pendingDetailStatus = currentDetailStatus;
+
+    statusEl.textContent = currentDetailStatus;
+    statusEl.className = 'detail-chip detail-status-trigger ' + getDetailStatusClass(statusClass);
+
+    if (statusMenuEl) {
+      statusMenuEl.classList.remove('show');
+    }
+
+    const riskEl = document.getElementById('alertDetailRisk');
+    const numericScore = String(riskScore || '').replace(/[^\d.]/g, '');
+    riskEl.textContent = numericScore ? `AI ${numericScore}%` : 'AI 정보 없음';
+
+    if (riskClass === 'risk-high') {
+      riskEl.className = 'detail-ai-badge';
+    } else if (riskClass === 'risk-medium') {
+      riskEl.className = 'detail-ai-badge medium';
+    } else {
+      riskEl.className = 'detail-ai-badge low';
+    }
+
+    const imgEl = document.getElementById('alertDetailImage');
+    const placeholderEl = document.getElementById('alertDetailPlaceholder');
+
+    if (imagePath && imagePath.trim() !== '') {
+      let finalImagePath = imagePath.trim();
+
+      if (!finalImagePath.startsWith('/')) {
+        finalImagePath = '/uploads/' + finalImagePath;
+      }
+
+      imgEl.src = finalImagePath;
+      imgEl.style.display = 'block';
+      placeholderEl.style.display = 'none';
+
+      imgEl.onerror = function () {
+        imgEl.src = '';
+        imgEl.style.display = 'none';
+        placeholderEl.textContent = '이미지를 불러올 수 없습니다.';
+        placeholderEl.style.display = 'flex';
+      };
+    } else {
+      imgEl.src = '';
+      imgEl.style.display = 'none';
+      placeholderEl.textContent = '사진';
+      placeholderEl.style.display = 'flex';
+    }
+
+    document.getElementById('alertDetailModal').classList.add('show');
+  }
+
+  function closeAlertDetailModal() {
+    document.getElementById('alertDetailModal').classList.remove('show');
+  }
+
+  function getFilteredCards() {
+    const keyword = document.getElementById('alertSearchInput')?.value.trim().toLowerCase() || '';
+    const allCards = Array.from(document.querySelectorAll('.alert-card'));
+
+    return allCards.filter(card => {
+      const title = (card.dataset.searchTitle || '').toLowerCase();
+      const location = (card.dataset.searchLocation || '').toLowerCase();
+      const content = (card.dataset.searchContent || '').toLowerCase();
+      const status = (card.dataset.status || '').trim();
+
+      const keywordMatched =
+        keyword === '' ||
+        title.includes(keyword) ||
+        location.includes(keyword) ||
+        content.includes(keyword);
+
+      const statusMatched =
+        currentStatusFilter === 'all' || status === currentStatusFilter;
+
+      return keywordMatched && statusMatched;
+    });
+  }
+
+  function filterByStatus(status, buttonEl) {
+  const listEl = document.querySelector('.alert-list');
+
+  currentStatusFilter = status;
+
+  document.querySelectorAll('.alert-filter-chip').forEach(btn => {
+    btn.classList.remove('active');
+  });
+
+  if (buttonEl) {
+    buttonEl.classList.add('active');
+  }
+
+  // 👉 1. 먼저 사라지기
+  listEl.classList.add('fade-out');
+
+  setTimeout(() => {
+    // 👉 2. 데이터 교체
+    alertAllCards = getFilteredCards();
+    alertVisibleCount = 6;
+    updateVisibleAlertCards();
+
+    // 👉 3. 다시 나타나기
+    listEl.classList.remove('fade-out');
+    listEl.classList.add('fade-in');
+
+    setTimeout(() => {
+      listEl.classList.remove('fade-in');
+    }, 180);
+
+  }, 120);
+}
+
+  function openDetailMapModal(event) {
+    if (event) {
+      event.stopPropagation();
+    }
+
+    const lat = parseFloat(detailLat);
+    const lng = parseFloat(detailLng);
+
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      if (typeof showNoticeModal === 'function') {
+        showNoticeModal('위치 좌표가 없어 지도를 표시할 수 없습니다.');
+      } else {
+        alert('위치 좌표가 없어 지도를 표시할 수 없습니다.');
+      }
+      return;
+    }
+
+    const modal = document.getElementById('detailMapModal');
+    const container = document.getElementById('detailMapCanvas');
+
+    modal.classList.add('show');
+    container.innerHTML = '';
+
+    setTimeout(() => {
+      if (!window.kakao || !window.kakao.maps) {
+        if (typeof showNoticeModal === 'function') {
+          showNoticeModal('지도 라이브러리를 불러오지 못했습니다.');
+        } else {
+          alert('지도 라이브러리를 불러오지 못했습니다.');
+        }
+        return;
+      }
+
+      kakao.maps.load(function () {
+        const position = new kakao.maps.LatLng(lat, lng);
+
+        const options = {
+          center: position,
+          level: 3
+        };
+
+        detailMap = new kakao.maps.Map(container, options);
+
+        detailMarker = new kakao.maps.Marker({
+          position: position
+        });
+
+        detailMarker.setMap(detailMap);
+
+        setTimeout(() => {
+          detailMap.relayout();
+          detailMap.setCenter(position);
+        }, 50);
+      });
+    }, 120);
+  }
+
+  function closeDetailMapModal() {
+    document.getElementById('detailMapModal').classList.remove('show');
+  }
+
+  function openStatusConfirmModal(event) {
+  if (event) {
+    event.stopPropagation();
+  }
+
+  const confirmTextEl = document.getElementById('statusConfirmText');
+  const nextStatus = pendingDetailStatus;
+
+  if (!nextStatus || nextStatus === currentDetailStatus) {
+    if (typeof showNoticeModal === 'function') {
+      showNoticeModal('변경할 상태를 먼저 선택해주세요.');
+    }
+    return;
+  }
+
+  pendingDetailStatus = nextStatus;
+
+  if (confirmTextEl) {
+    confirmTextEl.textContent = `상태를 '${currentDetailStatus}'에서 '${pendingDetailStatus}'로 변경하시겠습니까?`;
+  }
+
+  document.getElementById('statusConfirmModal').classList.add('show');
+}
+
+function closeStatusConfirmModal() {
+  document.getElementById('statusConfirmModal').classList.remove('show');
+}
+
+function toggleDetailStatusMenu(event) {
+  if (event) {
+    event.stopPropagation();
+  }
+
+  const menu = document.getElementById('alertDetailStatusMenu');
+  if (!menu) return;
+
+  menu.classList.toggle('show');
+}
+
+function closeDetailStatusMenu() {
+  const menu = document.getElementById('alertDetailStatusMenu');
+  if (!menu) return;
+
+  menu.classList.remove('show');
+}
+
+function selectDetailStatus(event, statusText) {
+  if (event) {
+    event.stopPropagation();
+  }
+
+  const statusEl = document.getElementById('alertDetailStatus');
+
+  pendingDetailStatus = statusText;
+  statusEl.textContent = statusText;
+  statusEl.className = 'detail-chip detail-status-trigger ' + getDetailStatusClassByText(statusText);
+
+  closeDetailStatusMenu();
+}
+
+function applyStatusChange() {
+  const statusEl = document.getElementById('alertDetailStatus');
+
+  currentDetailStatus = pendingDetailStatus;
+  statusEl.textContent = currentDetailStatus;
+  statusEl.className = 'detail-chip ' + getDetailStatusClassByText(currentDetailStatus);
+
+  closeStatusConfirmModal();
+}
+
+function getDetailStatusClassByText(statusText) {
+  if (statusText === '접수완료') return 'status-received';
+  if (statusText === '처리중') return 'status-processing';
+  if (statusText === '처리완료') return 'status-done';
+  if (statusText === '반려') return 'status-rejected';
+  return 'status-received';
+}
+
+  function openSearchModal() {
+    const modal = document.getElementById('alertSearchModal');
+    const input = document.getElementById('alertSearchInput');
+
+    modal.classList.add('show');
+
+    setTimeout(() => {
+      input.focus();
+      input.select();
+    }, 50);
+  }
+
+  function closeSearchModal() {
+    const modal = document.getElementById('alertSearchModal');
+    const input = document.getElementById('alertSearchInput');
+
+    modal.classList.remove('show');
+    input.value = '';
+    filterAlertCards();
+  }
+
+  function filterAlertCards() {
+  alertAllCards = getFilteredCards();
+  alertVisibleCount = 6;
+  updateVisibleAlertCards();
+}
+
+  function scrollAlertsToTop() {
+  const scrollTarget = document.querySelector('.alert-page');
+
+  if (scrollTarget) {
+    scrollTarget.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }
+}
+
+function updateVisibleAlertCards() {
+  const allCards = document.querySelectorAll('.alert-card');
+  const loadMoreEl = document.getElementById('alertLoadMore');
+
+  allCards.forEach(card => {
+    card.style.display = 'none';
+  });
+
+  alertAllCards.forEach((card, index) => {
+    if (index < alertVisibleCount) {
+      card.style.display = '';
+    }
+  });
+
+  if (!loadMoreEl) return;
+
+  if (alertVisibleCount < alertAllCards.length) {
+    loadMoreEl.style.display = 'flex';
+  } else {
+    loadMoreEl.style.display = 'none';
+  }
+}
+
+function loadMoreAlertCards() {
+  if (alertIsLoading) return;
+  if (alertVisibleCount >= alertAllCards.length) return;
+
+  const loadMoreEl = document.getElementById('alertLoadMore');
+  alertIsLoading = true;
+
+  if (loadMoreEl) {
+    loadMoreEl.style.display = 'flex';
+  }
+
+  setTimeout(() => {
+    alertVisibleCount += alertLoadStep;
+    updateVisibleAlertCards();
+    alertIsLoading = false;
+  }, 550);
+}
+
+function handleAlertInfiniteScroll() {
+  const scrollTarget = document.querySelector('.alert-page');
+  if (!scrollTarget) return;
+
+  const threshold = 120;
+  const reachedBottom =
+    scrollTarget.scrollTop + scrollTarget.clientHeight >= scrollTarget.scrollHeight - threshold;
+
+  if (reachedBottom) {
+    loadMoreAlertCards();
+  }
+}
+  document.addEventListener('click', function (e) {
+  const detailModal = document.getElementById('alertDetailModal');
+  const mapModal = document.getElementById('detailMapModal');
+  const searchModal = document.getElementById('alertSearchModal');
+  const statusConfirmModal = document.getElementById('statusConfirmModal');
+  const detailStatusDropdownWrap = document.getElementById('detailStatusDropdownWrap');
+
+  if (detailStatusDropdownWrap && !detailStatusDropdownWrap.contains(e.target)) {
+    closeDetailStatusMenu();
+  }
+
+  if (e.target === statusConfirmModal) {
+    closeStatusConfirmModal();
+  }
+
+  if (e.target === detailModal) {
+    closeAlertDetailModal();
+  }
+
+  if (e.target === mapModal) {
+    closeDetailMapModal();
+  }
+
+  if (e.target === searchModal) {
+    closeSearchModal();
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+  const scrollTarget = document.querySelector('.alert-page');
+  alertAllCards = getFilteredCards();
+  alertVisibleCount = 8;
+  updateVisibleAlertCards();
+  const regionToggle = document.getElementById('regionToggle');
+if (regionToggle) {
+  regionToggle.addEventListener('change', function () {
+    const isOn = this.checked ? 'on' : 'off';
+    const url = new URL(window.location.href);
+    url.searchParams.set('region_filter', isOn);
+    window.location.href = url.toString();
+  });
+}
+  if (scrollTarget) {
+    scrollTarget.addEventListener('scroll', handleAlertInfiniteScroll);
+  }
+});
+</script>
+{% endblock %}
