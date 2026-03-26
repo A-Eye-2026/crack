@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -46,7 +47,7 @@
       justify-content: center;
       align-items: center;
       padding: 18px 20px 16px;
-      bg : #f59794;
+      background-color: var(--bg);
     }
 
     .main {
@@ -323,6 +324,7 @@
 
   {% block extra_style %}{% endblock %}
 </head>
+
 <body class="{% block body_class %}{% endblock %}">
   <div class="layout">
     <main class="main">
@@ -345,20 +347,19 @@
 
           <div class="topbar-actions">
             <nav class="topbar-menu">
-              <a href="/admin/dashboard"
-                 class="menu-item {% if request.path == '/admin/dashboard' %}active{% endif %}">
+              <a href="/admin/dashboard" class="menu-item {% if request.path == '/admin/dashboard' %}active{% endif %}">
                 대시보드
               </a>
               <a href="/admin/incidents"
-                 class="menu-item {% if request.path.startswith('/admin/incidents') %}active{% endif %}">
+                class="menu-item {% if request.path.startswith('/admin/incidents') %}active{% endif %}">
                 신고관리
               </a>
               <a href="/admin/members"
-                 class="menu-item {% if request.path.startswith('/admin/members') %}active{% endif %}">
+                class="menu-item {% if request.path.startswith('/admin/members') %}active{% endif %}">
                 회원관리
               </a>
               <a href="/admin/statistics"
-                 class="menu-item {% if request.path.startswith('/admin/statistics') %}active{% endif %}">
+                class="menu-item {% if request.path.startswith('/admin/statistics') %}active{% endif %}">
                 통계
               </a>
             </nav>
@@ -384,4 +385,5 @@
 
   {% block extra_script %}{% endblock %}
 </body>
+
 </html>

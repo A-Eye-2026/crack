@@ -4,18 +4,22 @@ import time
 
 def create_deploy_package():
     source_dir = "."
-    output_filename = f"CRACK_PORTABLE_v1.3.5.zip"
+    output_filename = "CRACK_FULL_DEPLOY_v1.0.zip"
 
-    # 제외할 폴더 및 파일 명시
-    exclude_dirs = {'.git', '.venv', '__pycache__', '.vscode', 'node_modules', 'deploy'}
+    # 제외할 폴더 및 파일 명시 (최소화)
+    # .venv는 너무 커서 제외하는 것이 일반적이나, 
+    # 사용자가 "전체"를 원했으므로 고민되지만 .venv는 서버마다 환경이 다르므로 제외하고 
+    # 대신 원클릭 스크립트에서 자동 생성하도록 함.
+    # .git은 포함 요청이 있었으므로 제외 목록에서 제거.
+    exclude_dirs = {'.venv', '__pycache__', '.vscode', 'node_modules', 'deploy', 'tmp'}
     exclude_exts = {'.zip', '.log', '.bak'}
 
     print(f"[*] Starting packaging: {output_filename}")
     
-    # requirements.txt 명시적 업데이트 (원클릭 환경을 위한 의존성 정리)
-    # pip freeze의 지저분한 종속성 대신 핵심 모듈만 명시 (나머지는 pip가 자동 해결)
+    # requirements.txt 업데이트
     core_reqs = [
         "Flask",
+        "Flask-SQLAlchemy",
         "ultralytics",
         "Pillow",
         "piexif",
@@ -23,20 +27,19 @@ def create_deploy_package():
         "pillow_heif",
         "python-dotenv",
         "PyMySQL",
-        "certifi"
+        "certifi",
+        "opencv-python",
+        "numpy"
     ]
     with open("requirements.txt", "w", encoding="utf-8") as f:
         f.write("\n".join(core_reqs))
     
-    print("[*] requirements.txt explicitly regenerated for clean deployment.")
+    print("[*] requirements.txt regenerated.")
 
     with zipfile.ZipFile(output_filename, "w", zipfile.ZIP_DEFLATED) as ziph:
         for root, dirs, files in os.walk(source_dir):
-            if root == source_dir:
-                dirs[:] = [d for d in dirs if d not in exclude_dirs]
-            else:
-                # 하위 폴더 탐색 시에도 제외 폴더 거름
-                dirs[:] = [d for d in dirs if not any(ex in root for ex in exclude_dirs)]
+            # .venv 등 제외 폴더 건너뛰기
+            dirs[:] = [d for d in dirs if d not in exclude_dirs]
             
             for file in files:
                 ext = os.path.splitext(file)[1].lower()
@@ -45,15 +48,13 @@ def create_deploy_package():
                 # 자기 자신 제외
                 if file == output_filename:
                     continue
-                if file == "create_package.py":
-                    continue
                     
                 filepath = os.path.join(root, file)
                 arcname = os.path.relpath(filepath, source_dir)
                 ziph.write(filepath, arcname)
 
     print(f"[*] Successfully created: {output_filename} ({os.path.getsize(output_filename) // (1024*1024)} MB)")
-    print("[*] Ready for deployment.")
+    print("[*] Includes: .git, .gitignore, secrets, uploads (media)")
 
 if __name__ == "__main__":
     create_deploy_package()
