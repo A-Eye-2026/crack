@@ -3,6 +3,10 @@
 {% block title %}Smart Alerts - Crack{% endblock %}
 
 {% block extra_style %}
+{# Moved to content for reliability #}
+{% endblock %}
+
+{% block content %}
 <style>
   main {
     overflow: hidden !important;
@@ -195,23 +199,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    overflow: visible;
     padding-top: 2px;
-    transition: opacity 0.18s ease, transform 0.18s ease;
-  }
-
-  .alert-list.fade-out {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-
-  .alert-list.fade-in {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .alert-list > .alert-card:first-of-type {
-    margin-top: 2px;
   }
 
   .alert-card {
@@ -230,27 +218,35 @@
   .alert-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
-    border-color: rgba(249, 115, 22, 0.22);
   }
 
-  .alert-card.high-risk {
-    border: 1px solid rgba(239, 68, 68, 0.25);
-    box-shadow: 0 12px 28px rgba(239, 68, 68, 0.08);
-  }
-
-  .alert-top {
+  .alert-card-inner {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 10px;
+    gap: 14px;
   }
 
-  .alert-main {
-    flex: 1 1 auto;
+  .alert-thumbnail-wrap {
+    width: 84px;
+    height: 84px;
+    border-radius: 18px;
+    overflow: hidden;
+    background: #f8fafc;
+    flex-shrink: 0;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+  }
+
+  .alert-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .alert-main-content {
+    flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
   }
 
   .alert-title {
@@ -258,7 +254,9 @@
     font-weight: 900;
     color: #222;
     line-height: 1.35;
-    word-break: keep-all;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .alert-location {
@@ -266,38 +264,9 @@
     color: #555;
     font-weight: 700;
     line-height: 1.45;
-    word-break: keep-all;
-  }
-
-  .alert-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    font-size: 0.82rem;
-    color: #777;
-    line-height: 1.4;
-  }
-
-  .alert-repeat-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 24px;
-    padding: 0 10px;
-    border-radius: 999px;
-    background: #ffe4e6;
-    color: #b91c1c;
-    font-size: 13px;
-    font-weight: 900;
-    letter-spacing: -0.15px;
-    box-shadow: 0 2px 6px rgba(220,38,38,0.2);
-  }
-
-  .alert-repeat-badge.strong {
-    background: #fff1f2;
-    color: #dc2626;
-    box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.16);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .alert-status,
@@ -310,27 +279,6 @@
     border-radius: 999px;
     font-size: 12px;
     font-weight: 800;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .alert-risk {
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: -0.2px;
-  }
-
-  .risk-label {
-    font-size: 10px;
-    font-weight: 700;
-    opacity: 0.7;
-    margin-right: 4px;
-  }
-
-  .risk-value {
-    font-size: 13px;
-    font-weight: 900;
-    letter-spacing: -0.2px;
   }
 
   .status-received {
@@ -368,829 +316,201 @@
     color: #16a34a;
   }
 
-  .alert-empty {
-    background: #fff;
-    border-radius: 22px;
-    padding: 30px 20px;
-    text-align: center;
-    color: #777;
-    border: 1px dashed rgba(0, 0, 0, 0.08);
-    font-weight: 700;
-  }
-
-  .alert-load-more {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 14px 0 18px;
-    color: #7b8794;
-    font-size: 0.88rem;
-    font-weight: 600;
-  }
-
-  .alert-load-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(249, 115, 22, 0.18);
-    border-top-color: #f97316;
-    border-radius: 50%;
-    animation: alertSpin 0.8s linear infinite;
-  }
-
-  @keyframes alertSpin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .detail-modal-backdrop,
-  .search-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.45);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 999;
-    padding: 20px;
-  }
-
-  .detail-modal-backdrop.show,
-  .search-modal-backdrop.show {
-    display: flex;
-  }
-
-  .detail-modal-card,
-  .search-modal-card {
-    width: min(92vw, 460px);
-    background: #ffffff;
-    border-radius: 30px;
-    overflow: hidden;
-    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.22);
-    border: 1px solid #dbe3ec;
-  }
-
-  .detail-thumb-box {
-    position: relative;
-    width: 100%;
-    background: #ffffff;
-    padding: 20px 20px 12px;
-  }
-
-  .detail-photo-frame {
-    position: relative;
-    width: 100%;
-    height: 430px;
-    border: 1px solid #cfd8e3;
-    border-radius: 24px;
-    background: #f3f4f6;
-    overflow: hidden;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 1px 2px rgba(15, 23, 42, 0.04);
-  }
-
-  .detail-map-canvas {
-    width: 100%;
-    height: 100%;
-    display: none;
-  }
-
-  .detail-thumb-placeholder {
-    width: 100%;
-    height: 100%;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 20px;
-    font-size: 16px;
-    color: #334155;
-    font-weight: 700;
-  }
-
-  .detail-content-box {
-    padding: 14px 20px 20px;
-    background: #fff;
-  }
-
-  .detail-meta-row {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-
-  .detail-chip {
+  .alert-repeat-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 42px;
-    padding: 0 18px;
+    min-height: 24px;
+    padding: 0 10px;
     border-radius: 999px;
+    background: #ffe4e6;
+    color: #b91c1c;
     font-size: 13px;
-    font-weight: 800;
-    background: #fff3e8;
-    color: #ff7a00;
-    box-shadow: inset 0 0 0 1px rgba(255, 122, 0, 0.10);
-  }
-
-  .detail-chip.status-received {
-    background: #fff7ed;
-    color: #f97316;
-  }
-
-  .detail-chip.status-processing {
-    background: #fffbeb;
-    color: #d97706;
-  }
-
-  .detail-chip.status-done {
-    background: #f0fdf4;
-    color: #16a34a;
-  }
-
-  .detail-info-card {
-    position: relative;
-    background: #fafafa;
-    border: 1px solid #eceff3;
-    border-radius: 18px;
-    padding: 16px 16px 14px;
-    margin-bottom: 18px;
-  }
-
-  .detail-info-top-row {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 0;
-  }
-
-  .detail-info-score-stack {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
-  }
-
-  .detail-ai-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 34px;
-    padding: 0 13px;
-    border-radius: 999px;
-    font-size: 14px;
     font-weight: 900;
-    letter-spacing: -0.2px;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2);
+  }
+
+  .alert-repeat-badge.strong {
     background: #fff1f2;
     color: #dc2626;
-    box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.10);
-  }
-
-  .detail-ai-badge.medium {
-    background: #fff7ed;
-    color: #ea580c;
-    box-shadow: inset 0 0 0 1px rgba(234, 88, 12, 0.10);
-  }
-
-  .detail-ai-badge.low {
-    background: #f0fdf4;
-    color: #16a34a;
-    box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.10);
-  }
-
-  .detail-info-time {
-    font-size: 11px;
-    color: #9ca3af;
-    margin-top: 4px;
-  }
-
-  .detail-info-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 14px;
-  }
-
-  .detail-info-main {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding-right: 122px;
-  }
-
-  .detail-content-title {
-    font-size: 20px;
-    font-weight: 900;
-    color: #111;
-    margin: 0 0 2px 0;
-    line-height: 1.18;
-    letter-spacing: -0.35px;
-  }
-
-  .detail-content-text {
-    font-size: 14px;
-    color: #444;
-    line-height: 1.36;
-    margin: 0;
-    white-space: normal;
-    word-break: keep-all;
-  }
-
-  .detail-reporter-text {
-    color: #c2410c;
-    font-weight: 900;
-    letter-spacing: -0.1px;
-  }
-
-  .detail-content-body {
-    color: #535862;
-  }
-
-  .detail-close-btn,
-  .search-action-btn {
-    width: 100%;
-    height: 48px;
-    border: none;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #1f1f22, #2c2c30);
-    color: #fff;
-    font-size: 15px;
-    font-weight: 800;
-    cursor: pointer;
-    box-shadow: 0 10px 24px rgba(34, 34, 34, 0.18);
-  }
-
-  .search-modal-card {
-    padding: 20px;
-  }
-
-  .search-modal-head {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 14px;
-  }
-
-  .search-modal-title {
-    font-size: 1.1rem;
-    font-weight: 900;
-    color: #18212f;
-  }
-
-  .search-modal-desc {
-    font-size: 0.88rem;
-    line-height: 1.45;
-    color: #667085;
-    font-weight: 600;
-  }
-
-  .search-modal-field {
-    width: 100%;
-    height: 48px;
-    border: none;
-    border-radius: 16px;
-    background: #fffaf5;
-    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.18);
-    padding: 0 14px;
-    font-size: 14px;
-    color: #18212f;
-    outline: none;
-    margin-bottom: 12px;
-  }
-
-  .search-modal-field:focus {
-    background: #fff;
-    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.32), 0 0 0 4px rgba(249, 115, 22, 0.08);
-  }
-
-  .search-modal-help {
-    font-size: 12px;
-    line-height: 1.45;
-    color: #8b95a1;
-    margin-bottom: 14px;
-    font-weight: 600;
-  }
-
-  .search-modal-actions {
-    display: flex;
-    gap: 10px;
-  }
-
-  .search-modal-actions .search-action-btn.secondary {
-    background: #fffaf5;
-    color: #ea580c;
-    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.18);
   }
 
   @media (max-width: 640px) {
-    .detail-modal-backdrop,
-    .search-modal-backdrop {
-      padding: 16px;
-    }
-
-    .detail-modal-card,
-    .search-modal-card {
-      width: min(94vw, 420px);
-      border-radius: 24px;
-    }
-
-    .detail-thumb-box {
-      padding: 16px 16px 8px;
-    }
-
-    .detail-photo-frame {
-      height: 380px;
-      border-radius: 22px;
-    }
-
-    .detail-content-box,
-    .search-modal-card {
-      padding: 16px;
-    }
-
-    .detail-info-card {
-      padding: 14px 14px 12px;
-      margin-bottom: 16px;
-    }
-
-    .detail-close-btn,
-    .search-action-btn {
-      height: 46px;
-    }
-
     .alert-head-icon-btn {
       width: 38px;
       height: 38px;
-    }
-
-    .alert-head-icon-btn svg {
-      width: 17px;
-      height: 17px;
     }
 
     .alert-card {
       padding: 14px;
       border-radius: 20px;
     }
-
-    .alert-search-input {
-      height: 44px;
-    }
   }
 </style>
-{% endblock %}
 
-{% block content %}
 <div class="alert-page" id="alertPage">
-  <div class="alert-list" id="alertList">
-    <div class="alert-head">
-      <div class="alert-head-top">
-        <h2>스마트 알림</h2>
-
-        <div class="alert-head-actions">
-          <button
-            class="alert-head-icon-btn"
-            type="button"
-            onclick="scrollAlertsToTop()"
-            aria-label="맨 위로 이동"
-            title="맨 위로 이동"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
-              <path d="M12 19V7"></path>
-              <path d="M6 13l6-6 6 6"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <p>접수완료, 처리중, 처리완료 상태의 위험 신고만 보여줍니다.</p>
-
-      <div class="alert-search-row">
-        <div class="alert-search-box">
-          <svg class="alert-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="6"></circle>
-            <path d="M20 20l-4.2-4.2"></path>
+  <div class="alert-head">
+    <div class="alert-head-top">
+      <h2>스마트 알림</h2>
+      <div class="alert-head-actions">
+        <button class="alert-head-icon-btn" type="button" onclick="scrollAlertsToTop()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.5" style="width:20px; height:20px;">
+            <path d="M12 19V7"></path>
+            <path d="M6 13l6-6 6 6"></path>
           </svg>
-          <input
-            id="alertSearchInput"
-            class="alert-search-input"
-            type="text"
-            placeholder="주소 검색"
-            readonly
-            onclick="openAddressSearchModal()"
-          >
-          <button type="button" class="alert-search-open" onclick="openAddressSearchModal()">검색</button>
-        </div>
-      </div>
-
-      <div class="alert-filter-row" id="alertFilterRow">
-        <button type="button" class="alert-filter-chip active" data-status="all" onclick="filterByStatus('all', this)">전체</button>
-        <button type="button" class="alert-filter-chip" data-status="접수완료" onclick="filterByStatus('접수완료', this)">접수완료</button>
-        <button type="button" class="alert-filter-chip" data-status="처리중" onclick="filterByStatus('처리중', this)">처리중</button>
-        <button type="button" class="alert-filter-chip" data-status="처리완료" onclick="filterByStatus('처리완료', this)">처리완료</button>
+        </button>
       </div>
     </div>
+    <p>접수완료, 처리중, 처리완료 상태의 위험 신고만 보여줍니다.</p>
+    <div class="alert-search-row">
+      <div class="alert-search-box">
+        <svg class="alert-search-icon" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.5"
+          style="width:16px; height:16px; position:absolute; left:14px; top:50%; transform:translateY(-50%); z-index:5;">
+          <circle cx="11" cy="11" r="6"></circle>
+          <path d="M20 20l-4.2-4.2"></path>
+        </svg>
+        <input id="alertSearchInput" class="alert-search-input" type="text" placeholder="주소 검색" readonly
+          onclick="openAddressSearchModal()">
+        <button type="button" class="alert-search-open" onclick="openAddressSearchModal()">검색</button>
+      </div>
+    </div>
+    <div class="alert-filter-row" id="alertFilterRow">
+      <button type="button" class="alert-filter-chip active" data-status="all"
+        onclick="filterByStatus('all', this)">전체</button>
+      <button type="button" class="alert-filter-chip" data-status="접수완료"
+        onclick="filterByStatus('접수완료', this)">접수완료</button>
+      <button type="button" class="alert-filter-chip" data-status="처리중"
+        onclick="filterByStatus('처리중', this)">처리중</button>
+      <button type="button" class="alert-filter-chip" data-status="처리완료"
+        onclick="filterByStatus('처리완료', this)">처리완료</button>
+    </div>
+  </div>
 
-    {% set allowed_statuses = ['접수완료', '처리중', '처리완료'] %}
-    {% set ns = namespace(rendered=0) %}
+  <div class="alert-list" id="alertList">
     {% for item in alerts %}
-      {% if item.status in allowed_statuses %}
-      {% set ns.rendered = ns.rendered + 1 %}
-      {% set repeat_count = item.group_reporter_count|default(0, true)|int %}
-      <div
-        class="alert-card {% if item.risk_score|default(0) >= 80 %}high-risk{% endif %}"
-        onclick="openAlertDetailModalFromCard(this)"
-        data-title="{{ item.title|default('', true)|e }}"
-        data-location="{{ item.location|default('위치 정보 없음', true)|e }}"
-        data-content="{{ item.content|default('상세 설명이 없습니다.', true)|e }}"
-        data-status="{{ item.status|default('', true)|e }}"
-        data-status-class="{{ item.status_class|default('', true)|e }}"
-        data-risk-score="{{ item.risk_score|default(0, true) }}"
-        data-risk-class="{{ item.risk_class|default('', true)|e }}"
-        data-created-at="{{ item.created_at|default('', true)|e }}"
-        data-reporter-count="{{ repeat_count }}"
-        data-latitude="{{ item.latitude|default('', true) }}"
-        data-longitude="{{ item.longitude|default('', true) }}"
-        data-search-location="{{ (item.location|default('', true) ~ ' ' ~ item.region_name|default('', true))|e }}"
-      >
-        <div class="alert-top">
-          <div class="alert-status {{ item.status_class|default('status-default', true) }}">{{ item.status }}</div>
-          <div class="alert-risk {{ item.risk_class|default('risk-low', true) }}">
-            <span class="risk-label">AI</span>
-            <span class="risk-value">{{ item.risk_score|default(0, true) }}%</span>
-          </div>
-        </div>
+    {% set repeat_count = item.group_reporter_count|default(1) %}
+    <div class="alert-card {{ 'high-risk' if item.risk_score|default(0) >= 80 else '' }}"
+      onclick="location.href='/alert/view/{{ item.id }}'" data-id="{{ item.id }}"
+      data-title="{{ item.title|default('', true)|e }}" data-location="{{ item.location|default('위치 정보 없음', true)|e }}"
+      data-status="{{ item.status|default('', true)|e }}">
 
-        <div class="alert-main">
+      <div class="alert-card-inner">
+        {% if current_role in ('admin', 'manager') %}
+        <div class="alert-thumbnail-wrap" style="position: relative;">
+          {% if item.file_type == 'video' %}
+          <div
+            style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.6); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10;">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="white">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+          {% endif %}
+          {% if item.image_path %}
+          <img
+            src="{{ '/uploads/' + item.image_path if not (item.image_path.startswith('/') or item.image_path.startswith('http')) else item.image_path }}"
+            class="alert-thumbnail" alt="썸네일">
+          {% else %}
+          <div
+            style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:10px; color:#94a3b8; background:#f8fafc;">
+            No Image</div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="alert-main-content">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <div class="alert-status {{ item.status_class|default('status-default', true) }}">{{ item.status }}</div>
+            <div class="alert-risk {{ item.risk_class|default('risk-low', true) }}">AI {{ item.risk_score|default(0,
+              true) }}%</div>
+          </div>
           <div class="alert-title">{{ item.title }}</div>
           <div class="alert-location">{{ item.location }}</div>
-          <div class="alert-meta">
-            <span>{{ item.created_at }}</span>
-            {% if repeat_count >= 1 %}
-              <span class="alert-repeat-badge {% if repeat_count >= 3 %}strong{% endif %}">반복 제보 {{ repeat_count }}건</span>
-            {% endif %}
+          <div class="alert-meta" style="margin-top:2px; font-size: 0.82rem; color: #777;">
+            <span>{{ (item.created_at|string)[:16] if item.created_at else '' }}</span>
+            <span class="alert-repeat-badge {{ 'strong' if repeat_count >= 2 else '' }}">반복 제보 {{ repeat_count
+              }}건</span>
           </div>
         </div>
       </div>
-      {% endif %}
+    </div>
+    {% else %}
+    <div class="alert-empty">표시할 알림이 없습니다.</div>
     {% endfor %}
-
-    <div id="alertLoadMore" class="alert-load-more" style="display:none;">
-      <div class="alert-load-spinner"></div>
+    <div id="alertLoadMore"
+      style="display:none; align-items:center; justify-content:center; padding:20px; gap:8px; color:#94a3b8; font-size:14px; font-weight:600;">
+      <div
+        style="width:18px; height:18px; border:3px solid #f97316; border-top-color:transparent; border-radius:50%; animation: alertSpinner 0.8s linear infinite;">
+      </div>
       <span>불러오는 중...</span>
     </div>
-
-    <div
-      class="alert-empty"
-      id="alertEmptyMessage"
-      style="display:{% if ns.rendered == 0 %}block{% else %}none{% endif %};"
-    >
-      조건에 맞는 게시글이 없습니다.
-    </div>
-  </div>
-</div>
-
-<div class="detail-modal-backdrop" id="alertDetailModal">
-  <div class="detail-modal-card">
-    <div class="detail-thumb-box">
-      <div class="detail-photo-frame">
-        <div id="alertDetailMapCanvas" class="detail-map-canvas"></div>
-        <div id="alertDetailPlaceholder" class="detail-thumb-placeholder">위치 정보가 없습니다.</div>
-      </div>
-    </div>
-
-    <div class="detail-content-box">
-      <div class="detail-meta-row">
-        <div id="alertDetailStatus" class="detail-chip status-received">접수완료</div>
-      </div>
-
-      <div class="detail-info-card">
-        <div class="detail-info-top-row">
-          <div class="detail-info-score-stack">
-            <div id="alertDetailRisk" class="detail-ai-badge">AI 83%</div>
-            <span id="alertDetailTime" class="detail-info-time">00-00 00:00</span>
-          </div>
-        </div>
-
-        <div class="detail-info-head">
-          <div class="detail-info-main">
-            <div id="alertDetailTitle" class="detail-content-title">신고 제목</div>
-            <div id="alertDetailLocation" class="detail-content-text">위치 정보</div>
-            <div id="alertDetailReporter" class="detail-content-text detail-reporter-text" style="display:none;"></div>
-            <div id="alertDetailContent" class="detail-content-text detail-content-body">상세 설명이 없습니다.</div>
-          </div>
-        </div>
-      </div>
-
-      <button class="detail-close-btn" type="button" onclick="closeAlertDetailModal()">닫기</button>
-    </div>
-  </div>
-</div>
-
-<div class="search-modal-backdrop" id="addressSearchModal">
-  <div class="search-modal-card">
-    <div class="search-modal-head">
-      <div class="search-modal-title">주소 검색</div>
-      <div class="search-modal-desc">검색어를 입력하면 해당 주소가 포함된 신고만 보이도록 필터링합니다.</div>
-    </div>
-
-    <input id="addressSearchField" class="search-modal-field" type="text" placeholder="예: 수원시 영통구, 서울 강남구">
-    <div class="search-modal-help">카카오 주소 API를 붙이기 전까지는 내부 목록 필터용 검색 팝업으로 동작하도록 맞춰두었습니다.</div>
-
-    <div class="search-modal-actions">
-      <button type="button" class="search-action-btn secondary" onclick="closeAddressSearchModal()">취소</button>
-      <button type="button" class="search-action-btn" onclick="applyAddressSearch()">적용</button>
-    </div>
-  </div>
-</div>
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ KAKAO_JS_KEY }}&autoload=false"></script>
-<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-<script>
-  let detailLat = '';
-  let detailLng = '';
-  let detailInlineMap = null;
-  let detailInlineMarker = null;
-  let alertVisibleCount = 8;
-  const alertLoadStep = 8;
-  let alertIsLoading = false;
-  let currentStatusFilter = 'all';
-  let currentAddressKeyword = '';
-
-  function getDetailStatusClass(statusClass) {
-    if (statusClass === 'status-received') return 'status-received';
-    if (statusClass === 'status-processing') return 'status-processing';
-    if (statusClass === 'status-done') return 'status-done';
-    return 'status-default';
-  }
-
-  function getRiskBadgeClass(riskClass, numericScore) {
-    if (riskClass === 'risk-high' || numericScore >= 80) return 'detail-ai-badge';
-    if (riskClass === 'risk-medium' || numericScore >= 50) return 'detail-ai-badge medium';
-    return 'detail-ai-badge low';
-  }
-
-  function openAlertDetailModalFromCard(card) {
-    if (!card) return;
-
-    const title = card.dataset.title || '신고 상세';
-    const location = card.dataset.location || '위치 정보 없음';
-    const createdAt = card.dataset.createdAt || '-';
-    const reporterCount = Number(card.dataset.reporterCount || 0);
-    const content = card.dataset.content || '상세 설명이 없습니다.';
-    const status = card.dataset.status || '-';
-    const statusClass = card.dataset.statusClass || '';
-    const riskClass = card.dataset.riskClass || '';
-    const numericScore = Number(String(card.dataset.riskScore || '0').replace(/[^\d.]/g, '')) || 0;
-
-    document.getElementById('alertDetailTitle').textContent = title;
-    document.getElementById('alertDetailLocation').textContent = location;
-    document.getElementById('alertDetailTime').textContent = createdAt;
-    document.getElementById('alertDetailContent').textContent = content;
-
-    const reporterEl = document.getElementById('alertDetailReporter');
-    if (reporterCount >= 1) {
-      reporterEl.textContent = `반복 제보 ${reporterCount}건`;
-      reporterEl.style.display = 'block';
-    } else {
-      reporterEl.textContent = '';
-      reporterEl.style.display = 'none';
-    }
-
-    detailLat = card.dataset.latitude || '';
-    detailLng = card.dataset.longitude || '';
-
-    const statusEl = document.getElementById('alertDetailStatus');
-    statusEl.textContent = status;
-    statusEl.className = 'detail-chip ' + getDetailStatusClass(statusClass);
-
-    const riskEl = document.getElementById('alertDetailRisk');
-    riskEl.textContent = `AI ${numericScore}%`;
-    riskEl.className = getRiskBadgeClass(riskClass, numericScore);
-
-    document.getElementById('alertDetailModal').classList.add('show');
-    setTimeout(renderDetailInlineMap, 50);
-  }
-
-  function closeAlertDetailModal() {
-    document.getElementById('alertDetailModal').classList.remove('show');
-  }
-
-  function openAddressSearchModal() {
-    if (!(window.daum && window.daum.Postcode)) {
-      alert('주소 검색 서비스를 불러올 수 없습니다.');
-      return;
-    }
-
-    new daum.Postcode({
-      oncomplete: function (data) {
-        const selectedAddress = data.roadAddress || data.jibunAddress || data.address || '';
-        const input = document.getElementById('alertSearchInput');
-
-        currentAddressKeyword = selectedAddress;
-
-        if (input) {
-          input.value = selectedAddress;
+    <style>
+      @keyframes alertSpinner {
+        to {
+          transform: rotate(360deg);
         }
-
-        filterAlertCards();
       }
-    }).open();
-  }
+    </style>
+  </div>
+</div>
 
-  function closeAddressSearchModal() {
-    return;
-  }
-
-  function applyAddressSearch() {
-    filterAlertCards();
-  }
-
-  function getFilteredCards() {
-    const keyword = currentAddressKeyword.trim().toLowerCase();
-    const allCards = Array.from(document.querySelectorAll('.alert-card'));
-
-    return allCards.filter(card => {
-      const location = (card.dataset.searchLocation || '').toLowerCase();
-      const status = (card.dataset.status || '').trim();
-      const keywordMatched = keyword === '' || location.includes(keyword);
-      const statusMatched = currentStatusFilter === 'all' || status === currentStatusFilter;
-      return keywordMatched && statusMatched;
-    });
-  }
-
-  function applyVisibleCards() {
-    const allCards = Array.from(document.querySelectorAll('.alert-card'));
-    const filteredCards = getFilteredCards();
-    const visibleSet = new Set(filteredCards.slice(0, alertVisibleCount));
-    const emptyEl = document.getElementById('alertEmptyMessage');
-    const loadMoreEl = document.getElementById('alertLoadMore');
-
-    allCards.forEach(card => {
-      card.style.display = visibleSet.has(card) ? 'flex' : 'none';
-    });
-
-    if (emptyEl) {
-      emptyEl.style.display = filteredCards.length === 0 ? 'block' : 'none';
-    }
-
-    if (loadMoreEl) {
-      loadMoreEl.style.display = filteredCards.length > alertVisibleCount ? 'flex' : 'none';
-    }
-  }
-
-  function filterAlertCards() {
-    const listEl = document.getElementById('alertList');
-    alertVisibleCount = alertLoadStep;
-    if (listEl) listEl.classList.add('fade-out');
-
-    setTimeout(() => {
-      applyVisibleCards();
-      if (listEl) {
-        listEl.classList.remove('fade-out');
-        listEl.classList.add('fade-in');
-        setTimeout(() => listEl.classList.remove('fade-in'), 180);
-      }
-    }, 140);
-  }
-
-  function filterByStatus(status, buttonEl) {
-    currentStatusFilter = status;
-    document.querySelectorAll('.alert-filter-chip').forEach(btn => btn.classList.remove('active'));
-    if (buttonEl) buttonEl.classList.add('active');
-    filterAlertCards();
-  }
+<script>
+  let alertVisibleCount = 8;
+  const alertLoadStep = 6;
+  let alertIsLoading = false;
+  let alertAllCards = [];
 
   function scrollAlertsToTop() {
-    const scrollTarget = document.getElementById('alertPage');
-    if (!scrollTarget) return;
-
-    scrollTarget.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    const main = document.querySelector('main');
+    if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function loadMoreAlerts() {
-    const filteredCards = getFilteredCards();
-    if (alertIsLoading || filteredCards.length <= alertVisibleCount) return;
+  function filterByStatus(status, btn) {
+    document.querySelectorAll('.alert-filter-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
 
-    alertIsLoading = true;
-    const loadMoreEl = document.getElementById('alertLoadMore');
-    if (loadMoreEl) loadMoreEl.style.display = 'flex';
-
-    setTimeout(() => {
-      alertVisibleCount += alertLoadStep;
-      applyVisibleCards();
-      alertIsLoading = false;
-    }, 380);
-  }
-
-  function handleAlertScroll() {
-    const threshold = 120;
-
-    const reachedBottom =
-      window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - threshold;
-
-    if (reachedBottom) loadMoreAlerts();
-  }
-
-  function renderDetailInlineMap() {
-    const container = document.getElementById('alertDetailMapCanvas');
-    const placeholder = document.getElementById('alertDetailPlaceholder');
-    const hasCoords = String(detailLat).trim() !== '' && String(detailLng).trim() !== '';
-
-    if (!container || !placeholder) return;
-
-    if (!hasCoords) {
-      container.style.display = 'none';
-      placeholder.textContent = '위치 정보가 없습니다.';
-      placeholder.style.display = 'flex';
-      return;
-    }
-
-    const lat = parseFloat(detailLat);
-    const lng = parseFloat(detailLng);
-
-    if (Number.isNaN(lat) || Number.isNaN(lng)) {
-      container.style.display = 'none';
-      placeholder.textContent = '위치 좌표를 확인할 수 없습니다.';
-      placeholder.style.display = 'flex';
-      return;
-    }
-
-    if (!(window.kakao && window.kakao.maps)) {
-      container.style.display = 'none';
-      placeholder.textContent = '지도를 불러올 수 없습니다.';
-      placeholder.style.display = 'flex';
-      return;
-    }
-
-    placeholder.style.display = 'none';
-    container.style.display = 'block';
-
-    window.kakao.maps.load(function () {
-      const position = new kakao.maps.LatLng(lat, lng);
-      const options = { center: position, level: 3 };
-
-      if (!detailInlineMap) {
-        detailInlineMap = new kakao.maps.Map(container, options);
-        detailInlineMarker = new kakao.maps.Marker({ position });
-        detailInlineMarker.setMap(detailInlineMap);
-      } else {
-        detailInlineMarker.setPosition(position);
-        detailInlineMap.setCenter(position);
-      }
-
-      setTimeout(() => {
-        detailInlineMap.relayout();
-        detailInlineMap.setCenter(position);
-      }, 50);
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.alert-card').forEach(card => {
-      card.addEventListener('click', function () {
-        openAlertDetailModalFromCard(card);
-      });
+    const allCards = Array.from(document.querySelectorAll('.alert-card'));
+    alertAllCards = allCards.filter(card => {
+      return status === 'all' || card.dataset.status === status;
     });
 
-    document.querySelectorAll('.alert-filter-chip').forEach(btn => {
-      btn.addEventListener('click', function () {
-        filterByStatus(btn.dataset.status || 'all', btn);
-      });
-    });
+    alertVisibleCount = 8;
+    updateVisibleAlertCards();
+  }
 
-    window.addEventListener('scroll', handleAlertScroll);
+  function updateVisibleAlertCards() {
+    const allCards = document.querySelectorAll('.alert-card');
+    allCards.forEach(card => card.style.display = 'none');
+    alertAllCards.slice(0, alertVisibleCount).forEach(card => card.style.display = 'flex');
 
-    const detailModal = document.getElementById('alertDetailModal');
-    if (detailModal) {
-      detailModal.addEventListener('click', function (e) {
-        if (e.target === detailModal) closeAlertDetailModal();
-      });
+    const loadMore = document.getElementById('alertLoadMore');
+    if (loadMore) {
+      loadMore.style.display = alertVisibleCount < alertAllCards.length ? 'flex' : 'none';
     }
+  }
 
-    const searchModal = document.getElementById('addressSearchModal');
-    if (searchModal) {
-      searchModal.addEventListener('click', function (e) {
-        if (e.target === searchModal) closeAddressSearchModal();
-      });
+  document.addEventListener('DOMContentLoaded', () => {
+    alertAllCards = Array.from(document.querySelectorAll('.alert-card'));
+    updateVisibleAlertCards();
+
+    // 무한 스크롤 이벤트
+    const alertPage = document.getElementById('alertPage');
+    if (alertPage) {
+      alertPage.onscroll = function (e) {
+        if (alertIsLoading) return;
+        const { scrollTop, scrollHeight, clientHeight } = e.target;
+        if (scrollTop + clientHeight >= scrollHeight - 30) {
+          if (alertVisibleCount < alertAllCards.length) {
+            alertIsLoading = true;
+            document.getElementById('alertLoadMore').style.display = 'flex';
+            setTimeout(() => {
+              alertVisibleCount += alertLoadStep;
+              updateVisibleAlertCards();
+              alertIsLoading = false;
+            }, 400);
+          }
+        }
+      };
     }
-
-    const searchField = document.getElementById('addressSearchField');
-    if (searchField) {
-      searchField.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') applyAddressSearch();
-      });
-    }
-
-    filterAlertCards();
   });
 </script>
 {% endblock %}

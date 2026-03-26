@@ -2,9 +2,19 @@
 <html lang="ko">
 
 <head>
+    <script>
+        // [FOUC Guard] 즉시 실행하여 렌더링 전 클로킹 모드 진입
+        document.documentElement.classList.add('is-loading');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}Crack{% endblock %}</title>
+
+    <!-- Preload Critical Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;900&display=swap">
 
     <!-- Modern Typography: Inter & Outfit -->
     <link
@@ -69,6 +79,17 @@
             --footer-h: 70px;
         }
 
+        /* [FOUC Guard Style] 최상단 배치 */
+        .is-loading .app-container>*:not(#premium-loader) {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transition: none !important;
+        }
+
+        html.is-loading {
+            background-color: #F2F0EB !important;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -102,10 +123,11 @@
             display: grid;
             grid-template-rows: auto 1fr auto;
             overflow: hidden !important;
-            transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             border-radius: 24px !important;
             /* 4 corners curvature */
             border: 1px solid rgba(0, 0, 0, 0.05);
+            opacity: 1;
         }
 
         /* Admin Dashboard: Exception for 100% PC Width */
@@ -639,7 +661,7 @@
             margin-right: 4px;
         }
 
-        @media (min-width: 1024px) {
+        @media (min-width: 601px) {
             .admin-pc-btn {
                 display: flex !important;
             }
@@ -702,25 +724,27 @@
         /* Premium Loader Styles */
         #premium-loader {
             position: absolute;
-            top: var(--header-h);
-            /* Header Height */
-            left: 0;
+            inset: 0;
             width: 100%;
-            bottom: var(--footer-h);
-            /* Bottom Nav Height */
+            height: 100%;
             background: #F2F0EB;
-            /* [FIX] PWA 스플래시 배경색(#F2F0EB)과 100% 일치시켜 전환 시 깜빡임 제거 */
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 99999;
-            /* Extra high to cover all elements including filters */
+            z-index: 1000000;
             padding-bottom: 3vh;
-            /* Nudge content up slightly for better visual balance */
-            transition: opacity 0.5s ease, visibility 0.5s;
+            transition: opacity 0.4s ease, visibility 0.4s;
+        }
+
+        /* Full-screen Override for Admin Dashboard or PPT Mode */
+        body.admin-dashboard-page #premium-loader,
+        body.ppt-mode #premium-loader {
+            position: fixed;
+            width: 100vw;
+            height: 100dvh;
         }
 
         #premium-loader.fade-out {
@@ -990,61 +1014,60 @@
             }
         }
     </script>
+
+    <style>
+        /* PPT Mode Style Override: Persistent Class & Original Query Param both handled */
+        html.ppt-mode-active,
+        html.ppt-mode-active body,
+        body.ppt-mode {
+            overflow: hidden !important;
+        }
+
+        /* 관리자 대시보드에서만 스크롤 물리적 완전 차단 - 모든 래퍼 포함 */
+        html.ppt-mode-active body.admin-mode-active,
+        body.ppt-mode.admin-mode-active {
+            overflow: hidden !important;
+            height: 100vh !important;
+            width: 100vw !important;
+            position: fixed !important;
+            inset: 0 !important;
+            overscroll-behavior: none !important;
+        }
+
+        /* [핵심] 중간 래퍼(.app-container, main)도 절대 고정 */
+        body.ppt-mode.admin-mode-active .app-container,
+        body.ppt-mode.admin-mode-active main,
+        html.ppt-mode-active body.admin-mode-active .app-container,
+        html.ppt-mode-active body.admin-mode-active main {
+            overflow: hidden !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+        }
+
+        /* 스크롤 인디케이터(주황색 프로그레시브 바) 숨김 */
+        body.ppt-mode.admin-mode-active #scroll-indicator,
+        html.ppt-mode-active body.admin-mode-active #scroll-indicator {
+            display: none !important;
+        }
+
+        /* 공통: 발표 시 관리자 전환 버튼 숨김 */
+        body.ppt-mode .admin-pc-btn,
+        html.ppt-mode-active body .admin-pc-btn {
+            display: none !important;
+        }
+
+        /* 관리자 대시보드 전용: PPT 모드(ppt=1 파라미터 존재 시)에서만 상단바 완전 차단 */
+        body.ppt-mode.admin-dashboard-page header {
+            display: none !important;
+        }
+
+        /* 오직 관리자 대시보드에서만 하단바 숨김 (사용자 요청: 17~20페이지 하단바 복구) */
+        body.ppt-mode.admin-dashboard-page .bottom-nav,
+        html.ppt-mode-active body.admin-dashboard-page .bottom-nav {
+            display: none !important;
+        }
+    </style>
 </head>
-
-<style>
-    /* PPT Mode Style Override: Persistent Class & Original Query Param both handled */
-    html.ppt-mode-active,
-    html.ppt-mode-active body,
-    body.ppt-mode {
-        overflow: hidden !important;
-        /* height/fixed 제거하여 일반 슬라이드(17-20)에서는 스크롤 가능하게 함 */
-    }
-
-    /* 관리자 대시보드에서만 스크롤 물리적 완전 차단 - 모든 래퍼 포함 */
-    html.ppt-mode-active body.admin-mode-active,
-    body.ppt-mode.admin-mode-active {
-        overflow: hidden !important;
-        height: 100vh !important;
-        width: 100vw !important;
-        position: fixed !important;
-        inset: 0 !important;
-        overscroll-behavior: none !important;
-    }
-
-    /* [핵심] 중간 래퍼(.app-container, main)도 절대 고정 */
-    body.ppt-mode.admin-mode-active .app-container,
-    body.ppt-mode.admin-mode-active main,
-    html.ppt-mode-active body.admin-mode-active .app-container,
-    html.ppt-mode-active body.admin-mode-active main {
-        overflow: hidden !important;
-        height: 100vh !important;
-        max-height: 100vh !important;
-    }
-
-    /* 스크롤 인디케이터(주황색 프로그레시브 바) 숨김 */
-    body.ppt-mode.admin-mode-active #scroll-indicator,
-    html.ppt-mode-active body.admin-mode-active #scroll-indicator {
-        display: none !important;
-    }
-
-    /* 공통: 발표 시 관리자 전환 버튼 숨김 */
-    body.ppt-mode .admin-pc-btn,
-    html.ppt-mode-active body .admin-pc-btn {
-        display: none !important;
-    }
-
-    /* 관리자 대시보드 전용: PPT 모드(ppt=1 파라미터 존재 시)에서만 상단바 완전 차단 */
-    body.ppt-mode.admin-dashboard-page header {
-        display: none !important;
-    }
-
-    /* 오직 관리자 대시보드에서만 하단바 숨김 (사용자 요청: 17~20페이지 하단바 복구) */
-    body.ppt-mode.admin-dashboard-page .bottom-nav,
-    html.ppt-mode-active body.admin-dashboard-page .bottom-nav {
-        display: none !important;
-    }
-</style>
 
 <body
     class="{{ 'ppt-mode' if request.args.get('ppt') == '1' else '' }} {{ 'admin-dashboard-page' if request.path == '/admin/dashboard' else '' }} {{ 'admin-mode-active' if request.path == '/admin/dashboard' and request.args.get('ppt') == '1' else '' }}">
@@ -1088,10 +1111,9 @@
                 </div>
                 {% endif %}
                 {% endif %}
-                {% if session.get('user_role') == 'admin' %}
-                <a href="{{ url_for('admin.admin_dashboard') }}"
-                   class="admin-pc-btn ms-2 admin-dashboard-link"
-                   title="관리자 대시보드">
+                {% if session.get('is_admin') or session.get('user_role') == 'admin' %}
+                <a href="{{ url_for('admin.admin_dashboard') }}" class="admin-pc-btn ms-2 admin-dashboard-link"
+                    title="관리자 대시보드">
                     <i class="bi bi-person-fill-gear"></i>
                 </a>
                 {% endif %}
@@ -1604,7 +1626,12 @@
                 const delay = Math.max(0, minTime - elapsedTime);
 
                 setTimeout(() => {
-                    loader.classList.add('fade-out');
+                    // 클로킹 해제와 로더 제거를 거의 동시에 진행하되 클로킹을 아주 살짝 먼저 해제
+                    document.documentElement.classList.remove('is-loading');
+
+                    setTimeout(() => {
+                        loader.classList.add('fade-out');
+                    }, 50);
                 }, delay);
             });
         });
@@ -1631,7 +1658,7 @@
             var targetUrl = link.getAttribute('href');
             var appContainer = document.querySelector('.app-container');
 
-            sessionStorage.setItem('admin_transition', 'dashboard_enter');
+            sessionStorage.setItem('admin_transition', 'active');
 
             if (appContainer) {
                 appContainer.classList.add('admin-link-pressing');

@@ -64,10 +64,7 @@ def haversine_m(lat1, lon1, lat2, lon2):
 
 
 def _current_user_role():
-    role = session.get('user_role') or session.get('role')
-    if role:
-        return role
-
+    # 세션 캐시 대신 실시간 DB 체크를 선호하거나, 최소한 admin 여부는 확실히 체크해야 함
     user_id = session.get('user_id')
     if not user_id:
         return 'user'
@@ -86,10 +83,18 @@ def _current_user_role():
     if not row:
         return 'user'
 
-    role_value = row.get('role_value') or ('admin' if _safe_int(row.get('is_admin')) == 1 else 'user')
+    # is_admin이 1이면 role에 상관없이 admin으로 취급 (권한 충돌 방지)
+    is_admin_db = _safe_int(row.get('is_admin'))
+    role_db = row.get('role_value')
+    
+    if is_admin_db == 1:
+        role_value = 'admin'
+    else:
+        role_value = role_db or 'user'
+
     session['user_role'] = role_value
     session['role'] = role_value
-    session['is_admin'] = role_value == 'admin' or _safe_int(row.get('is_admin')) == 1
+    session['is_admin'] = (is_admin_db == 1) or (role_value == 'admin')
     session['user_name'] = row.get('nickname') or row.get('username') or '사용자'
     return role_value
 
@@ -390,14 +395,15 @@ def alert_page():
     # =========================
     if role in ('admin', 'manager'):
         region_filter_on = request.args.get('region_filter', 'on') == 'on'
+        manager_region = _get_manager_region()
+        manager_region = normalize_region_name(manager_region) or manager_region
 
-        # 🔹 관리자
-        if role == 'admin':
+        # 🔸 지역 정보가 없는 경우 (순수 우선순위 점수 + 최신순)
+        if not manager_region:
             filtered = [
                 item for item in items
                 if (item.get('status') or '') in ADMIN_ALERT_STATUSES
             ]
-
             filtered.sort(
                 key=lambda x: (
                     _priority_score(x),
@@ -406,70 +412,51 @@ def alert_page():
                 ),
                 reverse=True
             )
-
-        # 🔹 매니저
+        # 🔸 담당 지역이 설정된 경우 (지역 가중치 + 우선순위 점수)
         else:
-            manager_region = _get_manager_region()
-            manager_region = normalize_region_name(manager_region) or manager_region
+            m_lv1, m_lv2, m_lv3 = _split_region_levels(manager_region)
+            priority_list = []
+            secondary_list = []
+            others = []
 
-            if not manager_region:
-                filtered = [
-                    item for item in items
-                    if (item.get('status') or '') in ADMIN_ALERT_STATUSES
-                ]
-                filtered.sort(
-                    key=lambda x: (
-                        _priority_score(x),
-                        _safe_float(x.get('risk_score')),
-                        x.get('created_at') or datetime.min
-                    ),
-                    reverse=True
-                )
-            else:
-                m_lv1, m_lv2, m_lv3 = _split_region_levels(manager_region)
+            for item in items:
+                status = item.get('status') or ''
+                if status not in ADMIN_ALERT_STATUSES:
+                    continue
 
-                priority_list = []
-                secondary_list = []
-                others = []
+                raw_region = item.get('region_name') or ''
+                normalized_region = normalize_region_name(raw_region) or raw_region
+                r_lv1, r_lv2, r_lv3 = _split_region_levels(normalized_region)
 
-                for item in items:
-                    status = item.get('status') or ''
-                    if status not in ADMIN_ALERT_STATUSES:
-                        continue
-
-                    raw_region = item.get('region_name') or ''
-                    normalized_region = normalize_region_name(raw_region) or raw_region
-                    r_lv1, r_lv2, r_lv3 = _split_region_levels(normalized_region)
-
-                    if m_lv1 == r_lv1 and m_lv2 == r_lv2 and m_lv3 == r_lv3:
-                        priority_list.append(item)
-                    elif m_lv1 == r_lv1 and m_lv2 == r_lv2:
-                        secondary_list.append(item)
-                    else:
-                        others.append(item)
-
-                def sort_func(x):
-                    return (
-                        _priority_score(x),
-                        _safe_float(x.get('risk_score')),
-                        x.get('created_at') or datetime.min
-                    )
-
-                priority_list.sort(key=sort_func, reverse=True)
-                secondary_list.sort(key=sort_func, reverse=True)
-                others.sort(key=sort_func, reverse=True)
-
-                if region_filter_on:
-                    filtered = priority_list + secondary_list
+                if m_lv1 == r_lv1 and m_lv2 == r_lv2 and m_lv3 == r_lv3:
+                    priority_list.append(item)
+                elif m_lv1 == r_lv1 and m_lv2 == r_lv2:
+                    secondary_list.append(item)
                 else:
-                    filtered = priority_list + secondary_list + others
+                    others.append(item)
+
+            def sort_func(x):
+                return (
+                    _priority_score(x),
+                    _safe_float(x.get('risk_score')),
+                    x.get('created_at') or datetime.min
+                )
+
+            priority_list.sort(key=sort_func, reverse=True)
+            secondary_list.sort(key=sort_func, reverse=True)
+            others.sort(key=sort_func, reverse=True)
+
+            if region_filter_on:
+                filtered = priority_list + secondary_list
+            else:
+                filtered = priority_list + secondary_list + others
 
         alerts = [_serialize_alert_item(item, selected_lat, selected_lng) for item in filtered]
 
         return render_template(
             'admin_alert.html',
             alerts=alerts,
-            KAKAO_JS_KEY=current_app.config.get('KAKAO_JS_KEY', ''),
+            kakao_js_key=current_app.config.get('KAKAO_JS_KEY', ''),
             region_filter_on=region_filter_on,
             current_role=role
         )
@@ -480,15 +467,23 @@ def alert_page():
     region_city, region_district = _get_user_interest_region()
 
     filtered = []
+    user_id = session.get('user_id')
+    
     for item in items:
         status = item.get('status') or ''
         risk_score = _safe_float(item.get('risk_score'))
         reporters = _safe_int(item.get('group_reporter_count'), 1)
+        item_user_id = item.get('member_id') or item.get('user_id')
 
+        # 상태 기반 기본 필터
         if status not in VISIBLE_USER_STATUSES:
-            continue
+            # 내 글이면 관리자 확인중이나 AI 분석중인 상태여도 보여줌
+            if not (user_id and item_user_id == user_id and status != '반려'):
+                continue
 
-        if risk_score >= 80 or reporters >= 3:
+        # [필터 완화] 위험도가 낮아도 모든 접수된 건은 보여주도록 수정 (사용자 요청 반영)
+        # 이전: if risk_score >= 80 or reporters >= 3:
+        if True: # 모든 게시물 노출
             filtered.append(item)
 
     # 관심지역 기반 우선 정렬
@@ -540,7 +535,8 @@ def alert_page():
         'alert.html',
         alerts=alerts,
         notices=notices,
-        KAKAO_JS_KEY=current_app.config.get('KAKAO_JS_KEY', '')
+        kakao_js_key=current_app.config.get('KAKAO_JS_KEY', ''),
+        current_role=role
     )
 
 
@@ -587,7 +583,7 @@ def alert_view(report_id):
         'damage_type': ai_res.damage_type if ai_res else 'N/A'
     }
 
-    return render_template('alert_view.html', detail=detail, is_admin=session.get('is_admin', False))
+    return render_template('alert_view_v2.html', detail=detail, is_admin=session.get('is_admin', False))
 
 
 @alert_bp.route('/api/admin/report/<int:report_id>/status', methods=['POST'])

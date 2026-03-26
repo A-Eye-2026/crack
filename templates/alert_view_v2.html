@@ -248,6 +248,9 @@
     }
 </style>
 
+<!-- [SAFE-PASS] 데이터 전달을 위해 상단에 히든 필드 배치 -->
+<div id="safe-report-context" data-report-id="{{ detail.id }}" style="display:none;"></div>
+
 <div class="detail-container">
     <div class="detail-header">
         <a href="javascript:void(0)" onclick="history.back(); return false;" class="back-btn"
@@ -379,6 +382,10 @@
 </div>
 
 <script>
+    // [BRIDGE] HTML Context에서 ID 로드
+    const SAFE_CONTEXT = document.getElementById('safe-report-context');
+    const REPORT_ID = SAFE_CONTEXT ? SAFE_CONTEXT.dataset.reportId : null;
+
     function ensureMapReady(callback) {
         if (window.kakaoSdkLoaded === false) {
             console.error("SDK 로드 실패");
@@ -438,24 +445,19 @@
     {% if detail.file_type == 'video' %}
     (function () {
         var video = document.getElementById('cv-video');
-        if (!video) return;
-        var reportId = {{ detail.id }
-    };
+        if (!video || !REPORT_ID) return;
 
-    // 검출 데이터 로드
-    fetch('/api/report/' + reportId + '/detections')
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            allDetections = data;
-            historyLoaded = true;
-            renderHistory(data);
-            console.log('[CV] Loaded ' + data.length + ' detections');
-        })
-        .catch(function (e) { console.error('[CV] Error loading detections:', e); });
-
-        // 동영상은 이미 서버에서 CV 박스가 입혀져 인코딩된 결과물이 재생됩니다.
-        // 추가적인 캔버스 오버레이는 성능 문제와 뷰포트 오류 방지를 위해 제거되었습니다.
-    }) ();
+        // 검출 데이터 로드
+        fetch('/api/report/' + REPORT_ID + '/detections')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                allDetections = data;
+                historyLoaded = true;
+                renderHistory(data);
+                console.log('[CV] Loaded ' + data.length + ' detections');
+            })
+            .catch(function (e) { console.error('[CV] Error loading detections:', e); });
+    })();
     {% endif %}
 
     function formatTime(sec) {
@@ -519,53 +521,51 @@
 
     window.reAnalyzeAI = async function () {
         if (!confirm('AI 분석을 다시 실행하시겠습니까? 기존 분석 데이터는 삭제됩니다.')) return;
-        var reportId = {{ detail.id }
-    };
+        if (!REPORT_ID) return;
 
-    if (typeof showPremiumLoader === 'function') showPremiumLoader();
+        if (typeof showPremiumLoader === 'function') showPremiumLoader();
 
-    try {
-        var resp = await fetch('/api/admin/reanalyze/' + reportId, { method: 'POST' });
-        var data = await resp.json();
-        if (data.success) {
-            if (typeof showToast === 'function') showToast(data.message);
-            setTimeout(function () { window.location.reload(); }, 1500);
-        } else {
-            if (typeof showToast === 'function') showToast('실패: ' + data.message);
+        try {
+            var resp = await fetch('/api/admin/reanalyze/' + REPORT_ID, { method: 'POST' });
+            var data = await resp.json();
+            if (data.success) {
+                if (typeof showToast === 'function') showToast(data.message);
+                setTimeout(function () { window.location.reload(); }, 1500);
+            } else {
+                if (typeof showToast === 'function') showToast('실패: ' + data.message);
+            }
+        } catch (err) {
+            if (typeof showToast === 'function') showToast('오류가 발생했습니다.');
         }
-    } catch (err) {
-        if (typeof showToast === 'function') showToast('오류가 발생했습니다.');
-    }
     };
 
     window.updateStatusFromDetail = async function (newStatus) {
-        var reportId = {{ detail.id }
-    };
-    var payload = { status: newStatus };
-    if (newStatus === '반려' || newStatus === '삭제') {
-        var reason = prompt(newStatus + ' 사유를 입력해주세요:');
-        if (reason === null) return;
-        payload.reject_reason = reason;
-    }
-
-    if (typeof showPremiumLoader === 'function') showPremiumLoader();
-
-    try {
-        var resp = await fetch('/api/admin/report/' + reportId + '/status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        var data = await resp.json();
-        if (data.success) {
-            if (typeof showToast === 'function') showToast('상태가 변경되었습니다.');
-            setTimeout(function () { window.location.reload(); }, 800);
-        } else {
-            if (typeof showToast === 'function') showToast('실패: ' + data.message);
+        if (!REPORT_ID) return;
+        var payload = { status: newStatus };
+        if (newStatus === '반려' || newStatus === '삭제') {
+            var reason = prompt(newStatus + ' 사유를 입력해주세요:');
+            if (reason === null) return;
+            payload.reject_reason = reason;
         }
-    } catch (err) {
-        if (typeof showToast === 'function') showToast('오류가 발생했습니다.');
-    }
+
+        if (typeof showPremiumLoader === 'function') showPremiumLoader();
+
+        try {
+            var resp = await fetch('/api/admin/report/' + REPORT_ID + '/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            var data = await resp.json();
+            if (data.success) {
+                if (typeof showToast === 'function') showToast('상태가 변경되었습니다.');
+                setTimeout(function () { window.location.reload(); }, 800);
+            } else {
+                if (typeof showToast === 'function') showToast('실패: ' + data.message);
+            }
+        } catch (err) {
+            if (typeof showToast === 'function') showToast('오류가 발생했습니다.');
+        }
     };
     {% endif %}
 </script>

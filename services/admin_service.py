@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from services.region_service import normalize_region_name
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, current_app
+import threading
 from sqlalchemy import text
 
 from database import db
@@ -89,9 +90,10 @@ def _current_user_role():
 def _require_admin():
     if not session.get('user_id'):
         return redirect(url_for('auth.login'))
-    if _current_user_role() != 'admin':
-        return redirect(url_for('index'))
-    return None
+    # session['is_admin'] 또는 _current_user_role()이 admin이면 허용
+    if session.get('is_admin') or _current_user_role() == 'admin':
+        return None
+    return redirect(url_for('index'))
 
 
 def _latest_ai_join_sql():
@@ -366,7 +368,7 @@ def admin_dashboard():
         current_page=page,
         total_pages=total_pages,
         total_count=total_count,
-        KAKAO_JS_KEY=current_app.config.get('KAKAO_JS_KEY', ''),
+        kakao_js_key=current_app.config.get('KAKAO_JS_KEY', ''),
     )
 
 
@@ -463,7 +465,7 @@ def admin_incidents():
         total_pages=total_pages,
         total_count=total_count,
         current_query_string=current_query_string,
-        KAKAO_JS_KEY=current_app.config.get('KAKAO_JS_KEY', ''),
+        kakao_js_key=current_app.config.get('KAKAO_JS_KEY', ''),
     )
 
 @admin_bp.route('/admin/incidents/group/<int:incident_id>')
@@ -889,3 +891,37 @@ def admin_statistics():
         total_pages=1,
         total_count=total_reports,
     )
+
+@admin_bp.route('/api/admin/reanalyze/<int:report_id>', methods=['POST'])
+def admin_reanalyze(report_id):
+    denied = _require_admin()
+    if denied:
+        return denied
+    
+    try:
+        # 기존 분석 결과 및 비디오 검출 데이터 삭제 (raw SQL 사용)
+        db.session.execute(text("DELETE FROM ai_results WHERE report_id = :id"), {'id': report_id})
+        db.session.execute(text("DELETE FROM video_detections WHERE report_id = :id"), {'id': report_id})
+        
+        # 상태 변경
+        db.session.execute(text("UPDATE report SET status = 'AI 분석중' WHERE id = :id"), {'id': report_id})
+        db.session.commit()
+        
+        # 새로운 스레드에서 분석 시작 (app.py에 등록된 run_ai_analysis 사용)
+        row = db.session.execute(text("SELECT file_path, file_type FROM report WHERE id = :id"), {'id': report_id}).mappings().first()
+        if row and hasattr(current_app, 'run_ai_analysis'):
+            threading.Thread(target=current_app.run_ai_analysis, args=(report_id, row['file_path'], row['file_type'])).start()
+            return jsonify({'success': True, 'message': 'AI 재분석을 시작했습니다.'})
+        
+        return jsonify({'success': False, 'message': 'AI 분석 함수를 찾을 수 없습니다.'}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@admin_bp.route('/admin/ppt')
+def admin_ppt():
+    denied = _require_admin()
+    if denied:
+        return denied
+    return render_template('ppt.html')

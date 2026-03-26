@@ -11,6 +11,8 @@ __pycache__/
 venv/
 node_modules/
 uploads/images/
+uploads/videos/
+tmp/
 .idea/
 .vscode/
 *.log

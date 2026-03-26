@@ -19,6 +19,7 @@ def login():
             session['user_id'] = user.id
             session['user_name'] = user.nickname if user.nickname else user.username
             session['is_admin'] = user.is_admin
+            session['user_role'] = 'admin' if user.is_admin else 'user'
             return redirect(url_for('index'))
         else:
             return render_template('login.html', error="아이디 또는 비밀번호가 잘못되었습니다.")
