@@ -41,7 +41,7 @@
     <!-- [BRIDGE] Admin Transition State Check (Must be here to prevent flicker) -->
     <script>
         (function () {
-            if (window.location.pathname === '/admin/dashboard' && sessionStorage.getItem('admin_transition') === 'active') {
+            if (window.location.pathname.includes('/admin/dashboard') && sessionStorage.getItem('admin_transition') === 'active') {
                 document.documentElement.classList.add('admin-bridge-mode');
             } else {
                 sessionStorage.removeItem('admin_transition');
@@ -125,6 +125,14 @@
             height: calc(100dvh - 40px) !important;
             border-radius: 24px !important;
             box-shadow: 0 0 80px rgba(0, 0, 0, 0.2);
+        }
+
+        .app-container.admin-link-pressing {
+            transform: scale(0.994);
+            opacity: 0.985;
+            transition:
+                transform 0.14s ease,
+                opacity 0.14s ease;
         }
 
         @media (max-width: 480px) {
@@ -522,14 +530,16 @@
 
         #custom-toast {
             position: fixed;
-            top: 70px;
+            top: 80px;
+            /* PWA 상단바/헤더에 가려지지 않도록 하향 조정 */
             left: 50%;
-            transform: translateX(-50%) translateY(-200%);
+            transform: translate(-50%, -150%);
             background: #2D2D2D;
             color: #fff;
             padding: 14px 28px;
             border-radius: 16px;
             z-index: 999999 !important;
+            /* 그 어떤 레이어보다 앞에 보이도록 */
             transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             opacity: 0;
             display: flex;
@@ -538,17 +548,16 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
             pointer-events: none;
             width: auto;
-            max-width: calc(100vw - 32px);
+            max-width: 90vw;
             min-width: 250px;
             white-space: normal;
             word-break: keep-all;
             line-height: 1.4;
             text-align: center;
-            box-sizing: border-box;
         }
 
         #custom-toast.active {
-            transform: translateX(-50%) translateY(0);
+            transform: translate(-50%, 0);
             opacity: 1;
         }
 
@@ -819,6 +828,12 @@
             transition: all 0.8s cubic-bezier(0.65, 0, 0.35, 1) !important;
         }
 
+        .app-container.admin-link-pressing {
+            transform: scale(0.992);
+            filter: saturate(0.98);
+            transition: transform 0.12s ease, filter 0.12s ease;
+        }
+
         /* Admin Specific Loader: Modern Wave */
         .admin-loader-bar {
             width: 200px;
@@ -1073,10 +1088,11 @@
                 </div>
                 {% endif %}
                 {% endif %}
-
-                {% if session.get('is_admin') and request.path != '/admin/dashboard' %}
-                <a href="/admin/dashboard" class="admin-pc-btn admin-dashboard-link" title="관리자 대시보드">
-                    <i class="bi bi-speedometer2"></i>
+                {% if session.get('user_role') == 'admin' %}
+                <a href="{{ url_for('admin.admin_dashboard') }}"
+                   class="admin-pc-btn ms-2 admin-dashboard-link"
+                   title="관리자 대시보드">
+                    <i class="bi bi-person-fill-gear"></i>
                 </a>
                 {% endif %}
 
@@ -1601,32 +1617,33 @@
                     .catch(err => console.log('Service Worker registration failed', err));
             });
         }
-        // Admin Dashboard Transition Logic (Event Delegation - works with SPA)
-        // 이벤트 위임: document에 1회 등록하여 SPA 네비게이션 후에도 항상 작동
+        // Admin Dashboard Transition Logic
+        // 공통 레이아웃에는 과한 효과를 주지 않고, 진입 플래그만 저장한 뒤 짧게 눌린 느낌만 주고 이동
         window.adminTransitionTimer = null;
+
         document.addEventListener('click', function (e) {
             var link = e.target.closest('.admin-dashboard-link');
             if (!link) return;
 
             e.preventDefault();
-            e.stopPropagation(); // SPA 라우터의 클릭 가로채기 방지
+            e.stopPropagation();
 
             var targetUrl = link.getAttribute('href');
-            var main = document.querySelector('main');
-            var nav = document.querySelector('.bottom-nav');
+            var appContainer = document.querySelector('.app-container');
 
-            // 1. 내용물 추락 애니메이션 시작
-            if (main) main.classList.add('fall-away');
-            if (nav) nav.classList.add('fall-away');
+            sessionStorage.setItem('admin_transition', 'dashboard_enter');
 
-            // 2. 상태 저장 (다음 페이지에서 브리지 애니메이션 실행을 위함)
-            sessionStorage.setItem('admin_transition', 'active');
+            if (appContainer) {
+                appContainer.classList.add('admin-link-pressing');
+            }
 
-            // 3. 추락 완료 시점에 리다이렉트
-            if (window.adminTransitionTimer) clearTimeout(window.adminTransitionTimer);
+            if (window.adminTransitionTimer) {
+                clearTimeout(window.adminTransitionTimer);
+            }
+
             window.adminTransitionTimer = setTimeout(function () {
                 window.location.href = targetUrl;
-            }, 900);
+            }, 140);
         });
 
         // [BRIDGE] Next Page Expand Sequence
