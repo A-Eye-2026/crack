@@ -90,6 +90,6 @@ class CrackTalk(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('members.id', ondelete='CASCADE'), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=get_now_kst)
-    
+    is_blinded = db.Column(db.Boolean, default=False, nullable=False)
     # Relationship
     author = db.relationship('Member', backref=db.backref('crack_talks', lazy=True, order_by='CrackTalk.created_at.asc()'))
