@@ -1231,8 +1231,8 @@
                 {% endif %}
                 {% endif %}
 
-                <!-- Global Filter Tool in Alert Page -->
-                {% if request.path.startswith('/alert') %}
+                <!-- Global Filter Tool in Alert Page (Only on Feed List) -->
+                {% if request.path == '/alert' %}
                 <button id="headerFilterBtn" class="header-filter-btn" title="필터 및 검색" onclick="openFilterModal()">
                     <i class="bi bi-sliders"></i>
                 </button>
