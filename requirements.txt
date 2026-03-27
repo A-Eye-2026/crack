@@ -1,0 +1,12 @@
+Flask
+Flask-SQLAlchemy
+ultralytics
+Pillow
+piexif
+exifread
+pillow_heif
+python-dotenv
+PyMySQL
+certifi
+opencv-python
+numpy
