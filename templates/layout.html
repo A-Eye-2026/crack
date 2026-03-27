@@ -70,13 +70,40 @@
     <style>
         :root {
             --bg-main: #F2F0EB;
-            --text-asphalt: #333333;
-            --point-orange: #FF8C00;
-            --accent-soft: rgba(255, 140, 0, 0.1);
+            --point-orange: #f97316;
+            --point-orange-soft: #ff8c001a;
+            --text-main: #000;
+            --text-sub: #666;
             --white: #FFFFFF;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --header-h: 60px;
             --footer-h: 70px;
+        }
+
+        /* Unified Brand Status Colors (No !important to avoid card conflicts) */
+        .status-received {
+            background: #fff7ed;
+            color: #f97316;
+        }
+
+        .status-processing {
+            background: #fffbeb;
+            color: #d97706;
+        }
+
+        .status-done {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .status-rejected {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .status-deleted {
+            background: #f5f5f5;
+            color: #616161;
         }
 
         /* [FOUC Guard Style] 최상단 배치 */
@@ -198,6 +225,11 @@
 
             main {
                 padding-bottom: calc(var(--footer-h) + 10px) !important;
+            }
+
+            /* [USER REQUEST] Hide Admin entry button on Mobile */
+            .admin-pc-btn {
+                display: none !important;
             }
         }
 
@@ -331,8 +363,9 @@
             color: var(--point-orange) !important;
         }
 
-        .nav-item.has-unread {
+        .nav-item.has-unread i {
             /* 알림 배지만 노출하고 아이콘/텍스트 스타일은 다른 비활성 탭과 동일하게 유지 */
+            position: relative;
         }
 
         /* Admin Alert Badge */
@@ -601,6 +634,65 @@
             }
         }
 
+        @keyframes shakeAndFall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+
+            10% {
+                transform: translateX(-4px) rotate(-1deg);
+            }
+
+            20% {
+                transform: translateX(4px) rotate(1deg);
+            }
+
+            30% {
+                transform: translateX(-2px) rotate(-0.5deg);
+            }
+
+            40% {
+                transform: translateX(2px) rotate(0.5deg);
+            }
+
+            100% {
+                transform: translateY(100vh) rotate(-5deg);
+                opacity: 0;
+            }
+        }
+
+        .fall-away {
+            animation: shakeAndFall 0.8s cubic-bezier(0.36, 0, 0.66, -0.56) forwards !important;
+            pointer-events: none;
+        }
+
+        .admin-expanding {
+            animation: expandToFull 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes expandToFull {
+            0% {
+                max-width: 480px;
+                width: 100%;
+                border-radius: 24px;
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.02);
+            }
+
+            100% {
+                max-width: 100%;
+                width: 100vw;
+                border-radius: 0;
+                transform: scale(1);
+            }
+        }
+
         .shake {
             animation: shake 0.5s ease;
             border-color: var(--point-orange) !important;
@@ -659,6 +751,33 @@
             border: none;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             margin-right: 4px;
+        }
+
+        /* [NEW] 헤더 필터 버튼 전용 스타일 */
+        .header-filter-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50% !important;
+            background: var(--point-orange);
+            color: white !important;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 1.1rem;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 12px rgba(255, 140, 0, 0.25);
+        }
+
+        .header-filter-btn:hover {
+            background: #e67e00 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 140, 0, 0.35);
+        }
+
+        .header-filter-btn:active {
+            transform: scale(0.92);
         }
 
         @media (min-width: 601px) {
@@ -966,7 +1085,7 @@
             }
 
             100% {
-                transform: translate(0, 100vh) rotate(20deg);
+                transform: translate(0, 100vh) rotate(20deg) scaleY(1.3);
                 opacity: 0;
             }
         }
@@ -1111,6 +1230,14 @@
                 </div>
                 {% endif %}
                 {% endif %}
+
+                <!-- Global Filter Tool in Alert Page -->
+                {% if request.path.startswith('/alert') %}
+                <button id="headerFilterBtn" class="header-filter-btn" title="필터 및 검색" onclick="openFilterModal()">
+                    <i class="bi bi-sliders"></i>
+                </button>
+                {% endif %}
+
                 {% if session.get('is_admin') or session.get('user_role') == 'admin' %}
                 <a href="{{ url_for('admin.admin_dashboard') }}" class="admin-pc-btn ms-2 admin-dashboard-link"
                     title="관리자 대시보드">
@@ -1362,8 +1489,21 @@
                     return;
                 }
 
-                // [필독] 관리자 대시보드는 레이아웃이 완전히 다르므로 SPA 전환에서 제외 (새로고침 강제)
-                if (href.includes('logout') || href.includes('admin/dashboard') || window.location.pathname.includes('admin/dashboard')) return;
+                // [필독] 관리자 대시보드 전환 애니메이션 (Bridge)
+                if (href.includes('admin/dashboard') && !window.location.pathname.includes('admin/dashboard')) {
+                    e.preventDefault();
+                    sessionStorage.setItem('admin_transition', 'active');
+                    const mainElement = document.querySelector('main');
+                    const navElement = document.querySelector('.bottom-nav');
+                    if (mainElement) mainElement.classList.add('fall-away');
+                    if (navElement) navElement.classList.add('fall-away');
+                    if (link) link.classList.add('shake');
+                    setTimeout(() => { window.location.href = href; }, 600);
+                    return;
+                }
+
+                // 그 밖의 페이지 전환 제외 대상
+                if (href.includes('logout') || window.location.pathname.includes('admin/dashboard')) return;
 
                 // [FIX] 만약 대시보드 진입 애니메이션 대기 중이라면 즉시 중단 및 초기화
                 cancelAdminTransition();
@@ -1657,6 +1797,8 @@
 
             var targetUrl = link.getAttribute('href');
             var appContainer = document.querySelector('.app-container');
+            var mainElement = document.querySelector('main');
+            var navElement = document.querySelector('.bottom-nav');
 
             sessionStorage.setItem('admin_transition', 'active');
 
@@ -1664,13 +1806,19 @@
                 appContainer.classList.add('admin-link-pressing');
             }
 
+            // [SHAKE & FALL] Add animation classes
+            if (mainElement) mainElement.classList.add('fall-away');
+            if (navElement) navElement.classList.add('fall-away');
+            if (link) link.classList.add('shake');
+
             if (window.adminTransitionTimer) {
                 clearTimeout(window.adminTransitionTimer);
             }
 
+            // Give enough time for shakeAndFall keyframes (0.8s)
             window.adminTransitionTimer = setTimeout(function () {
                 window.location.href = targetUrl;
-            }, 140);
+            }, 700);
         });
 
         // [BRIDGE] Next Page Expand Sequence

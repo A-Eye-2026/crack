@@ -48,6 +48,7 @@
     main {
         padding-top: 0 !important;
     }
+
     /* 블라인드 메시지 스타일 */
     .blinded-msg {
         background: #f5f5f5 !important;
@@ -58,25 +59,32 @@
         align-items: center;
         gap: 6px;
     }
+
     /* 관리자용 블라인드 상태 메시지 (흐리게 표시) */
     .admin-blinded-msg {
         opacity: 0.55;
         background: #fff3f3 !important;
         border: 1.5px dashed #ffb3b3 !important;
     }
+
     /* 되돌리기 버튼 */
     .btn-unblind {
-        position: absolute; top: -8px;
-        color: #4CAF50; cursor: pointer;
+        position: absolute;
+        top: -8px;
+        color: #4CAF50;
+        cursor: pointer;
         font-size: 1.1rem;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
     }
+
     /* 블라인드 처리 버튼 (X) */
     .btn-blind {
-        position: absolute; top: -8px;
-        color: #FF4D4D; cursor: pointer;
+        position: absolute;
+        top: -8px;
+        color: #FF4D4D;
+        cursor: pointer;
         font-size: 1.1rem;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
     }
 </style>
 
@@ -127,13 +135,13 @@
             </div>
         </div>
         <div style="text-align: right; flex-shrink: 0; margin-left: 12px;">
-            <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; white-space: nowrap;
-                {% if report.status == '처리 완료' %}background:#E8F5E9;color:#2E7D32;
-                {% elif report.status == '신고 처리중' %}background:#E3F2FD;color:#1E88E5;
-                {% elif report.status == '접수완료' %}background:#FFF3E0;color:#E65100;
-                {% elif report.status == '반려' %}background:#FFEBEE;color:#D32F2F;
-                {% elif report.status == '삭제' %}background:#F5F5F5;color:#616161;
-                {% else %}background:#ECEFF1;color:#455A64;{% endif %}">
+            <span class="badge 
+                {% if report.status == '처리 완료' %}status-done
+                {% elif report.status == '신고 처리중' %}status-processing
+                {% elif report.status == '접수완료' %}status-received
+                {% elif report.status == '반려' %}status-rejected
+                {% elif report.status == '삭제' %}status-deleted
+                {% endif %}" style="font-size: 0.78rem; font-weight: 700;">
                 {{ report.status }}
             </span>
         </div>
@@ -339,13 +347,13 @@
                         </div>`;
                 }
 
-            container.insertAdjacentHTML('beforeend', bubbleContent);
-        });
-        container.scrollTop = container.scrollHeight;
-    } catch (e) {
-        console.error('Talk Load Error:', e);
+                container.insertAdjacentHTML('beforeend', bubbleContent);
+            });
+            container.scrollTop = container.scrollHeight;
+        } catch (e) {
+            console.error('Talk Load Error:', e);
+        }
     }
-}
 
     window.sendTalk = async function () {
         const input = document.getElementById('talk-input');
@@ -537,17 +545,23 @@
 <!-- 블라인드 처리/해제 확인 모달 (관리자용) -->
 <div id="talk-blind-modal-overlay"
     style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:100000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
-    <div style="background:white; padding:32px 24px; border-radius:32px; width:90%; max-width:340px; box-shadow:0 30px 80px rgba(0,0,0,0.3); text-align:center;">
+    <div
+        style="background:white; padding:32px 24px; border-radius:32px; width:90%; max-width:340px; box-shadow:0 30px 80px rgba(0,0,0,0.3); text-align:center;">
         <div style="margin-bottom:20px;">
-            <div style="width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+            <div
+                style="width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
                 <i id="blind-modal-icon" class="bi bi-eye-slash-fill" style="font-size:1.8rem;"></i>
             </div>
             <h3 id="blind-modal-title" style="font-size:1.3rem; color:#333; font-weight:800;">블라인드 처리</h3>
         </div>
-        <p id="blind-modal-desc" style="font-size:1.05rem; line-height:1.6; color:#444; margin-bottom:24px; word-break:keep-all; font-weight:500;"></p>
+        <p id="blind-modal-desc"
+            style="font-size:1.05rem; line-height:1.6; color:#444; margin-bottom:24px; word-break:keep-all; font-weight:500;">
+        </p>
         <div style="display:flex; gap:12px;">
-            <button onclick="closeBlindModal()" style="flex:1; padding:16px; border-radius:20px; font-weight:700; font-size:1rem; border:1.5px solid #eee; background:white; color:#666; cursor:pointer;">취소</button>
-            <button onclick="confirmBlindTalk()" id="blind-confirm-btn" style="flex:1.5; padding:16px; border-radius:20px; font-weight:800; font-size:1.1rem; border:none; color:white; cursor:pointer;">처리</button>
+            <button onclick="closeBlindModal()"
+                style="flex:1; padding:16px; border-radius:20px; font-weight:700; font-size:1rem; border:1.5px solid #eee; background:white; color:#666; cursor:pointer;">취소</button>
+            <button onclick="confirmBlindTalk()" id="blind-confirm-btn"
+                style="flex:1.5; padding:16px; border-radius:20px; font-weight:800; font-size:1.1rem; border:none; color:white; cursor:pointer;">처리</button>
         </div>
     </div>
 </div>

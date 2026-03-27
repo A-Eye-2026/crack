@@ -227,31 +227,10 @@
     box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.12);
   }
 
-  .role-badge,
-  .status-badge,
-  .mini-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-    font-weight: 800;
+  .status-inactive {
+    background: #fef2f2;
+    color: #dc2626;
   }
-
-  .role-badge,
-  .status-badge {
-    min-width: 76px;
-    height: 28px;
-    padding: 0 11px;
-    border-radius: 999px;
-    font-size: 11.5px;
-  }
-
-  .role-admin { background: #fff1f2; color: #dc2626; }
-  .role-manager { background: #fff7ed; color: #ea580c; }
-  .role-user { background: #f1f5f9; color: #64748b; }
-
-  .status-badge { background: #ecfdf5; color: #16a34a; }
-  .status-inactive { background: #fef2f2; color: #dc2626; }
 
   .stats-card,
   .risk-card,
@@ -332,20 +311,64 @@
     position: relative;
   }
 
-  .stats-item.received { background: linear-gradient(180deg, #fff7ed 0%, #fffbf7 100%); border-color: #fed7aa; }
-  .stats-item.processing { background: linear-gradient(180deg, #fffbeb 0%, #fffef7 100%); border-color: #fde68a; }
-  .stats-item.completed { background: linear-gradient(180deg, #f0fdf4 0%, #f7fef9 100%); border-color: #bbf7d0; }
-  .stats-item.rejected { background: linear-gradient(180deg, #f8fafc 0%, #fbfdff 100%); border-color: #dbe4ee; }
+  .stats-item.received {
+    background: linear-gradient(180deg, #fff7ed 0%, #fffbf7 100%);
+    border-color: #fed7aa;
+  }
 
-  .risk-item.avg { background: linear-gradient(180deg, #f8fafc 0%, #fbfdff 100%); border-color: #dbe4ee; }
-  .risk-item.high { background: linear-gradient(180deg, #fef2f2 0%, #fff8f8 100%); border-color: #fecaca; }
-  .risk-item.medium { background: linear-gradient(180deg, #fff7ed 0%, #fffbf7 100%); border-color: #fed7aa; }
-  .risk-item.low { background: linear-gradient(180deg, #ecfdf5 0%, #f7fef9 100%); border-color: #bbf7d0; }
+  .stats-item.processing {
+    background: linear-gradient(180deg, #fffbeb 0%, #fffef7 100%);
+    border-color: #fde68a;
+  }
 
-  .summary-item.date { background: linear-gradient(180deg, #f8fafc 0%, #fbfdff 100%); }
-  .summary-item.grouped { background: linear-gradient(180deg, #fff7ed 0%, #fffbf7 100%); border-color: #fed7aa; }
-  .summary-item.avg { background: linear-gradient(180deg, #f0fdf4 0%, #f7fef9 100%); border-color: #bbf7d0; }
-  .summary-item.reject { background: linear-gradient(180deg, #fef2f2 0%, #fff8f8 100%); border-color: #fecaca; }
+  .stats-item.completed {
+    background: linear-gradient(180deg, #f0fdf4 0%, #f7fef9 100%);
+    border-color: #bbf7d0;
+  }
+
+  .stats-item.rejected {
+    background: linear-gradient(180deg, #f8fafc 0%, #fbfdff 100%);
+    border-color: #dbe4ee;
+  }
+
+  .risk-item.avg {
+    background: linear-gradient(180deg, #f8fafc 0%, #fbfdff 100%);
+    border-color: #dbe4ee;
+  }
+
+  .risk-item.high {
+    background: linear-gradient(180deg, #fef2f2 0%, #fff8f8 100%);
+    border-color: #fecaca;
+  }
+
+  .risk-item.medium {
+    background: linear-gradient(180deg, #fff7ed 0%, #fffbf7 100%);
+    border-color: #fed7aa;
+  }
+
+  .risk-item.low {
+    background: linear-gradient(180deg, #ecfdf5 0%, #f7fef9 100%);
+    border-color: #bbf7d0;
+  }
+
+  .summary-item.date {
+    background: linear-gradient(180deg, #f8fafc 0%, #fbfdff 100%);
+  }
+
+  .summary-item.grouped {
+    background: linear-gradient(180deg, #fff7ed 0%, #fffbf7 100%);
+    border-color: #fed7aa;
+  }
+
+  .summary-item.avg {
+    background: linear-gradient(180deg, #f0fdf4 0%, #f7fef9 100%);
+    border-color: #bbf7d0;
+  }
+
+  .summary-item.reject {
+    background: linear-gradient(180deg, #fef2f2 0%, #fff8f8 100%);
+    border-color: #fecaca;
+  }
 
   .stats-label,
   .risk-label,
@@ -369,15 +392,37 @@
     flex-shrink: 0;
   }
 
-  .stats-item.received .stats-dot { background: #f97316; }
-  .stats-item.processing .stats-dot { background: #d97706; }
-  .stats-item.completed .stats-dot { background: #16a34a; }
-  .stats-item.rejected .stats-dot { background: #94a3b8; }
+  .stats-item.received .stats-dot {
+    background: #f97316;
+  }
 
-  .risk-item.high .risk-dot { background: #dc2626; }
-  .risk-item.medium .risk-dot { background: #ea580c; }
-  .risk-item.low .risk-dot { background: #16a34a; }
-  .risk-item.avg .risk-dot { background: #64748b; }
+  .stats-item.processing .stats-dot {
+    background: #d97706;
+  }
+
+  .stats-item.completed .stats-dot {
+    background: #16a34a;
+  }
+
+  .stats-item.rejected .stats-dot {
+    background: #94a3b8;
+  }
+
+  .risk-item.high .risk-dot {
+    background: #dc2626;
+  }
+
+  .risk-item.medium .risk-dot {
+    background: #ea580c;
+  }
+
+  .risk-item.low .risk-dot {
+    background: #16a34a;
+  }
+
+  .risk-item.avg .risk-dot {
+    background: #64748b;
+  }
 
   .stats-value,
   .risk-value,
@@ -390,17 +435,49 @@
     color: #0f172a;
   }
 
-  .stats-item.received .stats-value { color: #f97316; }
-  .stats-item.processing .stats-value { color: #d97706; }
-  .stats-item.completed .stats-value { color: #16a34a; }
-  .stats-item.rejected .stats-value { color: #64748b; }
-  .risk-item.high .risk-value { color: #dc2626; }
-  .risk-item.medium .risk-value { color: #ea580c; }
-  .risk-item.low .risk-value { color: #16a34a; }
-  .risk-item.avg .risk-value { color: #475569; }
-  .summary-item.grouped .summary-value { color: #ea580c; }
-  .summary-item.avg .summary-value { color: #16a34a; }
-  .summary-item.reject .summary-value { color: #dc2626; }
+  .stats-item.received .stats-value {
+    color: #f97316;
+  }
+
+  .stats-item.processing .stats-value {
+    color: #d97706;
+  }
+
+  .stats-item.completed .stats-value {
+    color: #16a34a;
+  }
+
+  .stats-item.rejected .stats-value {
+    color: #64748b;
+  }
+
+  .risk-item.high .risk-value {
+    color: #dc2626;
+  }
+
+  .risk-item.medium .risk-value {
+    color: #ea580c;
+  }
+
+  .risk-item.low .risk-value {
+    color: #16a34a;
+  }
+
+  .risk-item.avg .risk-value {
+    color: #475569;
+  }
+
+  .summary-item.grouped .summary-value {
+    color: #ea580c;
+  }
+
+  .summary-item.avg .summary-value {
+    color: #16a34a;
+  }
+
+  .summary-item.reject .summary-value {
+    color: #dc2626;
+  }
 
   .stats-sub,
   .risk-sub {
@@ -483,13 +560,47 @@
     line-height: 1;
   }
 
-  .mini-risk-high { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
-  .mini-risk-medium { background: #fff7ed; color: #ea580c; border-color: #fed7aa; }
-  .mini-risk-low { background: #ecfdf5; color: #16a34a; border-color: #bbf7d0; }
-  .mini-status-received { background: #fff7ed; color: #f97316; border-color: #fed7aa; }
-  .mini-status-processing { background: #fffbeb; color: #d97706; border-color: #fde68a; }
-  .mini-status-done { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
-  .mini-status-rejected { background: #f1f5f9; color: #64748b; border-color: #cbd5e1; }
+  .mini-risk-high {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+  }
+
+  .mini-risk-medium {
+    background: #fff7ed;
+    color: #ea580c;
+    border-color: #fed7aa;
+  }
+
+  .mini-risk-low {
+    background: #ecfdf5;
+    color: #16a34a;
+    border-color: #bbf7d0;
+  }
+
+  .mini-status-received {
+    background: #fff7ed;
+    color: #f97316;
+    border-color: #fed7aa;
+  }
+
+  .mini-status-processing {
+    background: #fffbeb;
+    color: #d97706;
+    border-color: #fde68a;
+  }
+
+  .mini-status-done {
+    background: #f0fdf4;
+    color: #16a34a;
+    border-color: #bbf7d0;
+  }
+
+  .mini-status-rejected {
+    background: #f1f5f9;
+    color: #64748b;
+    border-color: #cbd5e1;
+  }
 
   .post-location {
     font-size: 10px;
@@ -684,10 +795,8 @@
 <div class="member-layout">
   <div class="member-main">
     <div class="member-profile-card">
-      <a
-        href="/admin/members?page={{ request.args.get('page', 1) }}&keyword={{ request.args.get('keyword', '') }}&role={{ request.args.get('role', '') }}&sort={{ request.args.get('sort', 'role') }}&order={{ request.args.get('order', 'asc') }}"
-        class="back-btn member-back-btn js-page-transition-link"
-      >
+      <a href="/admin/members?page={{ request.args.get('page', 1) }}&keyword={{ request.args.get('keyword', '') }}&role={{ request.args.get('role', '') }}&sort={{ request.args.get('sort', 'role') }}&order={{ request.args.get('order', 'asc') }}"
+        class="back-btn member-back-btn js-page-transition-link">
         ← 목록으로
       </a>
 
@@ -698,40 +807,42 @@
             <div class="member-profile-id">@{{ member.uid }}</div>
 
             {% if request.args.get('edit') == '1' %}
-              <form method="post" action="/admin/members/{{ member.id }}/role" class="member-role-edit-form">
-                <select name="role" class="member-role-select">
-                  <option value="user" {% if member.role == 'user' %}selected{% endif %}>일반회원</option>
-                  <option value="manager" {% if member.role == 'manager' %}selected{% endif %}>매니저</option>
-                  <option value="admin" {% if member.role == 'admin' %}selected{% endif %}>관리자</option>
-                </select>
-                <button type="submit" class="member-save-btn" data-confirm-message="역할을 변경하시겠습니까?">저장</button>
-              </form>
+            <form method="post" action="/admin/members/{{ member.id }}/role" class="member-role-edit-form">
+              <select name="role" class="member-role-select">
+                <option value="user" {% if member.role=='user' %}selected{% endif %}>일반회원</option>
+                <option value="manager" {% if member.role=='manager' %}selected{% endif %}>매니저</option>
+                <option value="admin" {% if member.role=='admin' %}selected{% endif %}>관리자</option>
+              </select>
+              <button type="submit" class="member-save-btn" data-confirm-message="역할을 변경하시겠습니까?">저장</button>
+            </form>
 
-              <div class="member-status-edit-wrap">
-                {% if member.active %}
-                  <form method="post" action="/admin/members/{{ member.id }}/suspend" class="member-inline-form">
-                    <button type="submit" class="member-suspend-btn danger" data-confirm-message="이 회원을 정지하시겠습니까?">정지</button>
-                  </form>
-                {% else %}
-                  <form method="post" action="/admin/members/{{ member.id }}/unsuspend" class="member-inline-form">
-                    <button type="submit" class="member-suspend-btn" data-confirm-message="이 회원의 정지를 해제하시겠습니까?">정지 해제</button>
-                  </form>
-                {% endif %}
-              </div>
-            {% else %}
-              {% if member.role == 'admin' %}
-                <span class="role-badge role-admin">관리자</span>
-              {% elif member.role == 'manager' %}
-                <span class="role-badge role-manager">매니저</span>
-              {% else %}
-                <span class="role-badge role-user">일반회원</span>
-              {% endif %}
-
+            <div class="member-status-edit-wrap">
               {% if member.active %}
-                <span class="status-badge">활성</span>
+              <form method="post" action="/admin/members/{{ member.id }}/suspend" class="member-inline-form">
+                <button type="submit" class="member-suspend-btn danger"
+                  data-confirm-message="이 회원을 정지하시겠습니까?">정지</button>
+              </form>
               {% else %}
-                <span class="status-badge status-inactive">정지</span>
+              <form method="post" action="/admin/members/{{ member.id }}/unsuspend" class="member-inline-form">
+                <button type="submit" class="member-suspend-btn" data-confirm-message="이 회원의 정지를 해제하시겠습니까?">정지
+                  해제</button>
+              </form>
               {% endif %}
+            </div>
+            {% else %}
+            {% if member.role == 'admin' %}
+            <span class="role-badge role-admin">관리자</span>
+            {% elif member.role == 'manager' %}
+            <span class="role-badge role-manager">매니저</span>
+            {% else %}
+            <span class="role-badge role-user">일반회원</span>
+            {% endif %}
+
+            {% if member.active %}
+            <span class="status-badge">활성</span>
+            {% else %}
+            <span class="status-badge status-inactive">정지</span>
+            {% endif %}
             {% endif %}
           </div>
         </div>
@@ -742,9 +853,9 @@
           </span>
 
           {% if member.role == 'manager' %}
-            <span class="member-profile-chip">
-              지역 · {{ member.manager_region if member.manager_region else '미지정' }}
-            </span>
+          <span class="member-profile-chip">
+            지역 · {{ member.manager_region if member.manager_region else '미지정' }}
+          </span>
           {% endif %}
 
           <span class="member-profile-chip">
@@ -754,19 +865,15 @@
 
         <div class="member-profile-edit-row">
           {% if request.args.get('edit') == '1' %}
-            <a
-              href="/admin/members/{{ member.id }}?page={{ request.args.get('page', 1) }}&keyword={{ request.args.get('keyword', '') }}&role={{ request.args.get('role', '') }}&sort={{ request.args.get('sort', 'role') }}&order={{ request.args.get('order', 'asc') }}"
-              class="member-cancel-btn js-page-transition-link"
-            >
-              편집 종료
-            </a>
+          <a href="/admin/members/{{ member.id }}?page={{ request.args.get('page', 1) }}&keyword={{ request.args.get('keyword', '') }}&role={{ request.args.get('role', '') }}&sort={{ request.args.get('sort', 'role') }}&order={{ request.args.get('order', 'asc') }}"
+            class="member-cancel-btn js-page-transition-link">
+            편집 종료
+          </a>
           {% else %}
-            <a
-              href="/admin/members/{{ member.id }}?edit=1&page={{ request.args.get('page', 1) }}&keyword={{ request.args.get('keyword', '') }}&role={{ request.args.get('role', '') }}&sort={{ request.args.get('sort', 'role') }}&order={{ request.args.get('order', 'asc') }}"
-              class="member-edit-btn js-page-transition-link"
-            >
-              편집
-            </a>
+          <a href="/admin/members/{{ member.id }}?edit=1&page={{ request.args.get('page', 1) }}&keyword={{ request.args.get('keyword', '') }}&role={{ request.args.get('role', '') }}&sort={{ request.args.get('sort', 'role') }}&order={{ request.args.get('order', 'asc') }}"
+            class="member-edit-btn js-page-transition-link">
+            편집
+          </a>
           {% endif %}
         </div>
       </div>
@@ -802,9 +909,9 @@
             <div class="stats-value">{{ member_stats.rejected_reports or 0 }}</div>
             <div class="stats-sub">
               {% if (member_stats.rejected_reports or 0) > 0 %}
-                반려 이력 있음
+              반려 이력 있음
               {% else %}
-                반려 처리 없음
+              반려 처리 없음
               {% endif %}
             </div>
           </div>
@@ -882,50 +989,51 @@
       </div>
 
       {% if member_incidents and member_incidents|length > 0 %}
-        <div class="post-list">
-          {% for post in member_incidents %}
-            <a href="/admin/incidents?member_id={{ member.id }}" class="post-item js-page-transition-link">
-              <div class="post-item-top">
-                <div class="post-title">{{ post.title if post.title else '제목 없는 게시글' }}</div>
-                <div class="post-date">{{ post.first_created_at.strftime('%Y-%m-%d') if post.first_created_at else '-' }}</div>
-              </div>
+      <div class="post-list">
+        {% for post in member_incidents %}
+        <a href="/admin/incidents?member_id={{ member.id }}" class="post-item js-page-transition-link">
+          <div class="post-item-top">
+            <div class="post-title">{{ post.title if post.title else '제목 없는 게시글' }}</div>
+            <div class="post-date">{{ post.first_created_at.strftime('%Y-%m-%d') if post.first_created_at else '-' }}
+            </div>
+          </div>
 
-              <div class="post-meta">
-                {% if post.risk_score >= 70 %}
-                  <span class="mini-badge mini-risk-high">위험도 높음</span>
-                {% elif post.risk_score >= 40 %}
-                  <span class="mini-badge mini-risk-medium">위험도 중간</span>
-                {% else %}
-                  <span class="mini-badge mini-risk-low">위험도 낮음</span>
-                {% endif %}
+          <div class="post-meta">
+            {% if post.risk_score >= 70 %}
+            <span class="mini-badge mini-risk-high">위험도 높음</span>
+            {% elif post.risk_score >= 40 %}
+            <span class="mini-badge mini-risk-medium">위험도 중간</span>
+            {% else %}
+            <span class="mini-badge mini-risk-low">위험도 낮음</span>
+            {% endif %}
 
-                {% if post.status == '접수완료' %}
-                  <span class="mini-badge mini-status-received">접수완료</span>
-                {% elif post.status == '처리중' %}
-                  <span class="mini-badge mini-status-processing">처리중</span>
-                {% elif post.status == '처리완료' %}
-                  <span class="mini-badge mini-status-done">처리완료</span>
-                {% elif post.status == '반려' %}
-                  <span class="mini-badge mini-status-rejected">반려</span>
-                {% else %}
-                  <span class="mini-badge mini-status-rejected">{{ post.status }}</span>
-                {% endif %}
+            {% if post.status == '접수완료' %}
+            <span class="mini-badge mini-status-received">접수완료</span>
+            {% elif post.status == '처리중' %}
+            <span class="mini-badge mini-status-processing">처리중</span>
+            {% elif post.status == '처리완료' %}
+            <span class="mini-badge mini-status-done">처리완료</span>
+            {% elif post.status == '반려' %}
+            <span class="mini-badge mini-status-rejected">반려</span>
+            {% else %}
+            <span class="mini-badge mini-status-rejected">{{ post.status }}</span>
+            {% endif %}
 
-                <span class="post-location">
-                  {{ post.region_name if post.region_name else (post.location if post.location else '위치 정보 없음') }}
-                </span>
-              </div>
-            </a>
-          {% endfor %}
-        </div>
+            <span class="post-location">
+              {{ post.region_name if post.region_name else (post.location if post.location else '위치 정보 없음') }}
+            </span>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
 
-        <div class="section-card-footer">
-          <a href="/admin/incidents?member_id={{ member.id }}" class="section-link js-page-transition-link">전체 보기 →</a>
-        </div>
+      <div class="section-card-footer">
+        <a href="/admin/incidents?member_id={{ member.id }}" class="section-link js-page-transition-link">전체 보기 →</a>
+      </div>
       {% else %}
-        <div class="empty-box">
-          등록한 게시글이 없습니다.
-        </div>
+      <div class="empty-box">
+        등록한 게시글이 없습니다.
+      </div>
       {% endif %}
     </div>
   </div>

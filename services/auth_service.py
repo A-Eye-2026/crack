@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import db
@@ -40,8 +41,14 @@ def signup():
         username = request.form.get('username')
         password = request.form.get('password')
         nickname = request.form.get('nickname')
-        email = request.form.get('email')  # 이메일 추가
+        email = request.form.get('email')
 
+        # 1. 이메일 형식 및 @ 앞부분 영문/숫자 체크
+        # 규칙: 시작은 영문/숫자, @ 앞까지 영문/숫자만 허용
+        email_pattern = r'^[a-zA-Z0-9]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+
+        if not email or not re.match(email_pattern, email):
+            return render_template('signup.html', error="이메일 형식이 올바르지 않거나, 아이디 부분에 특수문자를 사용할 수 없습니다.")
         # 기본 검증
         if not nickname or len(nickname) > 20:
             return render_template('signup.html', error="닉네임은 1자 이상 20자 이하로 입력해주세요.")
@@ -73,8 +80,11 @@ def check_email():
     data = request.get_json()
     email = data.get('email')
 
-    if not email:
-        return jsonify({'available': False, 'message': '이메일을 입력해주세요.'}), 409
+    # 정규식 패턴 (기존과 동일하게 유지)
+    email_pattern = r'^[a-zA-Z0-9]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+
+    if not email or not re.match(email_pattern, email):
+        return jsonify({'available': False, 'message': '영문/숫자 조합의 올바른 이메일 형식을 입력해주세요.'}), 400
 
     user = Member.query.filter_by(email=email).first()
     if user:

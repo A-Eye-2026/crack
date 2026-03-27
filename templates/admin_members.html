@@ -19,101 +19,12 @@
 
 {% block extra_style %}
 <style>
-  .alert-btn { color: #f59e0b; }
-  .ppt-btn { color: #3b82f6; }
-
-  .section {
-    background: rgba(248, 250, 252, 0.9);
-    border: 1px solid #e5eaf1;
-    border-radius: 20px;
-    padding: 18px 16px 18px;
-    min-height: 650px;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
+  .alert-btn {
+    color: #f59e0b;
   }
 
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-  }
-
-  .section-title-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .section-title {
-    font-size: 18px;
-    font-weight: 900;
-    letter-spacing: -0.4px;
-    color: #0f172a;
-  }
-
-  .section-subtitle {
-    font-size: 11px;
-    color: #7b8794;
-    font-weight: 600;
-  }
-
-  .member-filter-form {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-
-  .filter-input,
-  .filter-select {
-    height: 36px;
-    border: 1px solid #d7dde5;
-    border-radius: 10px;
-    padding: 0 10px;
-    font-size: 12px;
-    color: #334155;
-    background: #fff;
-    outline: none;
-  }
-
-  .filter-input {
-    min-width: 220px;
-  }
-
-  .filter-input:focus,
-  .filter-select:focus {
-    border-color: #c9d3df;
-    box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.12);
-  }
-
-  .filter-btn,
-  .filter-reset-btn {
-    height: 36px;
-    padding: 0 12px;
-    border-radius: 10px;
-    border: 1px solid #d7dde5;
-    background: #fff;
-    color: #334155;
-    font-size: 12px;
-    font-weight: 800;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.18s ease;
-  }
-
-  .filter-btn:hover,
-  .filter-reset-btn:hover {
-    background: #f8fafc;
-    border-color: #c9d3df;
-    transform: translateY(-1px);
+  .ppt-btn {
+    color: #3b82f6;
   }
 
   .table-shell {
@@ -355,7 +266,7 @@
       0 2px 8px rgba(15, 23, 42, 0.03);
   }
 
-  body.member-enter .dashboard-shell > * {
+  body.member-enter .dashboard-shell>* {
     opacity: 0;
     transform: translateY(12px);
   }
@@ -380,7 +291,7 @@
       box-shadow 0.28s ease 0.04s;
   }
 
-  body.member-enter-active .dashboard-shell > * {
+  body.member-enter-active .dashboard-shell>* {
     opacity: 1;
     transform: translateY(0);
     transition:
@@ -419,25 +330,19 @@
       <input type="hidden" name="sort" value="{{ sort or 'role' }}">
       <input type="hidden" name="order" value="{{ order or 'asc' }}">
 
-      <input
-        type="text"
-        name="keyword"
-        value="{{ keyword }}"
-        placeholder="이름 또는 아이디 검색"
-        class="filter-input"
-      />
+      <input type="text" name="keyword" value="{{ keyword }}" placeholder="이름 또는 아이디 검색" class="filter-input" />
 
       <select name="role" class="filter-select">
         <option value="">전체 역할</option>
-        <option value="user" {% if role == 'user' %}selected{% endif %}>일반회원</option>
-        <option value="manager" {% if role == 'manager' %}selected{% endif %}>매니저</option>
-        <option value="admin" {% if role == 'admin' %}selected{% endif %}>관리자</option>
+        <option value="user" {% if role=='user' %}selected{% endif %}>일반회원</option>
+        <option value="manager" {% if role=='manager' %}selected{% endif %}>매니저</option>
+        <option value="admin" {% if role=='admin' %}selected{% endif %}>관리자</option>
       </select>
 
       <button type="submit" class="filter-btn">검색</button>
 
       {% if keyword or role %}
-        <a href="/admin/members" class="filter-reset-btn js-page-transition-link">초기화</a>
+      <a href="/admin/members" class="filter-reset-btn js-page-transition-link">초기화</a>
       {% endif %}
     </form>
   </div>
@@ -457,26 +362,32 @@
         <thead>
           <tr>
             <th>
-              <a href="/admin/members?page={{ page }}&keyword={{ keyword }}&role={{ role }}&sort=id&order={{ 'asc' if sort != 'id' or order == 'desc' else 'desc' }}" class="sort-link js-page-transition-link">번호</a>
+              <a href="/admin/members?page={{ page }}&keyword={{ keyword }}&role={{ role }}&sort=id&order={{ 'asc' if sort != 'id' or order == 'desc' else 'desc' }}"
+                class="sort-link js-page-transition-link">번호</a>
             </th>
             <th>
-              <a href="/admin/members?page={{ page }}&keyword={{ keyword }}&role={{ role }}&sort=name&order={{ 'asc' if sort != 'name' or order == 'desc' else 'desc' }}" class="sort-link js-page-transition-link">
+              <a href="/admin/members?page={{ page }}&keyword={{ keyword }}&role={{ role }}&sort=name&order={{ 'asc' if sort != 'name' or order == 'desc' else 'desc' }}"
+                class="sort-link js-page-transition-link">
                 이름{% if sort == 'name' %} {{ '▲' if order == 'asc' else '▼' }}{% endif %}
               </a>
             </th>
             <th>
-              <a href="/admin/members?page={{ page }}&keyword={{ keyword }}&role={{ role }}&sort=uid&order={{ 'asc' if sort != 'uid' or order == 'desc' else 'desc' }}" class="sort-link js-page-transition-link">
+              <a href="/admin/members?page={{ page }}&keyword={{ keyword }}&role={{ role }}&sort=uid&order={{ 'asc' if sort != 'uid' or order == 'desc' else 'desc' }}"
+                class="sort-link js-page-transition-link">
                 아이디{% if sort == 'uid' %} {{ '▲' if order == 'asc' else '▼' }}{% endif %}
               </a>
             </th>
             <th>
-              <a href="/admin/members?page={{ page }}&keyword={{ keyword }}&role={{ role }}&sort=role&order={{ 'asc' if sort != 'role' or order == 'desc' else 'desc' }}" class="sort-link js-page-transition-link">역할</a>
+              <a href="/admin/members?page={{ page }}&keyword={{ keyword }}&role={{ role }}&sort=role&order={{ 'asc' if sort != 'role' or order == 'desc' else 'desc' }}"
+                class="sort-link js-page-transition-link">역할</a>
             </th>
             <th>
-              <a href="/admin/members?page={{ page }}&keyword={{ keyword }}&role={{ role }}&sort=active&order={{ 'asc' if sort != 'active' or order == 'desc' else 'desc' }}" class="sort-link js-page-transition-link">상태</a>
+              <a href="/admin/members?page={{ page }}&keyword={{ keyword }}&role={{ role }}&sort=active&order={{ 'asc' if sort != 'active' or order == 'desc' else 'desc' }}"
+                class="sort-link js-page-transition-link">상태</a>
             </th>
             <th>
-              <a href="/admin/members?page={{ page }}&keyword={{ keyword }}&role={{ role }}&sort=created_at&order={{ 'asc' if sort != 'created_at' or order == 'desc' else 'desc' }}" class="sort-link js-page-transition-link">
+              <a href="/admin/members?page={{ page }}&keyword={{ keyword }}&role={{ role }}&sort=created_at&order={{ 'asc' if sort != 'created_at' or order == 'desc' else 'desc' }}"
+                class="sort-link js-page-transition-link">
                 가입일{% if sort == 'created_at' %} {{ '▲' if order == 'asc' else '▼' }}{% endif %}
               </a>
             </th>
@@ -491,18 +402,18 @@
             <td>{{ member.uid }}</td>
             <td>
               {% if member.role == 'admin' %}
-                <span class="role-badge role-admin">관리자</span>
+              <span class="role-badge role-admin">관리자</span>
               {% elif member.role == 'manager' %}
-                <span class="role-badge role-manager">매니저</span>
+              <span class="role-badge role-manager">매니저</span>
               {% else %}
-                <span class="role-badge role-user">일반회원</span>
+              <span class="role-badge role-user">일반회원</span>
               {% endif %}
             </td>
             <td>
               {% if member.active %}
-                <span class="status-badge status-active">활성</span>
+              <span class="status-badge status-active">활성</span>
               {% else %}
-                <span class="status-badge status-suspended">정지</span>
+              <span class="status-badge status-suspended">정지</span>
               {% endif %}
             </td>
             <td>{{ member.created_at.strftime('%Y-%m-%d') if member.created_at else '-' }}</td>
@@ -526,14 +437,16 @@
   <div class="table-bottom-bar">
     <div class="pagination-row">
       {% if page > 1 %}
-        <a href="/admin/members?page={{ page - 1 }}&keyword={{ keyword }}&role={{ role }}&sort={{ sort }}&order={{ order }}" class="page-btn js-page-transition-link">이전</a>
+      <a href="/admin/members?page={{ page - 1 }}&keyword={{ keyword }}&role={{ role }}&sort={{ sort }}&order={{ order }}"
+        class="page-btn js-page-transition-link">이전</a>
       {% endif %}
 
       <span class="page-btn current">{{ page }} / {{ total_pages }}</span>
 
-      {% if page < total_pages %}
-        <a href="/admin/members?page={{ page + 1 }}&keyword={{ keyword }}&role={{ role }}&sort={{ sort }}&order={{ order }}" class="page-btn js-page-transition-link">다음</a>
-      {% endif %}
+      {% if page < total_pages %} <a
+        href="/admin/members?page={{ page + 1 }}&keyword={{ keyword }}&role={{ role }}&sort={{ sort }}&order={{ order }}"
+        class="page-btn js-page-transition-link">다음</a>
+        {% endif %}
     </div>
   </div>
   {% endif %}

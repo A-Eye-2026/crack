@@ -35,31 +35,36 @@
       font-family: "Pretendard", "Noto Sans KR", Arial, sans-serif;
     }
 
+    html,
     body {
       background: var(--bg);
       color: var(--text);
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
     }
 
     .layout {
-      min-height: 100dvh;
+      height: 100dvh;
       display: flex;
       justify-content: center;
       align-items: center;
       padding: 18px 20px 16px;
       background-color: var(--bg);
+      overflow: hidden;
     }
 
     .main {
       width: 100%;
       max-width: 1240px;
+      height: 100%;
       margin: 0;
       padding: 0;
     }
 
     .dashboard-shell {
       width: 100%;
-      min-height: 760px;
+      height: 100%;
+      min-height: 0;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-xl);
@@ -260,6 +265,28 @@
       min-height: 0;
       display: flex;
       flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 4px;
+      /* 스크롤바 공간 여유 */
+    }
+
+    /* 커스텀 스크롤바 정제 */
+    .page-body::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .page-body::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .page-body::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 10px;
+    }
+
+    .page-body::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.1);
     }
 
     @media (max-width: 1100px) {
@@ -319,6 +346,182 @@
       .topbar-user {
         flex-wrap: wrap;
       }
+    }
+
+    /* --- Common Admin Design System --- */
+    .section {
+      background: rgba(248, 250, 252, 0.9);
+      border: 1px solid #e5eaf1;
+      border-radius: 20px;
+      padding: 18px 16px 18px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      margin-top: 0;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: -0.4px;
+      color: #0f172a;
+    }
+
+    .section-subtitle {
+      font-size: 11px;
+      color: #7b8794;
+      font-weight: 600;
+    }
+
+    .btn {
+      height: 36px;
+      padding: 0 14px;
+      border: 1px solid var(--border-strong);
+      background: #fff;
+      color: #334155;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.18s ease;
+    }
+
+    .btn:hover {
+      background: #f8fafc;
+      transform: translateY(-1px);
+    }
+
+    .table-shell {
+      border: 1px solid #edf1f5;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      overflow-y: visible;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    thead th {
+      text-align: center;
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 800;
+      padding: 13px 14px;
+      border-bottom: 1px solid #e9eef5;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #1f2937;
+      vertical-align: middle;
+      font-size: 13px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 76px;
+      height: 24px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    /* Unified Status Colors */
+    .status-received {
+      background: #fff7ed;
+      color: #f97316;
+    }
+
+    .status-processing {
+      background: #fffbeb;
+      color: #d97706;
+    }
+
+    .status-done {
+      background: #f0fdf4;
+      color: #16a34a;
+    }
+
+    .status-rejected {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    /* Unified Risk Colors */
+    .risk-high {
+      background: #fff1f2;
+      color: #ef4444;
+    }
+
+    .risk-medium {
+      background: #fff7ed;
+      color: #f97316;
+    }
+
+    .risk-low {
+      background: #f0fdf4;
+      color: #16a34a;
+    }
+
+    .pagination-row {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .page-btn {
+      height: 34px;
+      padding: 0 14px;
+      border: 1px solid #d7dde5;
+      background: #fff;
+      color: #334155;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.18s ease;
+    }
+
+    .page-btn:hover {
+      background: #f8fafc;
+      border-color: #c9d3df;
+      transform: translateY(-1px);
+    }
+
+    .page-btn.current {
+      cursor: default;
+      background: #f8fafc;
     }
   </style>
 

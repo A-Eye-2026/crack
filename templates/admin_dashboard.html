@@ -19,8 +19,13 @@
 
 {% block extra_style %}
 <style>
-  .alert-btn { color: #f59e0b; }
-  .ppt-btn { color: #3b82f6; }
+  .alert-btn {
+    color: #f59e0b;
+  }
+
+  .ppt-btn {
+    color: #3b82f6;
+  }
 
   .summary-grid {
     display: grid;
@@ -150,7 +155,6 @@
     border: 1px solid #e5eaf1;
     border-radius: 20px;
     padding: 16px 14px 16px;
-    min-height: 560px;
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -387,13 +391,40 @@
     white-space: nowrap;
   }
 
-  .risk-high { background: #fff1f2; color: #ef4444; }
-  .risk-medium { background: #fff7ed; color: #f97316; }
-  .risk-low { background: #f0fdf4; color: #16a34a; }
-  .status-received { background: #fff7ed; color: #f97316; }
-  .status-processing { background: #fffbeb; color: #d97706; }
-  .status-done { background: #f0fdf4; color: #16a34a; }
-  .status-rejected { background: #f1f5f9; color: #64748b; }
+  .risk-high {
+    background: #fff1f2;
+    color: #ef4444;
+  }
+
+  .risk-medium {
+    background: #fff7ed;
+    color: #f97316;
+  }
+
+  .risk-low {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+
+  .status-received {
+    background: #fff7ed;
+    color: #f97316;
+  }
+
+  .status-processing {
+    background: #fffbeb;
+    color: #d97706;
+  }
+
+  .status-done {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+
+  .status-rejected {
+    background: #f1f5f9;
+    color: #64748b;
+  }
 
   .mini-btn {
     height: 34px;
@@ -432,7 +463,9 @@
     padding: 20px;
   }
 
-  .detail-modal-backdrop.show { display: flex; }
+  .detail-modal-backdrop.show {
+    display: flex;
+  }
 
   .detail-modal-card {
     width: 100%;
@@ -502,7 +535,9 @@
     min-width: 0;
   }
 
-  .detail-inline-status-wrap { position: relative; }
+  .detail-inline-status-wrap {
+    position: relative;
+  }
 
   .detail-chip {
     display: inline-flex;
@@ -517,10 +552,25 @@
     box-shadow: inset 0 0 0 1px rgba(255, 122, 0, 0.10);
   }
 
-  .detail-chip.status-received { background: #fff7ed; color: #f97316; }
-  .detail-chip.status-processing { background: #fffbeb; color: #d97706; }
-  .detail-chip.status-done { background: #f0fdf4; color: #16a34a; }
-  .detail-chip.status-rejected { background: #f1f5f9; color: #64748b; }
+  .detail-chip.status-received {
+    background: #fff7ed;
+    color: #f97316;
+  }
+
+  .detail-chip.status-processing {
+    background: #fffbeb;
+    color: #d97706;
+  }
+
+  .detail-chip.status-done {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+
+  .detail-chip.status-rejected {
+    background: #f1f5f9;
+    color: #64748b;
+  }
 
   .detail-chip-button {
     border: none;
@@ -547,7 +597,9 @@
     z-index: 30;
   }
 
-  .detail-inline-status-wrap.open .detail-inline-status-menu { display: block; }
+  .detail-inline-status-wrap.open .detail-inline-status-menu {
+    display: block;
+  }
 
   .detail-inline-status-option {
     width: 100%;
@@ -564,9 +616,17 @@
     transition: all 0.15s ease;
   }
 
-  .detail-inline-status-option:hover { background: #f8fafc; }
-  .detail-inline-status-option.danger { color: #dc2626; }
-  .detail-inline-status-option.danger:hover { background: #fff1f2; }
+  .detail-inline-status-option:hover {
+    background: #f8fafc;
+  }
+
+  .detail-inline-status-option.danger {
+    color: #dc2626;
+  }
+
+  .detail-inline-status-option.danger:hover {
+    background: #fff1f2;
+  }
 
   .detail-inline-apply-btn {
     height: 34px;
@@ -607,9 +667,17 @@
     letter-spacing: -0.2px;
   }
 
-  .detail-risk-high { color: #e74c3c; }
-  .detail-risk-medium { color: #f39c12; }
-  .detail-risk-low { color: #27ae60; }
+  .detail-risk-high {
+    color: #e74c3c;
+  }
+
+  .detail-risk-medium {
+    color: #f39c12;
+  }
+
+  .detail-risk-low {
+    color: #27ae60;
+  }
 
   .detail-info-card {
     background: #fafafa;
@@ -719,7 +787,9 @@
     cursor: pointer;
   }
 
-  .map-modal-body { padding: 16px; }
+  .map-modal-body {
+    padding: 16px;
+  }
 
   .map-canvas {
     width: 100%;
@@ -730,7 +800,9 @@
     background: #f8fafc;
   }
 
-  .map-modal-footer { padding: 0 16px 16px; }
+  .map-modal-footer {
+    padding: 0 16px 16px;
+  }
 
   .custom-alert-backdrop {
     position: fixed;
@@ -743,7 +815,9 @@
     padding: 20px;
   }
 
-  .custom-alert-backdrop.show { display: flex; }
+  .custom-alert-backdrop.show {
+    display: flex;
+  }
 
   .custom-alert-box {
     width: 100%;
@@ -756,10 +830,29 @@
     backdrop-filter: blur(8px);
   }
 
-  .custom-alert-header { padding: 18px 20px 10px; }
-  .custom-alert-title { font-size: 18px; font-weight: 900; color: #0f172a; letter-spacing: -0.3px; }
-  .custom-alert-body { padding: 0 20px 18px; font-size: 14px; line-height: 1.6; color: #475569; }
-  .custom-alert-actions { display: flex; justify-content: flex-end; padding: 0 20px 20px; }
+  .custom-alert-header {
+    padding: 18px 20px 10px;
+  }
+
+  .custom-alert-title {
+    font-size: 18px;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: -0.3px;
+  }
+
+  .custom-alert-body {
+    padding: 0 20px 18px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #475569;
+  }
+
+  .custom-alert-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 20px 20px;
+  }
 
   .custom-alert-btn {
     min-width: 84px;
@@ -791,15 +884,41 @@
     z-index: 3000;
   }
 
-  .page-transition-overlay.show { opacity: 1; }
-  .dashboard-shell.page-leaving { opacity: 0.92; transition: opacity 0.12s ease; }
-  .dashboard-panel { opacity: 1; transition: opacity 0.18s ease; }
-  .dashboard-panel.is-switching { pointer-events: none; }
-  .dashboard-panel.fade-out { opacity: 0; }
-  .dashboard-panel.fade-in { opacity: 1; }
+  .page-transition-overlay.show {
+    opacity: 1;
+  }
 
-  body.dashboard-enter { overflow: hidden; }
-  body.dashboard-enter .layout { opacity: 0; transform: scale(0.992); }
+  .dashboard-shell.page-leaving {
+    opacity: 0.92;
+    transition: opacity 0.12s ease;
+  }
+
+  .dashboard-panel {
+    opacity: 1;
+    transition: opacity 0.18s ease;
+  }
+
+  .dashboard-panel.is-switching {
+    pointer-events: none;
+  }
+
+  .dashboard-panel.fade-out {
+    opacity: 0;
+  }
+
+  .dashboard-panel.fade-in {
+    opacity: 1;
+  }
+
+  body.dashboard-enter {
+    overflow: hidden;
+  }
+
+  body.dashboard-enter .layout {
+    opacity: 0;
+    transform: scale(0.992);
+  }
+
   body.dashboard-enter .dashboard-shell {
     opacity: 0;
     transform: translateY(10px) scaleY(0.985);
@@ -807,12 +926,18 @@
     filter: blur(4px);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(15, 23, 42, 0.03);
   }
-  body.dashboard-enter .dashboard-shell > * { opacity: 0; transform: translateY(12px); }
+
+  body.dashboard-enter .dashboard-shell>* {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
   body.dashboard-enter-active .layout {
     opacity: 1;
     transform: scale(1);
     transition: opacity 0.22s ease, transform 0.38s ease;
   }
+
   body.dashboard-enter-active .dashboard-shell {
     opacity: 1;
     transform: translateY(0) scaleY(1);
@@ -824,7 +949,8 @@
       filter 0.28s ease 0.04s,
       box-shadow 0.28s ease 0.04s;
   }
-  body.dashboard-enter-active .dashboard-shell > * {
+
+  body.dashboard-enter-active .dashboard-shell>* {
     opacity: 1;
     transform: translateY(0);
     transition:
@@ -833,52 +959,72 @@
   }
 
   @media (max-width: 1400px) {
-    .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .summary-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
   }
 
   @media (max-width: 1100px) {
-    .urgent-card-list { grid-template-columns: 1fr; }
+    .urgent-card-list {
+      grid-template-columns: 1fr;
+    }
   }
 
   @media (max-width: 900px) {
-    .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .summary-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   @media (max-width: 640px) {
-    .summary-grid { grid-template-columns: 1fr; }
-    .section-header { flex-direction: column; align-items: stretch; }
-    .summary-value { font-size: 28px; }
+    .summary-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .section-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .summary-value {
+      font-size: 28px;
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="summary-grid" id="dashboardSummaryGrid">
-  <a href="/admin/dashboard?tab=urgent" class="summary-card js-summary-card urgent {{ 'active' if selected_tab == 'urgent' else '' }}">
+  <a href="/admin/dashboard?tab=urgent"
+    class="summary-card js-summary-card urgent {{ 'active' if selected_tab == 'urgent' else '' }}">
     <div class="summary-label">긴급</div>
     <div class="summary-value"><strong>{{ summary.urgent_count|default(0) }}</strong>건</div>
     <div class="summary-meta">우선 조치가 필요한 신고</div>
   </a>
 
-  <a href="/admin/dashboard?tab=today" class="summary-card js-summary-card today {{ 'active' if selected_tab == 'today' else '' }}">
+  <a href="/admin/dashboard?tab=today"
+    class="summary-card js-summary-card today {{ 'active' if selected_tab == 'today' else '' }}">
     <div class="summary-label">오늘 접수</div>
     <div class="summary-value"><strong>{{ summary.today_count|default(0) }}</strong>건</div>
     <div class="summary-meta">오늘 등록된 위험 지점 수</div>
   </a>
 
-  <a href="/admin/dashboard?tab=pending" class="summary-card js-summary-card pending-strong {{ 'active' if selected_tab == 'pending' else '' }}">
+  <a href="/admin/dashboard?tab=pending"
+    class="summary-card js-summary-card pending-strong {{ 'active' if selected_tab == 'pending' else '' }}">
     <div class="summary-label">미처리</div>
     <div class="summary-value"><strong>{{ summary.pending_count|default(0) }}</strong>건</div>
     <div class="summary-meta">아직 검토 전인 위험 지점</div>
   </a>
 
-  <a href="/admin/dashboard?tab=long_pending" class="summary-card js-summary-card long-pending {{ 'active' if selected_tab == 'long_pending' else '' }}">
+  <a href="/admin/dashboard?tab=long_pending"
+    class="summary-card js-summary-card long-pending {{ 'active' if selected_tab == 'long_pending' else '' }}">
     <div class="summary-label">처리중</div>
     <div class="summary-value"><strong>{{ summary.processing_count|default(0) }}</strong>건</div>
     <div class="summary-meta">현재 처리중인 신고</div>
   </a>
 
-  <a href="/admin/dashboard?tab=rejected" class="summary-card js-summary-card rejected {{ 'active' if selected_tab == 'rejected' else '' }}">
+  <a href="/admin/dashboard?tab=rejected"
+    class="summary-card js-summary-card rejected {{ 'active' if selected_tab == 'rejected' else '' }}">
     <div class="summary-label">반려</div>
     <div class="summary-value"><strong>{{ summary.rejected_count|default(0) }}</strong>건</div>
     <div class="summary-meta">관리 기준에 따라 반려된 신고</div>
@@ -904,23 +1050,23 @@
 
           <div class="urgent-meta">
             {% if incident.status == '접수완료' %}
-              <span class="badge status-received">접수완료</span>
+            <span class="badge status-received">접수완료</span>
             {% elif incident.status == '처리중' %}
-              <span class="badge status-processing">처리중</span>
+            <span class="badge status-processing">처리중</span>
             {% elif incident.status == '처리완료' %}
-              <span class="badge status-done">처리완료</span>
+            <span class="badge status-done">처리완료</span>
             {% elif incident.status == '반려' %}
-              <span class="badge status-rejected">반려</span>
+            <span class="badge status-rejected">반려</span>
             {% else %}
-              <span class="badge">{{ incident.status|default('-', true) }}</span>
+            <span class="badge">{{ incident.status|default('-', true) }}</span>
             {% endif %}
 
             {% if score >= 80 %}
-              <span class="badge risk-high">Ai {{ score|round(0)|int }}%</span>
+            <span class="badge risk-high">Ai {{ score|round(0)|int }}%</span>
             {% elif score >= 50 %}
-              <span class="badge risk-medium">Ai {{ score|round(0)|int }}%</span>
+            <span class="badge risk-medium">Ai {{ score|round(0)|int }}%</span>
             {% else %}
-              <span class="badge risk-low">Ai {{ score|round(0)|int }}%</span>
+            <span class="badge risk-low">Ai {{ score|round(0)|int }}%</span>
             {% endif %}
           </div>
         </div>
@@ -933,9 +1079,9 @@
 
             <div class="urgent-count-badge">
               {% if report_count >= 2 %}
-                반복 {{ report_count }}건
+              반복 {{ report_count }}건
               {% else %}
-                단일 신고
+              단일 신고
               {% endif %}
             </div>
           </div>
@@ -943,28 +1089,19 @@
           <div class="urgent-actions">
             <div class="urgent-time">
               {% if incident.first_created_at %}
-                {{ incident.first_created_at.strftime('%m-%d %H:%M') }}
+              {{ incident.first_created_at.strftime('%m-%d %H:%M') }}
               {% else %}
-                -
+              -
               {% endif %}
             </div>
 
-            <button
-              class="mini-btn"
-              type="button"
-              onclick="openDashboardDetailModal(
+            <button class="mini-btn" type="button" onclick="openDashboardDetailModal(
                 '{{ incident.id|default('', true) }}',
-                '{{ incident.title|default("신고 상세")|e }}',
-                '{{ incident.location|default("-", true)|e }}',
-                '{{ incident.status|default("-", true)|e }}',
-                '{{ incident.first_created_at.strftime('%m-%d %H:%M') if incident.first_created_at else '-' }}',
-                '{{ incident.risk_score|default(0) }}',
-                '{{ incident.group_reporter_count|default(1) }}',
-                '{{ incident.image_path|default('', true)|e }}',
-                '{{ incident.latitude|default('', true) }}',
-                '{{ incident.longitude|default('', true) }}'
-              )"
-            >
+                '{{ incident.title|default(" 신고 상세")|e }}', '{{ incident.location|default("-", true)|e }}'
+              , '{{ incident.status|default("-", true)|e }}' , '{{ incident.first_created_at.strftime(' %m-%d %H:%M') if
+              incident.first_created_at else '-' }}', '{{ incident.risk_score|default(0) }}'
+              , '{{ incident.group_reporter_count|default(1) }}' , '{{ incident.image_path|default('', true)|e }}'
+              , '{{ incident.latitude|default('', true) }}' , '{{ incident.longitude|default('', true) }}' )">
               상세보기
             </button>
           </div>
@@ -978,12 +1115,8 @@
     </div>
 
     <div class="dashboard-pagination">
-      <button
-        type="button"
-        class="pagination-btn"
-        {% if current_page <= 1 %}disabled{% endif %}
-        onclick="moveDashboardPage({{ current_page - 1 }})"
-      >
+      <button type="button" class="pagination-btn" {% if current_page <=1 %}disabled{% endif %}
+        onclick="moveDashboardPage({{ current_page - 1 }})">
         이전
       </button>
 
@@ -993,12 +1126,9 @@
         <span class="pagination-total">{{ total_pages }}</span>
       </div>
 
-      <button
-        type="button"
-        class="pagination-btn"
-        {% if current_page >= total_pages %}disabled{% endif %}
+      <button type="button" class="pagination-btn" {% if current_page>= total_pages %}disabled{% endif %}
         onclick="moveDashboardPage({{ current_page + 1 }})"
-      >
+        >
         다음
       </button>
     </div>
@@ -1018,14 +1148,18 @@
       <div class="detail-meta-row">
         <div class="detail-status-change-wrap">
           <div class="detail-inline-status-wrap" id="dashboardInlineStatusWrap">
-            <button type="button" id="dashboardDetailStatus" class="detail-chip detail-chip-button" onclick="toggleInlineStatusMenu()">
+            <button type="button" id="dashboardDetailStatus" class="detail-chip detail-chip-button"
+              onclick="toggleInlineStatusMenu()">
               접수완료
             </button>
 
             <div class="detail-inline-status-menu" id="dashboardInlineStatusMenu">
-              <button type="button" class="detail-inline-status-option" onclick="selectInlineDashboardStatus('처리중')">처리중</button>
-              <button type="button" class="detail-inline-status-option" onclick="selectInlineDashboardStatus('처리완료')">처리완료</button>
-              <button type="button" class="detail-inline-status-option danger" onclick="selectInlineDashboardStatus('반려')">반려</button>
+              <button type="button" class="detail-inline-status-option"
+                onclick="selectInlineDashboardStatus('처리중')">처리중</button>
+              <button type="button" class="detail-inline-status-option"
+                onclick="selectInlineDashboardStatus('처리완료')">처리완료</button>
+              <button type="button" class="detail-inline-status-option danger"
+                onclick="selectInlineDashboardStatus('반려')">반려</button>
             </div>
           </div>
 
@@ -1043,9 +1177,13 @@
 
         <div class="detail-location-row">
           <div id="dashboardDetailLocation" class="detail-content-text">위치 정보</div>
-          <button class="detail-map-inline-btn" type="button" onclick="openDashboardMap()" title="지도 보기" aria-label="지도 보기">
-            <svg class="detail-map-inline-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M9 18L3.8 20.5C3.47 20.66 3.08 20.42 3.08 20.05V5.95C3.08 5.7 3.22 5.47 3.44 5.36L9 2.5M9 18L15 21.5M9 18V2.5M15 21.5L20.2 19C20.53 18.84 20.92 19.08 20.92 19.45V3.55C20.92 3.3 20.78 3.07 20.56 2.96L15 0.5M15 21.5V0.5M15 0.5L9 2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+          <button class="detail-map-inline-btn" type="button" onclick="openDashboardMap()" title="지도 보기"
+            aria-label="지도 보기">
+            <svg class="detail-map-inline-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true">
+              <path
+                d="M9 18L3.8 20.5C3.47 20.66 3.08 20.42 3.08 20.05V5.95C3.08 5.7 3.22 5.47 3.44 5.36L9 2.5M9 18L15 21.5M9 18V2.5M15 21.5L20.2 19C20.53 18.84 20.92 19.08 20.92 19.45V3.55C20.92 3.3 20.78 3.07 20.56 2.96L15 0.5M15 21.5V0.5M15 0.5L9 2.5"
+                stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
         </div>
@@ -1065,11 +1203,8 @@
       <div class="section-subtitle" style="font-size:14px; margin-bottom:14px;">반려 처리 사유를 입력해주세요.</div>
 
       <div class="detail-info-card">
-        <textarea
-          id="dashboardRejectReasonText"
-          placeholder="예: 중복 신고, 위험도 기준 미달, 사진 불명확"
-          style="width:100%; min-height:110px; border:1px solid #d7dde5; border-radius:12px; padding:12px; font-size:14px; resize:none; outline:none;"
-        ></textarea>
+        <textarea id="dashboardRejectReasonText" placeholder="예: 중복 신고, 위험도 기준 미달, 사진 불명확"
+          style="width:100%; min-height:110px; border:1px solid #d7dde5; border-radius:12px; padding:12px; font-size:14px; resize:none; outline:none;"></textarea>
       </div>
 
       <div style="display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
@@ -1417,7 +1552,7 @@
     switchDashboardTab(window.location.href, false);
   });
 
-  document.addEventListener('click', function(e) {
+  document.addEventListener('click', function (e) {
     const wrap = document.getElementById('dashboardInlineStatusWrap');
     if (wrap && !wrap.contains(e.target)) wrap.classList.remove('open');
   });
@@ -1425,16 +1560,16 @@
   document.addEventListener('DOMContentLoaded', function () {
     restoreDashboardScrollPosition();
 
-    document.getElementById('dashboardDetailModal')?.addEventListener('click', function(e) {
+    document.getElementById('dashboardDetailModal')?.addEventListener('click', function (e) {
       if (e.target.id === 'dashboardDetailModal') closeDashboardDetailModal();
     });
-    document.getElementById('customAlertModal')?.addEventListener('click', function(e) {
+    document.getElementById('customAlertModal')?.addEventListener('click', function (e) {
       if (e.target.id === 'customAlertModal') closeCustomAlert();
     });
-    document.getElementById('dashboardRejectModal')?.addEventListener('click', function(e) {
+    document.getElementById('dashboardRejectModal')?.addEventListener('click', function (e) {
       if (e.target.id === 'dashboardRejectModal') closeRejectReasonModal();
     });
-    document.getElementById('dashboardMapModal')?.addEventListener('click', function(e) {
+    document.getElementById('dashboardMapModal')?.addEventListener('click', function (e) {
       if (e.target.id === 'dashboardMapModal') closeDashboardMapModal();
     });
 

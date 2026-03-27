@@ -454,7 +454,7 @@ def alert_page():
         alerts = [_serialize_alert_item(item, selected_lat, selected_lng) for item in filtered]
 
         return render_template(
-            'admin_alert.html',
+            'alert.html',
             alerts=alerts,
             kakao_js_key=current_app.config.get('KAKAO_JS_KEY', ''),
             region_filter_on=region_filter_on,
