@@ -1,4 +1,4 @@
-from database import db
+from extensions import db
 from utils import get_now_kst
 
 class Member(db.Model):

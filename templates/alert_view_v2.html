@@ -295,6 +295,7 @@
         cursor: pointer;
         border: none;
         transition: all 0.2s;
+        white-space: nowrap;
     }
 
     .detail-status-btn.status-done {
@@ -398,32 +399,7 @@
         <h3
             style="margin: 0; font-size: 1.1rem; font-weight: 800; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
             상세 정보</h3>
-        {% if is_admin %}
-        <div style="position: relative;">
-            <button onclick="toggleAdminMenu()" style="border:none; background:none; padding:8px; cursor:pointer;">
-                <i class="bi bi-three-dots-vertical" style="font-size: 1.2rem;"></i>
-            </button>
-            <div id="admin-menu"
-                style="display:none; position:absolute; top:calc(100% + 5px); right:0; background:white; border-radius:12px; box-shadow:0 5px 20px rgba(0,0,0,0.1); width:130px; z-index:1000; padding:4px;">
-                <div onclick="updateStatusFromDetail('관리자 확인중')"
-                    style="padding:10px; font-size:0.85rem; font-weight:600; cursor:pointer; color:#607D8B;">관리자 확인
-                </div>
-                <div onclick="updateStatusFromDetail('접수완료')"
-                    style="padding:10px; font-size:0.85rem; font-weight:600; cursor:pointer;">신고접수</div>
-                <div onclick="updateStatusFromDetail('신고 처리중')"
-                    style="padding:10px; font-size:0.85rem; font-weight:600; cursor:pointer;">처리중</div>
-                <div onclick="updateStatusFromDetail('처리 완료')"
-                    style="padding:10px; font-size:0.85rem; font-weight:600; cursor:pointer; color:#2E7D32;">완료</div>
-                <div onclick="updateStatusFromDetail('반려')"
-                    style="padding:10px; font-size:0.85rem; font-weight:600; cursor:pointer; border-top:1px solid #eee; color:#D32F2F;">
-                    반려</div>
-                <div onclick="reAnalyzeAI()"
-                    style="padding:10px; font-size:0.85rem; font-weight:600; cursor:pointer; border-top:1px solid #eee; color:var(--point-orange);">
-                    <i class="bi bi-robot"></i> AI 재분석
-                </div>
-            </div>
-        </div>
-        {% endif %}
+        {# 3점 메뉴 제거 (상태 드롭다운으로 통합) #}
     </div>
 
     {% if is_admin %}
@@ -501,10 +477,17 @@
                     {{ detail.status }} <i class="bi bi-chevron-down" style="font-size: 0.7rem; margin-left: 2px;"></i>
                 </button>
                 <div id="detailStatusDropdown" class="status-dropdown-menu">
+                    <div onclick="updateStatusFromDetail('관리자 확인중')" class="dropdown-item" style="color:#607D8B;">관리자 확인
+                    </div>
                     <div onclick="updateStatusFromDetail('접수완료')" class="dropdown-item">접수완료</div>
                     <div onclick="updateStatusFromDetail('신고 처리중')" class="dropdown-item">처리중</div>
-                    <div onclick="updateStatusFromDetail('처리 완료')" class="dropdown-item">처리 완료</div>
+                    <div onclick="updateStatusFromDetail('처리 완료')" class="dropdown-item" style="color:#2E7D32;">처리 완료
+                    </div>
                     <div onclick="updateStatusFromDetail('반려')" class="dropdown-item reject-item">반려</div>
+                    <div onclick="reAnalyzeAI()" class="dropdown-item"
+                        style="border-top:1px solid #eee; color:var(--point-orange);">
+                        <i class="bi bi-robot"></i> AI 재분석
+                    </div>
                 </div>
             </div>
             {% endif %}
@@ -757,16 +740,8 @@
         if (menu) menu.classList.toggle('show');
     };
 
-    window.toggleAdminMenu = function () {
-        var menu = document.getElementById('admin-menu');
-        if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-    };
 
     document.addEventListener('click', function (e) {
-        var adminMenu = document.getElementById('admin-menu');
-        if (adminMenu && !e.target.closest('#admin-menu') && !e.target.closest('button[onclick="toggleAdminMenu()"]')) {
-            adminMenu.style.display = 'none';
-        }
         var statusMenu = document.getElementById('detailStatusDropdown');
         if (statusMenu && !e.target.closest('.status-dropdown-wrap')) {
             statusMenu.classList.remove('show');

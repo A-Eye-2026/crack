@@ -3,7 +3,7 @@ import json
 import re
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from database import db
+from extensions import db
 from models import Member
 from utils import check_profanity
 

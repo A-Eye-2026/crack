@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -49,14 +48,84 @@
       justify-content: center;
       align-items: center;
       padding: 20px;
-      /* 앱 화면 기준 상하 20px 여백과 통일 */
       background-color: var(--bg);
       overflow: hidden;
     }
 
+    .page-transition-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(244, 246, 248, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.16s ease;
+      z-index: 3000;
+    }
+
+    .page-transition-overlay.show {
+      opacity: 1;
+    }
+
+    .dashboard-shell.page-leaving {
+      opacity: 0.92;
+      transition: opacity 0.12s ease;
+    }
+
+    body.admin-enter {
+      overflow: hidden;
+    }
+
+    body.admin-enter .layout {
+      opacity: 0;
+      transform: scale(0.992);
+    }
+
+    body.admin-enter .dashboard-shell {
+      opacity: 0;
+      transform: translateY(10px) scaleY(0.985);
+      transform-origin: center top;
+      filter: blur(4px);
+      box-shadow:
+        0 10px 24px rgba(15, 23, 42, 0.05),
+        0 2px 8px rgba(15, 23, 42, 0.03);
+    }
+
+    body.admin-enter .dashboard-shell > * {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    body.admin-enter-active .layout {
+      opacity: 1;
+      transform: scale(1);
+      transition: opacity 0.22s ease, transform 0.38s ease;
+    }
+
+    body.admin-enter-active .dashboard-shell {
+      opacity: 1;
+      transform: translateY(0) scaleY(1);
+      filter: blur(0);
+      box-shadow:
+        0 18px 40px rgba(15, 23, 42, 0.08),
+        0 4px 12px rgba(15, 23, 42, 0.04);
+      transition:
+        opacity 0.24s ease 0.04s,
+        transform 0.46s cubic-bezier(0.22, 1, 0.36, 1) 0.04s,
+        filter 0.28s ease 0.04s,
+        box-shadow 0.28s ease 0.04s;
+    }
+
+    body.admin-enter-active .dashboard-shell > * {
+      opacity: 1;
+      transform: translateY(0);
+      transition:
+        opacity 0.28s ease 0.18s,
+        transform 0.46s cubic-bezier(0.22, 1, 0.36, 1) 0.18s;
+    }
+
     .main {
       width: 100%;
-      max-width: 1240px;
+      max-width: 1500px;
       height: 100%;
       margin: 0;
       padding: 0;
@@ -83,7 +152,6 @@
       align-items: center;
       gap: 16px;
       height: 60px;
-      /* 앱 헤더 표준 높이와 일치 */
       margin-bottom: 8px;
     }
 
@@ -227,6 +295,9 @@
       border: 1px solid #e2e8f0;
       box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
       white-space: nowrap;
+
+      text-decoration: none !important;
+      color: inherit !important;
     }
 
     .account-chip strong {
@@ -271,10 +342,8 @@
       overflow-y: auto;
       overflow-x: hidden;
       padding-right: 4px;
-      /* 스크롤바 공간 여유 */
     }
 
-    /* 커스텀 스크롤바 정제 */
     .page-body::-webkit-scrollbar {
       width: 6px;
     }
@@ -350,224 +419,17 @@
         flex-wrap: wrap;
       }
     }
-
-    /* --- Common Admin Design System --- */
-    .section {
-      background: rgba(248, 250, 252, 0.9);
-      border: 1px solid #e5eaf1;
-      border-radius: 20px;
-      padding: 18px 16px 18px;
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      margin-top: 0;
-    }
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .section-title {
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: -0.4px;
-      color: #0f172a;
-    }
-
-    .section-subtitle {
-      font-size: 11px;
-      color: #7b8794;
-      font-weight: 600;
-    }
-
-    .btn {
-      height: 36px;
-      padding: 0 14px;
-      border: 1px solid var(--border-strong);
-      background: #fff;
-      color: #334155;
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: 800;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      transition: all 0.18s ease;
-    }
-
-    .btn:hover {
-      background: #f8fafc;
-      transform: translateY(-1px);
-    }
-
-    .table-shell {
-      border: 1px solid #edf1f5;
-      border-radius: 18px;
-      overflow: hidden;
-      background: #fff;
-    }
-
-    .table-wrap {
-      overflow-x: auto;
-      overflow-y: visible;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-
-    thead th {
-      text-align: center;
-      background: #f8fafc;
-      color: #475569;
-      font-weight: 800;
-      padding: 13px 14px;
-      border-bottom: 1px solid #e9eef5;
-      white-space: nowrap;
-      font-size: 13px;
-    }
-
-    tbody td {
-      padding: 9px 12px;
-      border-bottom: 1px solid #f1f5f9;
-      color: #1f2937;
-      vertical-align: middle;
-      font-size: 13px;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 76px;
-      height: 24px;
-      padding: 0 9px;
-      border-radius: 999px;
-      font-size: 10px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    /* Unified Status Colors */
-    .status-received {
-      background: #fff7ed;
-      color: #f97316;
-    }
-
-    .status-processing {
-      background: #fffbeb;
-      color: #d97706;
-    }
-
-    .status-done {
-      background: #f0fdf4;
-      color: #16a34a;
-    }
-
-    .status-rejected {
-      background: #f1f5f9;
-      color: #64748b;
-    }
-
-    /* Unified Risk Colors */
-    .risk-high {
-      background: #fff1f2;
-      color: #ef4444;
-    }
-
-    .risk-medium {
-      background: #fff7ed;
-      color: #f97316;
-    }
-
-    .risk-low {
-      background: #f0fdf4;
-      color: #16a34a;
-    }
-
-    .pagination-row {
-      display: flex;
-      justify-content: center;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-    }
-
-    .page-btn {
-      height: 34px;
-      padding: 0 14px;
-      border: 1px solid #d7dde5;
-      background: #fff;
-      color: #334155;
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: 800;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.18s ease;
-    }
-
-    .page-btn:hover {
-      background: #f8fafc;
-      border-color: #c9d3df;
-      transform: translateY(-1px);
-    }
-
-    .page-btn.current {
-      cursor: default;
-      background: #f8fafc;
-    }
-
-    /* --- PPT Mode Overrides --- */
-    body.ppt-mode {
-      background: transparent !important;
-    }
-
-    body.ppt-mode .layout {
-      padding: 0 !important;
-      background: transparent !important;
-    }
-
-    body.ppt-mode .main {
-      max-width: 100% !important;
-    }
-
-    body.ppt-mode .dashboard-shell {
-      background: var(--surface) !important;
-      border: 1px solid var(--border) !important;
-      box-shadow: var(--shadow-lg) !important;
-      border-radius: var(--radius-xl) !important;
-      padding: 10px 15px !important;
-      backdrop-filter: blur(6px) !important;
-      height: 100% !important;
-      min-height: 0 !important;
-    }
-
-    body.ppt-mode .page-body {
-      padding: 0 !important;
-      margin: 0 !important;
-    }
   </style>
 
   {% block extra_style %}{% endblock %}
 </head>
-
-<body class="{% block body_class %}{% endblock %} {% if request.args.get('ppt') == '1' %}ppt-mode{% endif %}">
+<body class="{% block body_class %}{% endblock %}">
   <div class="layout">
     <main class="main">
       <div class="dashboard-shell">
         <header class="topbar">
           <div class="topbar-left">
-            <a href="/" class="header-brand">
+            <a href="/admin/dashboard" class="header-brand js-page-transition-link">
               <div class="header-brand-row">
                 <span class="logo-icon">⚡</span>
                 <span class="header-brand-main">CRACK</span>
@@ -583,30 +445,34 @@
 
           <div class="topbar-actions">
             <nav class="topbar-menu">
-              <a href="/admin/dashboard" class="menu-item {% if request.path == '/admin/dashboard' %}active{% endif %}">
+              <a href="/admin/dashboard"
+                 class="menu-item js-page-transition-link {% if request.path == '/admin/dashboard' %}active{% endif %}">
                 대시보드
               </a>
               <a href="/admin/incidents"
-                class="menu-item {% if request.path.startswith('/admin/incidents') %}active{% endif %}">
+                 class="menu-item js-page-transition-link {% if request.path.startswith('/admin/incidents') %}active{% endif %}">
                 신고관리
               </a>
               <a href="/admin/members"
-                class="menu-item {% if request.path.startswith('/admin/members') %}active{% endif %}">
+                  class="menu-item js-page-transition-link {% if request.path.startswith('/admin/members') %}active{% endif %}">
                 회원관리
               </a>
               <a href="/admin/statistics"
-                class="menu-item {% if request.path.startswith('/admin/statistics') %}active{% endif %}">
+                 class="menu-item js-page-transition-link {% if request.path.startswith('/admin/statistics') %}active{% endif %}">
                 통계
               </a>
             </nav>
 
             <div class="topbar-user">
               {% block account_area %}
-              <div class="account-chip">
+              <a
+                href="{{ url_for('admin.admin_member_detail', member_id=session.get('user_id')) }}"
+                class="account-chip js-page-transition-link"
+              >
                 <strong>{{ session.get('user_name', '관리자') }}</strong>
                 <span>{{ session.get('role', 'admin') }}</span>
-              </div>
-              <a href="/logout" class="logout-pill">로그아웃</a>
+              </a>
+              <a href="/logout" class="logout-pill js-page-transition-link">로그아웃</a>
               {% endblock %}
             </div>
           </div>
@@ -619,7 +485,95 @@
     </main>
   </div>
 
-  {% block extra_script %}{% endblock %}
-</body>
+<div class="page-transition-overlay" id="pageTransitionOverlay" aria-hidden="true"></div>
 
+<script>
+(function () {
+  const overlay = document.getElementById('pageTransitionOverlay');
+
+  function clearTransitionState() {
+    if (overlay) {
+      overlay.classList.remove('show');
+    }
+
+    const shell = document.querySelector('.dashboard-shell');
+    if (shell) {
+      shell.classList.remove('page-leaving');
+    }
+
+    document.body.classList.remove('admin-enter');
+    document.body.classList.remove('admin-enter-active');
+  }
+
+  function runEnterAnimation() {
+    document.body.classList.add('admin-enter');
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.body.classList.add('admin-enter-active');
+      });
+    });
+
+    setTimeout(() => {
+      document.body.classList.remove('admin-enter');
+      document.body.classList.remove('admin-enter-active');
+    }, 900);
+  }
+
+  function isModifiedEvent(event) {
+    return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
+  }
+
+  function isSamePage(link) {
+    const targetUrl = new URL(link.href, window.location.href);
+    return (
+      targetUrl.pathname === window.location.pathname &&
+      targetUrl.search === window.location.search &&
+      targetUrl.hash === window.location.hash
+    );
+  }
+
+  function runPageTransition(href) {
+    if (!href) return;
+
+    const shell = document.querySelector('.dashboard-shell');
+    if (overlay) overlay.classList.add('show');
+    if (shell) shell.classList.add('page-leaving');
+
+    setTimeout(() => {
+      window.location.href = href;
+    }, 160);
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    runEnterAnimation();
+
+    document.addEventListener('click', function (event) {
+      const link = event.target.closest('a.js-page-transition-link');
+      if (!link) return;
+
+      const href = link.getAttribute('href');
+      if (!href) return;
+      if (href.startsWith('#')) return;
+      if (link.target === '_blank') return;
+      if (link.hasAttribute('download')) return;
+      if (isModifiedEvent(event)) return;
+      if (isSamePage(link)) return;
+
+      event.preventDefault();
+      runPageTransition(link.href);
+    });
+  });
+
+  window.addEventListener('pageshow', function () {
+    clearTransitionState();
+  });
+
+  window.addEventListener('popstate', function () {
+    clearTransitionState();
+  });
+})();
+</script>
+{% block extra_script %}{% endblock %}
+</body>
 </html>

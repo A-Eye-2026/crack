@@ -33,6 +33,7 @@
     <!-- Kakao Maps SDK -->
     <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_js_key }}&libraries=services"
         onload="window.kakaoSdkLoaded = true" onerror="window.kakaoSdkLoaded = false"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json?v=1.3.0">
@@ -582,7 +583,7 @@
         }
 
         #custom-toast {
-            position: absolute;
+            position: fixed;
             top: 80px;
             /* PWA 상단바/헤더에 가려지지 않도록 하향 조정 */
             left: 50%;
@@ -1391,12 +1392,32 @@
             const msgElem = document.getElementById('toast-message');
             if (msgElem) msgElem.innerText = msg;
             if (toast) {
+                toast.classList.remove('active');
+                void toast.offsetWidth; // reflow
                 toast.classList.add('active');
                 // 기존 타이머가 있으면 제거 (연속 발생 대응)
                 if (window.toastTimer) clearTimeout(window.toastTimer);
                 window.toastTimer = setTimeout(() => toast.classList.remove('active'), duration);
             }
         }
+
+        // [USER REQUEST] 스크롤 인디케이터 처리기 (캡처 모드를 사용하여 하위 요소들의 스크롤도 전역에서 감지)
+        document.addEventListener('DOMContentLoaded', () => {
+            const indicator = document.getElementById('scroll-indicator');
+            if (indicator) {
+                document.addEventListener('scroll', (e) => {
+                    const target = e.target;
+                    // document scroll 또는 overflow:auto 인 요소의 스크롤 감지
+                    const scrollNode = (target === document) ? (document.scrollingElement || document.documentElement) : target;
+
+                    if (scrollNode && scrollNode.scrollHeight > scrollNode.clientHeight) {
+                        const scrollHeight = scrollNode.scrollHeight - scrollNode.clientHeight;
+                        const progress = (scrollNode.scrollTop / scrollHeight) * 100;
+                        indicator.style.width = Math.min(progress, 100) + '%';
+                    }
+                }, true); // Use capture phase
+            }
+        });
 
         window.showNoticeModal = function (msg) {
             const modal = document.getElementById('notice-modal');
@@ -1649,23 +1670,47 @@
             let startY = 0;
             let currentY = 0;
             let pulling = false;
-            const threshold = 80;
+            // [USER REQUEST] PTR 오작동을 막기 위해 민감도(임계값)를 대폭 상향
+            const threshold = 160;
 
             function initPullToRefresh() {
                 const main = document.querySelector('main');
                 const path = window.location.pathname;
 
-                // Report 탭: 커스텀 PTR + 브라우저 기본 PTR 완전 차단
-                if (path.startsWith('/report')) {
-                    main.style.overscrollBehaviorY = 'contain';
-                    return; // PTR 이벤트 등록 자체를 하지 않음
+                // [PTR HARD BLOCK] 상세 페이지(view, members/id, incidents/id) 및 특정 탭(report, status) 원천 차단
+                // 상세페이지에서 PTR 후 카카오 지도가 먹통이 되는 현상을 방지하기 위함
+                const isDetailPath = path.includes('/view') || path.includes('/alert_view') || /\/(members|incidents)\/\d+/.test(path);
+                const isBlockedTab = path.startsWith('/report') || path.startsWith('/status');
+
+                if (isDetailPath || isBlockedTab) {
+                    console.log("[PTR] Detail view or blocked tab detected. Hard-blocking PTR.");
+                    main.style.overscrollBehaviorY = 'none';
+                    main.style.touchAction = 'pan-x pan-y';
+
+                    // 터치 이벤트 수준에서 한번 더 차단 (당기는 동작만)
+                    let startY = 0;
+                    main.addEventListener('touchstart', e => {
+                        startY = e.touches[0].pageY;
+                    }, { passive: true });
+
+                    main.addEventListener('touchmove', e => {
+                        const moveY = e.touches[0].pageY;
+                        // scrollTop이 0인 상태에서 아래로 당기는(PTR) 동작만 차단
+                        if (main.scrollTop <= 0 && moveY > startY) {
+                            if (e.cancelable) e.preventDefault();
+                        }
+                    }, { passive: false });
+                    return; // PTR 초기화 중단
                 }
 
-                // Alert/Status 이외 페이지도 PTR 불필요
-                if (!path.startsWith('/alert') && !path.startsWith('/status')) {
-                    main.style.overscrollBehaviorY = 'auto';
+                // Alert 이외의 모든 페이지도 기본적으로 PTR 불필요 (맵 보호를 위해 none 처리)
+                if (!path.startsWith('/alert')) {
+                    main.style.overscrollBehaviorY = 'none';
                     return;
                 }
+
+                // Alert 페이지: 커스텀 PTR 활성화 (브라우저 기본 PTR은 contain으로 차단)
+                main.style.overscrollBehaviorY = 'contain';
 
                 // Alert/Status: 즉시 PTR 활성화 (overscroll 차단으로 브라우저 기본 PTR 방지)
                 main.style.overscrollBehaviorY = 'contain';

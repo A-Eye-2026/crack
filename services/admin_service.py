@@ -2,17 +2,13 @@ import math
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from services.region_service import normalize_region_name
+from services.region_service import normalize_region_name, parse_region_hierarchy
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, current_app
-import threading
 from sqlalchemy import text
 
-from database import db
+from extensions import db, socketio
 
 admin_bp = Blueprint('admin', __name__)
-
-# [용어 정의] 상단바와 하단바를 제외한 실질적인 본문 영역을 '메인 콘텐츠 영역' 또는 '메인 영역'으로 정의합니다.
-MAIN_CONTENT_AREA = "메인 콘텐츠 영역 (Main Content Area)"
 
 
 def _safe_float(value, default=0.0):
@@ -107,10 +103,9 @@ def _current_user_role():
 def _require_admin():
     if not session.get('user_id'):
         return redirect(url_for('auth.login'))
-    # session['is_admin'] 또는 _current_user_role()이 admin이면 허용
-    if session.get('is_admin') or _current_user_role() == 'admin':
-        return None
-    return redirect(url_for('index'))
+    if _current_user_role() != 'admin':
+        return redirect(url_for('index'))
+    return None
 
 
 def _latest_ai_join_sql():
@@ -139,6 +134,7 @@ def _fetch_reports():
             r.file_type,
             r.created_at,
             r.user_id,
+            r.address,
             r.status,
             r.reject_reason,
             r.region_name,
@@ -171,7 +167,7 @@ def _fetch_reports():
         if (item.get('file_path') or '').lower().endswith(('.mp4', '.mov', '.avi', '.m4v')):
             item['file_type'] = 'video'
         
-        item['location'] = item.get('region_name') or item.get('content') or '위치 정보 없음'
+        item['location'] = item.get('region_name') or item.get('address') or '위치 정보 없음'
         item['first_created_at'] = item['created_at']
         rows.append(item)
     return rows
@@ -272,11 +268,13 @@ def _status_rank(status):
     order = {
         '관리자 확인중': 0,
         '접수완료': 1,
-        '처리중': 2,
-        '처리완료': 3,
-        '반려': 4,
+        '신고 처리중': 2,
+        '처리중': 3,
+        '처리완료': 4,
+        '반려': 5,
+        '삭제': 6,
     }
-    return order.get(status or '', 99)
+    return order.get((status or '').strip(), 99)
 
 
 def _hydrate_reports():
@@ -315,7 +313,7 @@ def admin_dashboard():
 
     selected_tab = request.args.get('tab', 'urgent').strip() or 'pending'
     page = max(_safe_int(request.args.get('page', 1), 1), 1)
-    per_page = 10
+    per_page = 8
 
     reports, representative_reports, _ = _hydrate_reports()
     now = datetime.now()
@@ -392,12 +390,13 @@ def admin_dashboard():
         current_page=page,
         total_pages=total_pages,
         total_count=total_count,
-        kakao_js_key=current_app.config.get('KAKAO_JS_KEY', ''),
+        KAKAO_JS_KEY=current_app.config.get('KAKAO_JS_KEY', ''),
     )
 
 
 @admin_bp.route('/admin/incidents')
 def admin_incidents():
+    member_id = request.args.get('member_id', type=int)
     denied = _require_admin()
     if denied:
         return denied
@@ -407,19 +406,24 @@ def admin_incidents():
     selected_risk = request.args.get('risk', '').strip()
     selected_region = request.args.get('region', '').strip()
     keyword = request.args.get('keyword', '').strip()
-    sort_by = request.args.get('sort_by', 'priority').strip() or 'priority'
+    sort_by = request.args.get('sort', 'latest').strip() or 'latest'
     sort_order = request.args.get('order', 'desc').strip().lower() or 'desc'
     page = max(_safe_int(request.args.get('page', 1), 1), 1)
-    per_page = 10
+    per_page = 8  # [USER REQUEST] 스크롤 방지를 위해 8개로 하향 조정
 
     reports, representative_reports, _ = _hydrate_reports()
 
     filtered = []
-    for item in representative_reports:
+    for item in reports:
         status = item.get('status') or ''
+        if status == '삭제':
+            continue
         risk_score = _safe_float(item.get('risk_score'))
         region_name = normalize_region_name(item.get('region_name') or item.get('location') or '')
         title_text = (item.get('title') or '') + ' ' + (item.get('content') or '') + ' ' + (item.get('location') or '')
+
+        if member_id and _safe_int(item.get('user_id')) != member_id:
+            continue
 
         if quick_filter == 'pending' and status not in ('관리자 확인중', '접수완료'):
             continue
@@ -446,6 +450,8 @@ def admin_incidents():
         filtered.sort(key=lambda x: (_safe_float(x.get('risk_score')), x.get('created_at') or datetime.min), reverse=reverse)
     elif sort_by == 'reports':
         filtered.sort(key=lambda x: (_safe_int(x.get('group_reporter_count'), 0), x.get('created_at') or datetime.min), reverse=reverse)
+    elif sort_by == 'status':
+        filtered.sort(key=lambda x: (_status_rank(x.get('status')),-_safe_float(x.get('risk_score')),x.get('created_at') or datetime.min),reverse=reverse)
     elif sort_by == 'pending':
         filtered.sort(key=lambda x: (_status_rank(x.get('status')), x.get('created_at') or datetime.min), reverse=(sort_order == 'asc'))
     else:
@@ -489,7 +495,8 @@ def admin_incidents():
         total_pages=total_pages,
         total_count=total_count,
         current_query_string=current_query_string,
-        kakao_js_key=current_app.config.get('KAKAO_JS_KEY', ''),
+        member_id=member_id,  # 추가
+        KAKAO_JS_KEY=current_app.config.get('KAKAO_JS_KEY', ''),
     )
 
 @admin_bp.route('/admin/incidents/group/<int:incident_id>')
@@ -572,8 +579,66 @@ def incident_update_status():
     db.session.commit()
 
     if request.is_json:
+        socketio.emit('status_update', {'incident_id': incident_id, 'new_status': new_status}, namespace='/')
         return jsonify({'ok': True, 'message': '상태가 변경되었습니다.'})
+    socketio.emit('status_update', {'incident_id': incident_id, 'new_status': new_status}, namespace='/')
     return redirect(request.referrer or url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/admin/incidents/bulk-update', methods=['POST'])
+def bulk_update_incidents():
+    denied = _require_admin()
+    if denied:
+        return denied
+
+    incident_ids = request.form.getlist('incident_ids')
+    new_status = (request.form.get('new_status') or '').strip()
+    reject_reason = (request.form.get('reject_reason') or '').strip()
+    return_query = (request.form.get('return_query') or '').strip()
+
+    if not incident_ids:
+        return redirect(f"/admin/incidents?{return_query}" if return_query else url_for('admin.admin_incidents'))
+
+    if new_status not in ('관리자 확인중', '접수완료', '처리중', '처리완료', '반려'):
+        return redirect(f"/admin/incidents?{return_query}" if return_query else url_for('admin.admin_incidents'))
+
+    incident_ids = [_safe_int(i) for i in incident_ids if _safe_int(i) > 0]
+    if not incident_ids:
+        return redirect(f"/admin/incidents?{return_query}" if return_query else url_for('admin.admin_incidents'))
+
+    reports, _, group_map = _hydrate_reports()
+
+    target_ids = set()
+    for incident_id in incident_ids:
+        grouped_ids = group_map.get(incident_id, {}).get('group_ids', [incident_id])
+        for rid in grouped_ids:
+            target_ids.add(_safe_int(rid))
+
+    target_ids = [rid for rid in target_ids if rid > 0]
+    if not target_ids:
+        return redirect(f"/admin/incidents?{return_query}" if return_query else url_for('admin.admin_incidents'))
+
+    placeholders = ','.join([f':id{i}' for i in range(len(target_ids))])
+    params = {f'id{i}': rid for i, rid in enumerate(target_ids)}
+    params.update({
+        'new_status': new_status,
+        'reject_reason': reject_reason if new_status == '반려' else None,
+        'last_checked_at': datetime.now()
+    })
+
+    sql = text(f"""
+        UPDATE report
+        SET status = :new_status,
+            reject_reason = :reject_reason,
+            last_checked_at = :last_checked_at
+        WHERE id IN ({placeholders})
+    """)
+    db.session.execute(sql, params)
+    db.session.commit()
+
+    for rid in target_ids:
+        socketio.emit('status_update', {'incident_id': _safe_int(rid), 'new_status': new_status}, namespace='/')
+
+    return redirect(f"/admin/incidents?{return_query}" if return_query else url_for('admin.admin_incidents'))
 
 
 @admin_bp.route('/admin/members')
@@ -587,7 +652,7 @@ def admin_members():
     sort = request.args.get('sort', 'role').strip() or 'role'
     order = request.args.get('order', 'asc').strip().lower() or 'asc'
     page = max(_safe_int(request.args.get('page', 1), 1), 1)
-    per_page = 10
+    per_page = 8  # [USER REQUEST] 스크롤 방지를 위해 8개로 하향 조정
 
     sql = text("""
         SELECT
@@ -651,6 +716,9 @@ def admin_members():
     )
 
 
+# [NOTICE] 상세페이지(member_detail)에서는 모바일 브라우저의 PTR(Pull-to-Refresh) 기능을 
+# layout.html의 스크립트를 통해 '하드하게' 차단하고 있습니다. 
+# 이는 카카오 지도 로더와의 충돌을 방지하기 위함이므로, 상세페이지 레이아웃 유지 시 주의하십시오.
 @admin_bp.route('/admin/members/<int:member_id>')
 def admin_member_detail(member_id):
     denied = _require_admin()
@@ -735,18 +803,41 @@ def admin_member_detail(member_id):
         member_summary_comment=member_summary_comment,
     )
 
+def _member_detail_redirect(member_id):
+    page = request.form.get('page', request.args.get('page', 1))
+    keyword = request.form.get('keyword', request.args.get('keyword', ''))
+    role = request.form.get('role_filter', request.args.get('role', ''))
+    sort = request.form.get('sort', request.args.get('sort', 'role'))
+    order = request.form.get('order', request.args.get('order', 'asc'))
+
+    return redirect(url_for(
+        'admin.admin_member_detail',
+        member_id=member_id,
+        page=page,
+        keyword=keyword,
+        role=role,
+        sort=sort,
+        order=order
+    ))
+
 
 @admin_bp.route('/admin/members/<int:member_id>/role', methods=['POST'])
 def admin_member_change_role(member_id):
     denied = _require_admin()
     if denied:
         return denied
+
     new_role = (request.form.get('role') or '').strip()
     if new_role not in ('admin', 'manager', 'user'):
-        return redirect(request.referrer or url_for('admin.admin_members'))
-    db.session.execute(text("UPDATE members SET role = :role WHERE id = :member_id"), {'role': new_role, 'member_id': member_id})
+        return _member_detail_redirect(member_id)
+
+    db.session.execute(
+        text("UPDATE members SET role = :role WHERE id = :member_id"),
+        {'role': new_role, 'member_id': member_id}
+    )
     db.session.commit()
-    return redirect(request.referrer or url_for('admin.admin_member_detail', member_id=member_id))
+
+    return _member_detail_redirect(member_id)
 
 
 @admin_bp.route('/admin/members/<int:member_id>/suspend', methods=['POST'])
@@ -754,9 +845,14 @@ def admin_member_suspend(member_id):
     denied = _require_admin()
     if denied:
         return denied
-    db.session.execute(text("UPDATE members SET active = 0 WHERE id = :member_id"), {'member_id': member_id})
+
+    db.session.execute(
+        text("UPDATE members SET active = 0 WHERE id = :member_id"),
+        {'member_id': member_id}
+    )
     db.session.commit()
-    return redirect(request.referrer or url_for('admin.admin_member_detail', member_id=member_id))
+
+    return _member_detail_redirect(member_id)
 
 
 @admin_bp.route('/admin/members/<int:member_id>/unsuspend', methods=['POST'])
@@ -764,10 +860,30 @@ def admin_member_unsuspend(member_id):
     denied = _require_admin()
     if denied:
         return denied
-    db.session.execute(text("UPDATE members SET active = 1 WHERE id = :member_id"), {'member_id': member_id})
-    db.session.commit()
-    return redirect(request.referrer or url_for('admin.admin_member_detail', member_id=member_id))
 
+    db.session.execute(
+        text("UPDATE members SET active = 1 WHERE id = :member_id"),
+        {'member_id': member_id}
+    )
+    db.session.commit()
+
+    return _member_detail_redirect(member_id)
+
+
+def add_to_region_tree(tree: dict, parts: list[str]):
+    if not parts:
+        return
+
+    node = tree
+    for i, part in enumerate(parts):
+        is_last = i == len(parts) - 1
+
+        if is_last:
+            node[part] = node.get(part, 0) + 1
+        else:
+            if part not in node or not isinstance(node[part], dict):
+                node[part] = {}
+            node = node[part]
 
 @admin_bp.route('/admin/statistics')
 def admin_statistics():
@@ -779,19 +895,19 @@ def admin_statistics():
     now = datetime.now()
 
     # -----------------------------
-    # 1) 지역별 집계
+    # 1) 지역별 계층 집계
     # -----------------------------
-    region_counter = defaultdict(int)
+    region_data_map = {"all": {}}
 
     for r in reports:
-        region = normalize_region_name(
-            r.get('region_name') or r.get('location') or ''
-        ) or '기타'
-        region_counter[region] += 1
+        raw_address = r.get('region_name') or r.get('location') or ''
+        parts = parse_region_hierarchy(raw_address)
 
-    region_data_map = {
-        "all": dict(region_counter)
-    }
+        if not parts:
+            add_to_region_tree(region_data_map["all"], ["기타"])
+            continue
+
+        add_to_region_tree(region_data_map["all"], parts)
 
     # -----------------------------
     # 2) 기간별 추이 데이터 생성 헬퍼
@@ -915,37 +1031,3 @@ def admin_statistics():
         total_pages=1,
         total_count=total_reports,
     )
-
-@admin_bp.route('/api/admin/reanalyze/<int:report_id>', methods=['POST'])
-def admin_reanalyze(report_id):
-    denied = _require_admin()
-    if denied:
-        return denied
-    
-    try:
-        # 기존 분석 결과 및 비디오 검출 데이터 삭제 (raw SQL 사용)
-        db.session.execute(text("DELETE FROM ai_results WHERE report_id = :id"), {'id': report_id})
-        db.session.execute(text("DELETE FROM video_detections WHERE report_id = :id"), {'id': report_id})
-        
-        # 상태 변경
-        db.session.execute(text("UPDATE report SET status = 'AI 분석중' WHERE id = :id"), {'id': report_id})
-        db.session.commit()
-        
-        # 새로운 스레드에서 분석 시작 (app.py에 등록된 run_ai_analysis 사용)
-        row = db.session.execute(text("SELECT file_path, file_type FROM report WHERE id = :id"), {'id': report_id}).mappings().first()
-        if row and hasattr(current_app, 'run_ai_analysis'):
-            threading.Thread(target=current_app.run_ai_analysis, args=(report_id, row['file_path'], row['file_type'])).start()
-            return jsonify({'success': True, 'message': 'AI 재분석을 시작했습니다.'})
-        
-        return jsonify({'success': False, 'message': 'AI 분석 함수를 찾을 수 없습니다.'}), 500
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@admin_bp.route('/admin/ppt')
-def admin_ppt():
-    denied = _require_admin()
-    if denied:
-        return denied
-    return render_template('ppt.html')

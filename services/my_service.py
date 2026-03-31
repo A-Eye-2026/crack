@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
-from database import db
+from extensions import db
 from models import Member, Report, UserSettings, PointLog
 from utils import check_profanity
 

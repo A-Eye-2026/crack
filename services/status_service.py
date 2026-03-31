@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
-from database import db
+from extensions import db, socketio
 from models import Report, CrackTalk, Member
 from datetime import timedelta
 from utils import check_profanity, get_now_kst
@@ -127,6 +127,16 @@ def post_cracktalk():
     db.session.add(new_talk)
     try:
         db.session.commit()
+        # [WEB-SOCKET] 실시간 CrackTalk 브로드캐스트
+        session_user = Member.query.get(user_id)
+        socketio.emit('new_message', {
+            'id': new_talk.id,
+            'author_id': new_talk.author_id,
+            'nickname': session_user.nickname if session_user else '익명',
+            'content': new_talk.content,
+            'date': new_talk.created_at.strftime('%m-%d %H:%M'),
+            'is_blinded': False
+        }, namespace='/')
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': '저장 중 오류가 발생했습니다.'}), 500

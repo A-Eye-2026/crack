@@ -6,7 +6,7 @@ from services.region_service import normalize_region_name
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, current_app
 from sqlalchemy import text
 
-from database import db
+from extensions import db
 from models import Report, AiResult, Member, Notice, PointLog, VideoDetection
 
 alert_bp = Blueprint('alert', __name__)
@@ -567,6 +567,9 @@ def alert_page():
 # 아래는 기존 라우트 (상세보기, 상태 업데이트, 공지, 동영상 API)
 # =====================================================
 
+# [NOTICE] 상세페이지(alert_view)에서는 모바일 브라우저의 PTR(Pull-to-Refresh) 기능을 
+# layout.html의 스크립트를 통해 '하드하게' 차단하고 있습니다. 
+# 이는 카카오 지도 로더와의 충돌을 방지하기 위함이므로, 상세페이지 레이아웃 유지 시 주의하십시오.
 @alert_bp.route('/alert/view/<int:report_id>')
 def alert_view(report_id):
     rpt = Report.query.get_or_404(report_id)

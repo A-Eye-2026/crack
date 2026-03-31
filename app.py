@@ -10,7 +10,7 @@ from ultralytics import YOLO
 import cv2
 
 # 내부 모듈 임포트
-from database import db
+from extensions import db, socketio
 from models import Report, AiResult, Member, VideoDetection
 from utils import reverse_geocode
 
@@ -79,12 +79,13 @@ for d in [UPLOAD_IMAGE_DIR, UPLOAD_VIDEO_DIR]:
 # app.py 60~62라인쯤에 추가
 print("DEBUG: SQLALCHEMY_DATABASE_URI =", app.config.get('SQLALCHEMY_DATABASE_URI'))
 
-db.init_app(app) # 63라인
+db.init_app(app)
+socketio.init_app(app)
 
 
 # AI 모델 로드
 try:
-    model_path = os.path.join(base_dir, 'static', 'best.pt')
+    model_path = os.path.join(base_dir, 'static', 'best_merge_v2.pt')
     model = YOLO(model_path)
 except Exception as e:
     print(f"Error loading YOLO model: {e}")
@@ -434,4 +435,5 @@ if __name__ == '__main__':
     print("📈  Smart Road Safety Platform")
     print("="*50 + "\n")
     # [RELOAD] PPT 8페이지 모달 UI 개선 및 기술 설명 정확도(Pillow/YOLO) 반영을 위한 서버 재시작
-    app.run(host='0.0.0.0', port=8012, debug=True)
+    # 사용자가 0.0.0.0을 브라우저에 입력하는 오류를 방지하기 위해 127.0.0.1로 바인딩
+    socketio.run(app, host='127.0.0.1', port=8012, debug=True, allow_unsafe_werkzeug=True)

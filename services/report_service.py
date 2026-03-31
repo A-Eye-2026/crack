@@ -3,7 +3,7 @@ import time
 from datetime import timedelta
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
 from werkzeug.utils import secure_filename
-from database import db
+from extensions import db
 from models import Report, AiResult, Member, PointLog
 from utils import allowed_file, extract_gps_from_exif, haversine, reverse_geocode, get_now_kst
 

@@ -10,3 +10,5 @@ PyMySQL
 certifi
 opencv-python
 numpy
+Flask-SocketIO
+eventlet

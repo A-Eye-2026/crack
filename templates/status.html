@@ -110,8 +110,8 @@
     style="position: relative; z-index: 1; background: var(--bg-main);">
     {% if reports %}
     {% for report in reports %}
-    <div class="report-card" {% if report.status=='반려' %} onclick="showRejectReason(event, this)"
-        data-reason="{{ report.reject_reason }}" {% elif report.status=='삭제' %}
+    <div class="report-card" id="report-card-{{ report.id }}" {% if report.status=='반려' %}
+        onclick="showRejectReason(event, this)" data-reason="{{ report.reject_reason }}" {% elif report.status=='삭제' %}
         style="opacity: 0.4; filter: grayscale(0.5); cursor: default;" {% else %}
         onclick="location.href='/alert/view/{{ report.id }}'" {% endif %}>
         <div style="display: flex; align-items: center; gap: 12px;">
@@ -137,7 +137,7 @@
             </div>
         </div>
         <div style="text-align: right; flex-shrink: 0; margin-left: 12px;">
-            <span class="badge 
+            <span class="badge badge-status-text
                 {% if report.status == '처리 완료' %}status-done
                 {% elif report.status == '신고 처리중' %}status-processing
                 {% elif report.status == '접수완료' %}status-received
@@ -351,7 +351,12 @@
 
                 container.insertAdjacentHTML('beforeend', bubbleContent);
             });
-            container.scrollTop = container.scrollHeight;
+
+            // [UX] 데이터 렌더링 후 즉시 최하단으로 스크롤 (레이아웃 계산 대기 포함)
+            requestAnimationFrame(() => {
+                container.scrollTop = container.scrollHeight;
+                setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
+            });
         } catch (e) {
             console.error('Talk Load Error:', e);
         }
@@ -492,6 +497,92 @@
     window.closeRejectModal = function () {
         const modal = document.getElementById('reject-modal-overlay');
         if (modal) modal.style.display = 'none';
+    }
+
+    // [WEB-SOCKET] Socket.IO 실시간 연동
+    if (typeof io !== 'undefined') {
+        const socket = io();
+
+        // 1. CrackTalk 실시간 수신
+        socket.on('new_message', function (data) {
+            console.log("[Socket] New CrackTalk:", data);
+            const container = document.getElementById('talk-messages');
+            if (!container) return;
+
+            // 로딩 중이거나 내역 없음 안내 제거
+            if (container.innerHTML.includes('불러오고') || container.innerHTML.includes('아직 대화가')) {
+                container.innerHTML = '';
+            }
+
+            const isMe = data.author_id === statusCurrentUserId;
+            let bubbleContent = '';
+
+            if (data.is_blinded && !statusIsAdmin) {
+                bubbleContent = `
+                    <div style="display:flex;flex-direction:column;align-items:flex-start;width:100%;">
+                        <div style="display:flex;align-items:flex-end;gap:6px;max-width:80%;">
+                            <div class="blinded-msg" style="padding:10px 14px;border-radius:2px 18px 18px 18px;font-size:0.85rem;line-height:1.4;box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                                <i class="bi bi-eye-slash-fill" style="font-size:0.85rem;"></i>
+                                관리자에 의해 노출이 제한된 게시물
+                            </div>
+                            <span style="font-size:0.65rem;opacity:0.4;white-space:nowrap;">${data.date}</span>
+                        </div>
+                    </div>`;
+            } else {
+                // 관리자 또는 일반 메시지
+                const isAdminStyle = statusIsAdmin ? (data.is_blinded ? 'admin-blinded-msg' : '') : '';
+                const btnIcon = (statusIsAdmin) ? (data.is_blinded
+                    ? `<i class="bi bi-arrow-counterclockwise btn-unblind" onclick="openBlindModal(${data.id}, true)" style="${isMe ? 'left:-8px' : 'right:-8px'}" title="블라인드 해제"></i>`
+                    : `<i class="bi bi-x-circle-fill btn-blind" onclick="openBlindModal(${data.id}, false)" style="${isMe ? 'left:-8px' : 'right:-8px'}" title="블라인드 처리"></i>`) : '';
+
+                bubbleContent = `
+                    <div style="display:flex;flex-direction:column;align-items:${isMe ? 'flex-end' : 'flex-start'};width:100%;">
+                        ${!isMe ? `<span style="font-size:0.75rem;font-weight:700;margin-bottom:4px;margin-left:4px;opacity:0.7;">${data.nickname}</span>` : ''}
+                        <div style="display:flex;align-items:flex-end;gap:6px;flex-direction:${isMe ? 'row-reverse' : 'row'};max-width:80%;">
+                            <div class="${isAdminStyle}" style="background:${isMe ? 'var(--point-orange)' : 'white'};color:${data.is_blinded ? '#999' : (isMe ? 'white' : 'black')};padding:10px 14px;border-radius:${isMe ? '18px 2px 18px 18px' : '2px 18px 18px 18px'};font-size:0.9rem;line-height:1.4;box-shadow:0 2px 5px rgba(0,0,0,0.05);position:relative;">
+                                ${data.content}
+                                ${data.is_blinded ? `<span style="display:block;font-size:0.72rem;margin-top:4px;color:#aaa;">[블라인드 처리됨]</span>` : ''}
+                                ${btnIcon}
+                            </div>
+                            <span style="font-size:0.65rem;opacity:0.4;white-space:nowrap;">${data.date}</span>
+                        </div>
+                    </div>`;
+            }
+
+            container.insertAdjacentHTML('beforeend', bubbleContent);
+
+            // 사용자가 Talk 섹션을 보고 있으면 부드럽게 하단 스크롤
+            const talkSection = document.getElementById('talk-section');
+            if (talkSection && talkSection.style.display !== 'none') {
+                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+            }
+        });
+
+        // 2. 신고 처리 상태 실시간 수신
+        socket.on('status_update', function (data) {
+            console.log("[Socket] Report Status Update:", data);
+            const card = document.getElementById('report-card-' + data.incident_id);
+            if (!card) return;
+
+            const badge = card.querySelector('.badge-status-text');
+            if (badge) {
+                // 기존 클래스 제거
+                badge.classList.remove('status-done', 'status-processing', 'status-received', 'status-rejected', 'status-deleted');
+
+                // 새 클래스 및 텍스트 적용
+                badge.innerText = data.new_status;
+                if (data.new_status === '처리 완료') badge.classList.add('status-done');
+                else if (data.new_status === '신고 처리중') badge.classList.add('status-processing');
+                else if (data.new_status === '접수완료') badge.classList.add('status-received');
+                else if (data.new_status === '반려') badge.classList.add('status-rejected');
+                else if (data.new_status === '삭제') badge.classList.add('status-deleted');
+
+                // 강조 모션
+                badge.style.transform = 'scale(1.2)';
+                badge.style.transition = 'transform 0.3s ease';
+                setTimeout(() => badge.style.transform = '', 500);
+            }
+        });
     }
     }) ();
 </script>
