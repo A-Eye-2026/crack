@@ -11,6 +11,9 @@ from database import db
 
 admin_bp = Blueprint('admin', __name__)
 
+# [용어 정의] 상단바와 하단바를 제외한 실질적인 본문 영역을 '메인 콘텐츠 영역' 또는 '메인 영역'으로 정의합니다.
+MAIN_CONTENT_AREA = "메인 콘텐츠 영역 (Main Content Area)"
+
 
 def _safe_float(value, default=0.0):
     try:
@@ -28,6 +31,20 @@ def _safe_int(value, default=0):
         return int(value)
     except Exception:
         return default
+
+
+def _normalize_path(path):
+    if not path:
+        return ''
+    path = path.replace('\\', '/')
+    if path.startswith('http') or path.startswith('data:'):
+        return path
+    if not path.startswith('/'):
+        if path.startswith('uploads/'):
+            path = '/' + path
+        else:
+            path = '/uploads/' + path
+    return path
 
 
 def _parse_dt(value):
@@ -146,7 +163,14 @@ def _fetch_reports():
         item = dict(row)
         item['created_at'] = _parse_dt(item.get('created_at'))
         item['risk_score'] = _safe_float(item.get('confidence'))
-        item['image_path'] = item.get('thumbnail_path') or item.get('file_path') or ''
+        # 경로 정규화 및 형식 판별 적용
+        item['file_path'] = _normalize_path(item.get('file_path'))
+        item['thumbnail_path'] = _normalize_path(item.get('thumbnail_path'))
+        item['image_path'] = item['thumbnail_path'] or item['file_path'] or ''
+        # 동영상 확장자 체크 추가
+        if (item.get('file_path') or '').lower().endswith(('.mp4', '.mov', '.avi', '.m4v')):
+            item['file_type'] = 'video'
+        
         item['location'] = item.get('region_name') or item.get('content') or '위치 정보 없음'
         item['first_created_at'] = item['created_at']
         rows.append(item)

@@ -1,10 +1,9 @@
-{% extends "admin_layout.html" %}
+﻿{% extends "admin_layout.html" %}
 
 {% block title %}CRACK 신고 전체 관리{% endblock %}
 
 {% block quick_actions %}
 <div class="header-quick-actions">
-  <a href="/alert" class="quick-btn alert-btn js-page-transition-link" title="알림 페이지">🔔</a>
   <a href="/admin/ppt" class="quick-btn ppt-btn js-page-transition-link" title="리포트 페이지">📊</a>
 </div>
 {% endblock %}
@@ -1097,13 +1096,7 @@
               </td>
 
               <td>
-                <button class="mini-btn" type="button" onclick="openIncidentDetailModal(
-                        '{{ incident.id }}',
-                        '{{ incident.title|default(" 신고 상세")|e }}', '{{ incident.location|e }}'
-                  , '{{ incident.status|e }}' , '{{ incident.first_created_at.strftime(' %m-%d %H:%M') if
-                  incident.first_created_at else '-' }}', '{{ incident.risk_score|default(0) }}'
-                  , '{{ incident.group_reporter_count|default(0) }}' , '{{ incident.image_path|default('', true)|e }}'
-                  , '{{ incident.latitude|default('', true) }}' , '{{ incident.longitude|default('', true) }}' )">
+                <button class="mini-btn" type="button" onclick="window.location.href='/alert/view/{{ incident.id }}'">
                   상세보기
                 </button>
               </td>
@@ -1155,126 +1148,6 @@
   </form>
 </section>
 
-<div class="detail-modal-backdrop" id="incidentDetailModal">
-  <div class="detail-modal-card">
-    <div class="detail-thumb-box">
-      <div class="detail-photo-frame">
-        <img id="incidentDetailImage" class="detail-thumb-img" src="" alt="신고 이미지">
-        <div id="incidentDetailPlaceholder" class="detail-thumb-placeholder">사진</div>
-      </div>
-    </div>
-
-    <div class="detail-content-box">
-      <div class="detail-meta-row">
-        <div class="detail-status-change-wrap">
-          <div class="detail-inline-status-wrap" id="incidentInlineStatusWrap">
-            <button type="button" id="incidentDetailStatus" class="detail-chip detail-chip-button"
-              onclick="toggleIncidentStatusMenu()">
-              접수완료
-            </button>
-
-            <div class="detail-inline-status-menu" id="incidentInlineStatusMenu">
-              <button type="button" class="detail-inline-status-option"
-                onclick="selectInlineIncidentStatus('처리중')">처리중</button>
-              <button type="button" class="detail-inline-status-option"
-                onclick="selectInlineIncidentStatus('처리완료')">처리완료</button>
-              <button type="button" class="detail-inline-status-option danger"
-                onclick="selectInlineIncidentStatus('반려')">반려</button>
-            </div>
-          </div>
-
-          <button class="detail-inline-apply-btn" type="button" onclick="applyInlineIncidentStatus()">
-            변경
-          </button>
-        </div>
-
-        <div class="detail-time-risk-wrap">
-          <span id="incidentDetailTime" class="detail-time-text">00-00 00:00</span>
-          <span id="incidentDetailRisk" class="detail-risk-badge">AI 0%</span>
-        </div>
-      </div>
-
-      <div class="detail-divider"></div>
-
-      <div class="detail-info-card">
-        <div id="incidentDetailTitle" class="detail-content-title">신고 제목</div>
-
-        <div class="detail-location-row">
-          <div id="incidentDetailLocation" class="detail-content-text">위치 정보</div>
-          <button class="detail-map-inline-btn" type="button" onclick="openIncidentMap()" title="지도 보기"
-            aria-label="지도 보기">
-            <svg class="detail-map-inline-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true">
-              <path
-                d="M9 18L3.8 20.5C3.47 20.66 3.08 20.42 3.08 20.05V5.95C3.08 5.7 3.22 5.47 3.44 5.36L9 2.5M9 18L15 21.5M9 18V2.5M15 21.5L20.2 19C20.53 18.84 20.92 19.08 20.92 19.45V3.55C20.92 3.3 20.78 3.07 20.56 2.96L15 0.5M15 21.5V0.5M15 0.5L9 2.5"
-                stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </button>
-        </div>
-
-        <div id="incidentDetailReporter" class="detail-content-text" style="margin-top:8px;">반복 제보 -</div>
-      </div>
-
-      <div class="detail-close-wrap">
-        <button class="detail-close-btn" type="button" onclick="closeIncidentDetailModal()">닫기</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="detail-modal-backdrop" id="incidentRejectModal">
-  <div class="detail-modal-card" style="max-width:420px;">
-    <div class="detail-content-box">
-      <div class="section-title" style="font-size:22px; margin-bottom:8px;">반려 사유 입력</div>
-      <div class="section-subtitle" style="font-size:14px; margin-bottom:14px;">
-        반려 처리 사유를 입력해주세요.
-      </div>
-
-      <div class="detail-info-card">
-        <textarea id="incidentRejectReasonText" maxlength="40" placeholder="예: 중복 신고, 위험도 기준 미달, 사진 불명확"
-          style="width:100%; min-height:110px; border:1px solid #d7dde5; border-radius:12px; padding:12px; font-size:14px; resize:none; outline:none;"></textarea>
-        <div id="incidentRejectReasonCount" style="margin-top:8px; font-size:12px; color:#94a3b8; text-align:right;">
-          0 / 40자
-        </div>
-      </div>
-
-      <div class="modal-action-row">
-        <button class="modal-btn-secondary" type="button" onclick="closeIncidentRejectModal()">취소</button>
-        <button class="modal-btn-primary" type="button" onclick="submitIncidentReject()">반려 확인</button>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="detail-modal-backdrop" id="bulkRejectModal">
-  <div class="detail-modal-card" style="max-width:420px;">
-    <div class="detail-content-box">
-      <div class="section-title" style="font-size:22px; margin-bottom:8px;">선택 항목 반려</div>
-      <div class="section-subtitle" style="font-size:14px; margin-bottom:14px;">
-        선택한 신고들의 반려 사유를 입력해주세요.
-      </div>
-
-      <div class="detail-info-card">
-        <textarea id="bulkRejectReasonText" maxlength="40" placeholder="예: 중복 신고, 위험도 기준 미달, 사진 불명확"
-          style="width:100%; min-height:110px; border:1px solid #d7dde5; border-radius:12px; padding:12px; font-size:14px; resize:none; outline:none;"></textarea>
-        <div id="bulkRejectReasonCount" style="margin-top:8px; font-size:12px; color:#94a3b8; text-align:right;">
-          0 / 40자
-        </div>
-      </div>
-
-      <div class="modal-action-row">
-        <button class="modal-btn-secondary" type="button" onclick="closeBulkRejectModal()">취소</button>
-        <button class="modal-btn-primary" type="button" onclick="submitBulkReject()">반려 확인</button>
-      </div>
-    </div>
-  </div>
-</div>
-<form id="incidentStatusForm" action="/incident/update-status" method="POST" style="display:none;">
-  <input type="hidden" name="incident_id" id="incidentIdInput">
-  <input type="hidden" name="new_status" id="incidentNewStatusInput">
-  <input type="hidden" name="reject_reason" id="incidentRejectReasonInput" value="">
-  <input type="hidden" name="return_query" value="{{ current_query_string }}">
-</form>
-</div>
 <div class="custom-alert-backdrop" id="customAlertModal">
   <div class="custom-alert-box">
     <div class="custom-alert-header">
@@ -1373,7 +1246,7 @@
   let incidentDetailLat = '';
   let incidentDetailLng = '';
   let incidentDetailId = '';
-  let incidentSelectedStatus = '';
+  let incidentSelectedS'';
   let incidentCurrentStatus = '';
   let pendingBulkStatus = '';
   let incidentMapInstance = null;
@@ -1581,199 +1454,6 @@
     form.submit();
   }
 
-  function toggleIncidentStatusMenu() {
-    const wrap = document.getElementById('incidentInlineStatusWrap');
-    if (wrap) wrap.classList.toggle('open');
-  }
-
-  function selectInlineIncidentStatus(value) {
-    incidentSelectedStatus = value;
-
-    const statusEl = document.getElementById('incidentDetailStatus');
-    if (statusEl) {
-      statusEl.textContent = value;
-      statusEl.className = 'detail-chip detail-chip-button ' + getIncidentStatusClass(value);
-    }
-
-    const wrap = document.getElementById('incidentInlineStatusWrap');
-    if (wrap) wrap.classList.remove('open');
-  }
-
-  function openIncidentRejectModal() {
-    const modal = document.getElementById('incidentRejectModal');
-    const textarea = document.getElementById('incidentRejectReasonText');
-
-    if (!modal || !textarea) {
-      openCustomAlert('반려 모달 요소를 찾지 못했습니다.');
-      return;
-    }
-
-    textarea.value = '';
-    const counter = document.getElementById('incidentRejectReasonCount');
-    if (counter) counter.textContent = '0 / 40자';
-
-    modal.classList.add('show');
-  }
-
-  function closeIncidentRejectModal() {
-    const modal = document.getElementById('incidentRejectModal');
-    if (modal) modal.classList.remove('show');
-  }
-
-  function submitIncidentStatus(newStatus, rejectReason = '') {
-    const form = document.getElementById('incidentStatusForm');
-    const idInput = document.getElementById('incidentIdInput');
-    const statusInput = document.getElementById('incidentNewStatusInput');
-    const rejectInput = document.getElementById('incidentRejectReasonInput');
-
-    if (!form || !idInput || !statusInput || !rejectInput) {
-      openCustomAlert('상태 변경 폼을 찾지 못했습니다.');
-      return;
-    }
-
-    if (!incidentDetailId) {
-      openCustomAlert('신고 ID를 찾지 못했습니다.');
-      return;
-    }
-
-    idInput.value = incidentDetailId;
-    statusInput.value = newStatus;
-    rejectInput.value = rejectReason;
-    form.submit();
-  }
-
-  function submitIncidentReject() {
-    const textarea = document.getElementById('incidentRejectReasonText');
-    if (!textarea) {
-      openCustomAlert('반려 사유 입력창을 찾지 못했습니다.');
-      return;
-    }
-
-    const reason = textarea.value.trim();
-
-    if (!reason) {
-      openCustomAlert('반려 사유를 입력해주세요.');
-      return;
-    }
-
-    closeIncidentRejectModal();
-    submitIncidentStatus('반려', reason);
-  }
-
-  function applyInlineIncidentStatus() {
-    if (!incidentDetailId) {
-      openCustomAlert('사건 정보가 없습니다.');
-      return;
-    }
-
-    if (!incidentSelectedStatus) {
-      openCustomAlert('변경할 상태를 선택해주세요.');
-      return;
-    }
-
-    if (incidentSelectedStatus === incidentCurrentStatus) {
-      openCustomAlert('현재 상태와 동일합니다.');
-      return;
-    }
-
-    if (incidentSelectedStatus === '반려') {
-      openIncidentRejectModal();
-      return;
-    }
-
-    submitIncidentStatus(incidentSelectedStatus);
-  }
-
-  function openIncidentDetailModal(
-    incidentId,
-    title,
-    location,
-    status,
-    time,
-    riskScore,
-    reporterCount,
-    imagePath,
-    lat,
-    lng
-  ) {
-    const titleEl = document.getElementById('incidentDetailTitle');
-    const locationEl = document.getElementById('incidentDetailLocation');
-    const timeEl = document.getElementById('incidentDetailTime');
-    const reporterEl = document.getElementById('incidentDetailReporter');
-    const statusEl = document.getElementById('incidentDetailStatus');
-    const riskEl = document.getElementById('incidentDetailRisk');
-    const imgEl = document.getElementById('incidentDetailImage');
-    const placeholderEl = document.getElementById('incidentDetailPlaceholder');
-    const modalEl = document.getElementById('incidentDetailModal');
-    const statusWrap = document.getElementById('incidentInlineStatusWrap');
-
-    if (!titleEl || !locationEl || !timeEl || !reporterEl || !statusEl || !riskEl || !imgEl || !placeholderEl || !modalEl) {
-      openCustomAlert('상세보기 모달 요소를 찾지 못했습니다.');
-      return;
-    }
-
-    incidentDetailId = incidentId || '';
-    incidentDetailLat = lat || '';
-    incidentDetailLng = lng || '';
-    incidentCurrentStatus = status || '';
-    incidentSelectedStatus = status || '';
-
-    titleEl.textContent = title || '신고 상세';
-    locationEl.textContent = location || '위치 정보 없음';
-    timeEl.textContent = time || '-';
-    reporterEl.textContent =
-      Number(reporterCount || 0) >= 1
-        ? `반복 제보 ${Number(reporterCount)}건`
-        : '반복 제보 -';
-
-    statusEl.textContent = status || '-';
-    statusEl.className = 'detail-chip detail-chip-button ' + getIncidentStatusClass(status || '');
-
-    const score = Number(riskScore || 0);
-    riskEl.textContent = `AI ${Math.round(score)}%`;
-
-    if (score >= 80) {
-      riskEl.className = 'detail-risk-badge detail-risk-high';
-    } else if (score >= 50) {
-      riskEl.className = 'detail-risk-badge detail-risk-medium';
-    } else {
-      riskEl.className = 'detail-risk-badge detail-risk-low';
-    }
-
-    if (statusWrap) statusWrap.classList.remove('open');
-
-    if (imagePath && String(imagePath).trim() !== '') {
-      let finalImagePath = String(imagePath).trim();
-
-      if (!finalImagePath.startsWith('/')) {
-        finalImagePath = '/uploads/' + finalImagePath;
-      }
-
-      imgEl.onerror = null;
-      imgEl.src = finalImagePath;
-      imgEl.style.display = 'block';
-      placeholderEl.style.display = 'none';
-
-      imgEl.onerror = function () {
-        imgEl.src = '';
-        imgEl.style.display = 'none';
-        placeholderEl.style.display = 'flex';
-        imgEl.onerror = null;
-      };
-    } else {
-      imgEl.onerror = null;
-      imgEl.src = '';
-      imgEl.style.display = 'none';
-      placeholderEl.style.display = 'flex';
-    }
-
-    modalEl.classList.add('show');
-  }
-
-  function closeIncidentDetailModal() {
-    const modalEl = document.getElementById('incidentDetailModal');
-    const wrap = document.getElementById('incidentInlineStatusWrap');
-
     if (modalEl) modalEl.classList.remove('show');
     if (wrap) wrap.classList.remove('open');
   }
@@ -1846,60 +1526,6 @@
     }
   }
 
-  function openIncidentMap() {
-    const modal = document.getElementById('incidentMapModal');
-    const canvas = document.getElementById('incidentMapCanvas');
-
-    if (!modal || !canvas) {
-      openCustomAlert('지도 모달 요소를 찾지 못했습니다.');
-      return;
-    }
-
-    const lat = parseFloat(incidentDetailLat);
-    const lng = parseFloat(incidentDetailLng);
-
-    if (Number.isNaN(lat) || Number.isNaN(lng)) {
-      openCustomAlert('지도 좌표 정보가 없습니다.');
-      return;
-    }
-
-    modal.classList.add('show');
-
-    if (!window.kakao || !window.kakao.maps) {
-      openCustomAlert('카카오 지도 SDK를 불러오지 못했습니다.');
-      return;
-    }
-
-    const position = new kakao.maps.LatLng(lat, lng);
-
-    if (!incidentMapInstance) {
-      incidentMapInstance = new kakao.maps.Map(canvas, {
-        center: position,
-        level: 3
-      });
-    } else {
-      incidentMapInstance.setCenter(position);
-    }
-
-    if (incidentMapMarker) {
-      incidentMapMarker.setMap(null);
-    }
-
-    incidentMapMarker = new kakao.maps.Marker({
-      position: position
-    });
-    incidentMapMarker.setMap(incidentMapInstance);
-
-    setTimeout(() => {
-      kakao.maps.event.trigger(incidentMapInstance, 'resize');
-      incidentMapInstance.setCenter(position);
-    }, 50);
-  }
-
-  function closeIncidentMapModal() {
-    const modal = document.getElementById('incidentMapModal');
-    if (modal) modal.classList.remove('show');
-  }
 
   document.addEventListener('change', function (e) {
     if (e.target.matches('.incident-check') || e.target.id === 'checkAllIncidents') {

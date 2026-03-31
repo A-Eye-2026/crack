@@ -6,6 +6,9 @@ from utils import check_profanity
 
 my_bp = Blueprint('my', __name__)
 
+# [용어 정의] 상단바와 하단바를 제외한 실질적인 본문 영역을 '메인 콘텐츠 영역' 또는 '메인 영역'으로 정의합니다.
+MAIN_CONTENT_AREA = "메인 콘텐츠 영역 (Main Content Area)"
+
 @my_bp.route('/mypage')
 def mypage():
     user_id = session.get('user_id')

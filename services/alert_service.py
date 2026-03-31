@@ -11,6 +11,9 @@ from models import Report, AiResult, Member, Notice, PointLog, VideoDetection
 
 alert_bp = Blueprint('alert', __name__)
 
+# [용어 정의] 상단바와 하단바를 제외한 실질적인 본문 영역을 '메인 콘텐츠 영역' 또는 '메인 영역'으로 정의합니다.
+MAIN_CONTENT_AREA = "메인 콘텐츠 영역 (Main Content Area)"
+
 VISIBLE_USER_STATUSES = {'접수완료', '처리중', '처리완료'}
 ADMIN_ALERT_STATUSES = {'관리자 확인중', '접수완료', '처리중', '처리완료', '반려'}
 
@@ -31,6 +34,20 @@ def _safe_int(value, default=0):
         return int(value)
     except Exception:
         return default
+
+
+def _normalize_path(path):
+    if not path:
+        return ''
+    path = path.replace('\\', '/')
+    if path.startswith('http') or path.startswith('data:'):
+        return path
+    if not path.startswith('/'):
+        if path.startswith('uploads/'):
+            path = '/' + path
+        else:
+            path = '/uploads/' + path
+    return path
 
 
 def _parse_dt(value):
@@ -327,10 +344,11 @@ def _serialize_alert_item(item, selected_lat=None, selected_lng=None):
         'created_at': item.get('created_at').strftime('%m-%d %H:%M') if item.get('created_at') else '-',
         'time': item.get('created_at').strftime('%Y-%m-%d %H:%M:%S') if item.get('created_at') else '알 수 없음',
         'created_at_obj': item.get('created_at'),
-        'image_path': item.get('image_path') or '',
-        'file_path': item.get('image_path') or '',
-        'original_file_path': item.get('file_path') or '',
-        'file_type': item.get('file_type') or 'image',
+        'image_path': _normalize_path(item.get('thumbnail_path') or item.get('file_path')),
+        'file_path': _normalize_path(item.get('file_path')),
+        'thumbnail_path': _normalize_path(item.get('thumbnail_path')),
+        'original_file_path': _normalize_path(item.get('file_path')),
+        'file_type': 'video' if (item.get('file_path') or '').lower().endswith(('.mp4', '.mov', '.avi', '.m4v')) else (item.get('file_type') or 'image'),
         'latitude': item.get('latitude'),
         'longitude': item.get('longitude'),
         'lat': item.get('latitude'),
@@ -391,7 +409,7 @@ def alert_page():
     selected_lat, selected_lng = _selected_point()
 
     # =========================
-    # 🔥 관리자 / 매니저
+    # 관리자 / 매니저
     # =========================
     if role in ('admin', 'manager'):
         region_filter_on = request.args.get('region_filter', 'on') == 'on'
@@ -540,18 +558,9 @@ def alert_page():
     )
 
 
-@alert_bp.route('/alert/detail/<int:report_id>')
-def alert_detail(report_id):
-    if not session.get('user_id'):
-        return jsonify({'ok': False, 'message': '로그인이 필요합니다.'}), 401
 
-    items = _load_alert_items()
-    selected_lat, selected_lng = _selected_point()
-    target = next((item for item in items if _safe_int(item.get('id')) == report_id), None)
-    if not target:
-        return jsonify({'ok': False, 'message': '대상을 찾을 수 없습니다.'}), 404
 
-    return jsonify({'ok': True, 'item': _serialize_alert_item(target, selected_lat, selected_lng)})
+
 
 
 # =====================================================
@@ -575,14 +584,17 @@ def alert_view(report_id):
         'address': rpt.address,
         'lat': rpt.latitude,
         'lng': rpt.longitude,
-        'file_path': rpt.file_path,
-        'thumbnail_path': rpt.thumbnail_path,
-        'file_type': rpt.file_type,
+        'file_path': _normalize_path(rpt.file_path),
+        'thumbnail_path': _normalize_path(rpt.thumbnail_path),
+        'file_type': 'video' if (rpt.file_path or '').lower().endswith(('.mp4', '.mov', '.avi', '.m4v')) else (rpt.file_type or 'image'),
         'reporter_name': reporter_name,
         'confidence': ai_res.confidence if ai_res else 0,
         'damage_type': ai_res.damage_type if ai_res else 'N/A'
     }
 
+    # [SECURITY POLICY] 상세 페이지 가시성 권한 제어
+    # 1. 관리자(is_admin): 지도, 첨부 동영상, 첨부 사진, AI 분석 상세 데이터를 모두 열람 가능
+    # 2. 일반 사용자: 개인정보 및 분석 데이터 보호를 위해 지도(Location) 및 기본 텍스트만 열람 가능
     return render_template('alert_view_v2.html', detail=detail, is_admin=session.get('is_admin', False))
 
 
@@ -616,6 +628,22 @@ def update_report_status(report_id):
 
         db.session.commit()
         return jsonify({'success': True, 'message': f'상태가 {new_status}(으)로 변경되었습니다.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@alert_bp.route('/api/admin/report/<int:report_id>/delete', methods=['POST'])
+def delete_report(report_id):
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+
+    try:
+        rpt = Report.query.get_or_404(report_id)
+        # 삭제 사유는 필요 시 로그로 남기거나 별도 필드에 기록 (현재는 즉시 삭제)
+        db.session.delete(rpt)
+        db.session.commit()
+        return jsonify({'success': True, 'message': '제보가 삭제되었습니다.'})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500

@@ -6,6 +6,23 @@ from utils import check_profanity, get_now_kst
 
 status_bp = Blueprint('status', __name__)
 
+# [용어 정의] 상단바와 하단바를 제외한 실질적인 본문 영역을 '메인 콘텐츠 영역' 또는 '메인 영역'으로 정의합니다.
+MAIN_CONTENT_AREA = "메인 콘텐츠 영역 (Main Content Area)"
+import os
+
+def _normalize_path(path):
+    if not path:
+        return ''
+    path = path.replace('\\', '/')
+    if path.startswith('http') or path.startswith('data:'):
+        return path
+    if not path.startswith('/'):
+        if path.startswith('uploads/'):
+            path = '/' + path
+        else:
+            path = '/uploads/' + path
+    return path
+
 @status_bp.route('/status')
 def status():
     user_id = session.get('user_id')
@@ -33,12 +50,18 @@ def status():
 
     my_reports = []
     for r in db_reports:
+        # 확장자 기반 file_type 판별 보강
+        ext_video = (r.file_path or '').lower().endswith(('.mp4', '.mov', '.avi', '.m4v'))
+        f_type = 'video' if ext_video else (r.file_type or 'image')
+        
         my_reports.append({
             'id': r.id,
             'title': r.title or '제목 없음',
             'status': r.status,
             'date': r.created_at.strftime('%Y-%m-%d') if r.created_at else '',
-            'file_path': r.file_path,
+            'file_path': _normalize_path(r.file_path),
+            'thumbnail_path': _normalize_path(r.thumbnail_path),
+            'file_type': f_type,
             'reject_reason': r.reject_reason
         })
     return render_template('status.html', reports=my_reports)

@@ -20,9 +20,9 @@
 
         <div id="upload-placeholder"
             style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
-            <i class="bi bi-camera-reels-fill" style="font-size: 2.5rem; color: var(--point-orange); opacity: 0.8;"></i>
-            <p id="selected-file-name" style="margin-top: 12px; font-weight: 600;">사진/영상 첨부 또는 직접 촬영</p>
-            <span style="font-size: 0.75rem; opacity: 0.5;">동영상은 최대 100MB까지 가능합니다.</span>
+            <i class="bi bi-camera-fill" style="font-size: 3rem; color: var(--point-orange); margin-bottom: 10px;"></i>
+            <p id="selected-file-name" style="margin-top: 12px; font-weight: 700; font-size: 1.1rem;">현장 사진 촬영 또는 첨부</p>
+            <span style="font-size: 0.8rem; opacity: 0.6;">포트홀이 잘 보이도록 가까이서 찍어주세요.</span>
         </div>
 
         <!-- 크롭 컨테이너 (꽉 차게 조정) / 클릭 시 사진 재선택 가능하도록 함 -->
@@ -49,19 +49,19 @@
         </button>
     </div>
 
-    <!-- Hidden Inputs (단일화) -->
-    <input type="file" id="file-input" accept="image/*,video/*" style="display: none;"
+    <!-- Hidden Inputs (단일화) / capture="camera" 추가로 직접 촬영 유도 -->
+    <input type="file" id="file-input" accept="image/*,video/*" capture="camera" style="display: none;"
         onchange="handleFileSelection(this)">
 
 
     <div class="form-group" style="margin-bottom: 20px;">
         <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">위치 설정</label>
 
-        <!-- [신규] 메타데이터 성공 안내 메시지 -->
-        <div id="exif-success-msg"
-            style="display: none; padding: 12px; background: rgba(67, 160, 71, 0.1); border: 1px solid rgba(67, 160, 71, 0.3); border-radius: 12px; margin-bottom: 12px; font-size: 0.85rem; color: #2E7D32; font-weight: 600; align-items: center; gap: 8px; line-height: 1.4;">
-            <i class="bi bi-check-circle-fill" style="font-size: 1.1rem; flex-shrink: 0;"></i>
-            <span id="exif-success-text">사진의 위치 정보(메타데이터)를 분석했습니다.</span>
+        <!-- 초기 노출되는 직접 위치 설정 버튼 -->
+        <div id="location-guide-msg"
+            style="padding: 12px; background: rgba(255, 140, 0, 0.05); border: 1px solid rgba(255, 140, 0, 0.2); border-radius: 12px; margin-bottom: 12px; font-size: 0.85rem; color: var(--point-orange); font-weight: 600; display: flex; align-items: center; gap: 8px; line-height: 1.4;">
+            <i class="bi bi-info-circle-fill" style="font-size: 1.1rem; flex-shrink: 0;"></i>
+            <span>사진/영상을 첨부하면 위치 설정 지도가 활성화됩니다.</span>
         </div>
 
         <!-- 초기 노출되는 직접 위치 설정 버튼 -->
@@ -88,17 +88,19 @@
 
         <!-- 지도 영역 (초기 숨김) -->
         <div id="map-interaction-area" style="display: none;">
+            <!-- [추가] EXIF 추출 성공 알림 영역 -->
+            <div id="exif-success-msg"
+                style="display: none; padding: 12px; background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 12px; margin-bottom: 12px; font-size: 0.85rem; color: #2e7d32; font-weight: 600; align-items: flex-start; gap: 8px; line-height: 1.4;">
+                <i class="bi bi-check-circle-fill" style="font-size: 1.1rem; flex-shrink: 0; margin-top: 2px;"></i>
+                <span id="exif-success-text">사진 위치(메타데이터)가 확인되어 적용되었습니다.</span>
+            </div>
+
             <div id="map"
                 style="margin-top: 12px; height: 220px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.1); overflow: hidden; position: relative; z-index: 1;">
-                <div id="exif-success-msg-map"
-                    style="display: none; align-items: center; gap: 8px; font-size: 0.85rem; color: #2E7D32; background: #E8F5E9; padding: 10px 14px; border-radius: 12px; font-weight: 700; position: absolute; top: 12px; left: 12px; z-index: 10;">
-                    <i class="bi bi-broadcast-pin"></i>
-                    <span>사진 촬영 위치 확인됨</span>
-                </div>
                 <div id="gps-status-badge"
                     style="display: none; align-items: center; gap: 8px; font-size: 0.85rem; color: #E65100; background: #FFF3E0; padding: 10px 14px; border-radius: 12px; font-weight: 700; position: absolute; top: 12px; left: 12px; z-index: 10;">
                     <i class="bi bi-geo-alt-fill"></i>
-                    <span id="gps-status-text">위치 정보 확인 중...</span>
+                    <span id="gps-status-text">내 위치 찾는 중...</span>
                 </div>
             </div>
             <p style="font-size: 0.75rem; color: var(--point-orange); margin-top: 6px; font-weight: 600;">
@@ -175,11 +177,12 @@
 </style>
 {% endblock %}
 
-<script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
+
 <script>
     console.log('[Report] Loaded Version: 1.3.0');
     // 사용자 명시적 지도 활성화 함수
     function activateMapManually() {
+        console.log('[Map] Manual activation requested');
         // [수정] 직접 버튼 누를 때만 지도 묶음 노출
         document.getElementById('btn-manual-location').style.display = 'none';
         document.getElementById('location-input-group').style.display = 'flex';
@@ -188,28 +191,32 @@
         document.getElementById('report-location-text').onclick = function () { openAddressSearch(); };
         document.getElementById('btn-my-location').onclick = function () { getCurrentLocation(); };
 
-        setTimeout(() => { if (window.map) map.relayout(); }, 200);
+        // [보강] 지도가 아직 초기화 안 된 경우를 대비하여 ensureMapReady 호출
+        ensureMapReady(function () {
+            console.log('[Map] Ready after manual activation');
+            if (window.map) {
+                map.relayout();
+                // 핀이 아직 없다면 기본 위치로 설정
+                const center = map.getCenter();
+                updateMarkerOnly(center.getLat(), center.getLng(), true);
+            }
+        });
     }
 
     // showNoticeModal, hideNoticeModal은 layout.html 전역 함수 사용
 
     // --- 1. 파일 첨부 버그 수정 및 EXIF 제어 추가 ---
-    function restoreMapState(optionalMsg) {
-        // [수정] 메타데이터 없을 때 지도 묶음 항상 노출
-        document.getElementById('btn-manual-location').style.display = 'none';
-        document.getElementById('location-input-group').style.display = 'flex';
-        document.getElementById('map-interaction-area').style.display = 'block';
+    function restoreMapState() {
+        // [수정] 수동 위치 설정 상태로 UI 초기화
+        document.getElementById('btn-manual-location').style.display = 'flex';
+        document.getElementById('location-input-group').style.display = 'none';
+        document.getElementById('map-interaction-area').style.display = 'none';
+        document.getElementById('location-guide-msg').style.display = 'flex';
 
-        document.getElementById('report-location-text').onclick = function () { openAddressSearch(); };
-        document.getElementById('report-location-text').style.cursor = 'pointer';
-        document.getElementById('report-location-text').style.background = '#fafafa';
-        document.getElementById('btn-my-location').style.display = 'flex';
-        document.getElementById('btn-my-location').onclick = function () { getCurrentLocation(); };
-        document.getElementById('exif-success-msg').style.display = 'none';
-        setTimeout(() => { if (window.map) map.relayout(); }, 200);
-        if (optionalMsg) {
-            showNoticeModal(optionalMsg);
-        }
+        document.getElementById('report-lat').value = "";
+        document.getElementById('report-lng').value = "";
+        document.getElementById('report-address').value = "";
+        document.getElementById('report-location-text').value = "";
     }
 
     // 오직 박스 클릭 시 이 함수만 실행되어 OS 기본 창 통일
@@ -234,32 +241,9 @@
     // 글로벌 범위에서 크로퍼 인스턴스 관리 (SPA 재진입 시 상태 유지/초기화 대응)
     if (typeof window.cropper === 'undefined') window.cropper = null;
     var selectedFile = null;
-    var originalFileForGPS = null; // [핵심] 크롭 전 원본 파일 참조 보관 (GPS 보존용)
-    var gpsExtractionDone = false; // GPS 추출 완료 여부 플래그
-    var gpsExtractionPromise = null; // GPS 추출 Promise (제출 시 대기용)
 
-    // [신규] DMS(도/분/초) 배열을 십진수 좌표로 변환하는 헬퍼 함수
-    function toNum(val) {
-        if (typeof val === 'number') return val;
-        // exifr Fraction object (numerator/denominator) 처리
-        if (val && typeof val.numerator === 'number' && typeof val.denominator === 'number') {
-            return val.numerator / val.denominator;
-        }
-        return Number(val);
-    }
 
-    function dmsToDecimal(dms, ref) {
-        if (!dms || !Array.isArray(dms) || dms.length < 3) return null;
-        try {
-            // dms[0]: 도, dms[1]: 분, dms[2]: 초 (각각 분수 형태일 수 있음)
-            let deg = toNum(dms[0]) + (toNum(dms[1]) / 60) + (toNum(dms[2]) / 3600);
-            if (ref === 'S' || ref === 'W') deg = deg * -1;
-            return isNaN(deg) ? null : deg;
-        } catch (e) {
-            console.error("[EXIF] DMS Conversion Error:", e);
-            return null;
-        }
-    }
+
 
     function handleFileSelection(input) {
         if (!validateFileSize(input)) return;
@@ -289,68 +273,8 @@
         if (isImg) {
             console.log("[File] Image selection detected:", originalFile.name);
 
-            // [수정] 브라우저 GPS 자동 폴백 삭제 (사용자 요청: 사진 메타데이터 우선순위 강제)
-            // 지도가 필요한 경우에만 사용자가 직접 '내 위치' 버튼을 누르도록 함
-
-            // [핵심 수정] GPS 추출을 Promise로 관리하여 제출 시 대기 가능하게 함
-            gpsExtractionPromise = new Promise(async (resolveGPS) => {
-                let gpsFound = false;
-
-                // 시도 1: 프론트엔드 exifr 라이브러리로 추출
-                if (typeof exifr !== 'undefined') {
-                    try {
-                        await processExif(originalFile);
-                        if (document.getElementById('report-lat').value) {
-                            gpsFound = true;
-                            console.log('[GPS Pipeline] ✅ Frontend exifr succeeded');
-                        }
-                    } catch (e) {
-                        console.warn('[GPS Pipeline] Frontend exifr failed:', e);
-                    }
-                }
-
-                // 시도 2: 서버 측 GPS 추출 (프론트 실패 시 또는 병렬 보완)
-                // [속도 최적화] 동영상은 GPS 추출 지원이 안되므로 100MB 임시 업로드 스킵
-                if (!gpsFound && !isVideo) {
-                    try {
-                        const tempFormData = new FormData();
-                        tempFormData.append('file', originalFile);
-                        console.log(`[Server Fallback] Uploading original file: name='${originalFile.name}', size=${originalFile.size}, type='${originalFile.type}'`);
-
-                        const res = await fetch('/api/upload', { method: 'POST', body: tempFormData });
-                        const data = await res.json();
-                        console.log('[Server Fallback] Full response:', JSON.stringify(data));
-
-                        if (data.gps && data.gps.lat && !isNaN(data.gps.lat)) {
-                            console.info(`[Server Fallback] ✅ GPS FOUND: lat=${data.gps.lat}, lng=${data.gps.lng}`);
-                            const currentLat = document.getElementById('report-lat').value;
-                            if (!currentLat) {
-                                processGpsData(data.gps.lat, data.gps.lng);
-                            }
-                            if (data.address) {
-                                document.getElementById('report-address').value = data.address;
-                                document.getElementById('report-location-text').value = data.address;
-                            }
-                            gpsFound = true;
-                        } else {
-                            console.warn('[Server Fallback] ❌ No GPS from server.');
-                        }
-                    } catch (err) {
-                        console.error('[Server Fallback] Temp upload failed:', err);
-                    }
-                }
-
-                // 최종 실패 시 수동 위치 안내
-                if (!gpsFound) {
-                    const currentLat = document.getElementById('report-lat').value;
-                    if (!currentLat) {
-                        restoreMapState('사진에서 위치 정보를 자동 추출할 수 없습니다. 직접 지도에서 위치를 지정해 주세요.');
-                    }
-                }
-
-                gpsExtractionDone = true;
-                resolveGPS();
-            });
+            // [사용자 요청] 항상 수동 지도 활성화
+            activateMapManually();
 
             // 미리보기 로드 (Cropper) - GPS 추출과 병렬 진행
             const reader = new FileReader();
@@ -385,15 +309,13 @@
         const isVid = originalFile.type.startsWith('video/') || /\.(mp4|mov|avi|wmv|mkv)$/i.test(originalFile.name);
         if (isVid) {
             console.log("[File] Video selection detected:", originalFile.name);
-            // 즉시 안내 문구 노출 시도
-            setTimeout(() => {
-                restoreMapState('동영상은 위치 정보 자동 추출을 지원하지 않습니다. 지도에서 직접 핀을 지정해 주세요.');
-                // [수정] 동영상은 삭제 버튼만 표시하고 사진 자르기 버튼은 숨김
-                document.getElementById('crop-controls').style.display = "flex";
-                const cropBtns = document.querySelectorAll('#crop-controls button');
-                if (cropBtns[0]) cropBtns[0].style.display = 'none'; // 사진 자르기 숨김
-                if (cropBtns[1]) cropBtns[1].style.flex = '1';       // 삭제 버튼 전체 너비
-            }, 500);
+            // [사용자 요청] 동영상도 항상 수동 지도 활성화
+            activateMapManually();
+            // [수정] 동영상은 삭제 버튼만 표시하고 사진 자르기 버튼은 숨김
+            document.getElementById('crop-controls').style.display = "flex";
+            const cropBtns = document.querySelectorAll('#crop-controls button');
+            if (cropBtns[0]) cropBtns[0].style.display = 'none'; // 사진 자르기 숨김
+            if (cropBtns[1]) cropBtns[1].style.flex = '1';       // 삭제 버튼 전체 너비
 
             const previewImg = document.getElementById('final-preview-image');
             previewImg.style.display = "block";
@@ -422,105 +344,13 @@
             };
         }
         // 3. 기타 파일
-        else {
+        else if (!isImg && !isVid) {
             document.getElementById('upload-placeholder').style.display = "flex";
             restoreMapState();
         }
     }
 
-    async function processExif(file) {
-        console.log(`[EXIF] Starting GPS extraction: name='${file.name}', size=${file.size}, type='${file.type}'`);
-        document.getElementById('gps-status-badge').style.display = 'flex';
-        document.getElementById('gps-status-text').innerText = '위치 정보 분석 중...';
 
-        try {
-            let lat = null, lng = null;
-
-            // 시도 1: exifr.gps(file) - 가장 안정적 (HEIC 대응 포함)
-            try {
-                console.log('[EXIF] Attempt 1: exifr.gps()');
-                const coords = await exifr.gps(file);
-                console.log('[EXIF] exifr.gps result:', JSON.stringify(coords));
-                if (coords && coords.latitude && !isNaN(coords.latitude)) {
-                    lat = coords.latitude;
-                    lng = coords.longitude;
-                    console.log(`[EXIF] ✅ Success via exifr.gps: ${lat}, ${lng}`);
-                } else {
-                    console.warn('[EXIF] exifr.gps returned null/invalid coords');
-                }
-            } catch (e) {
-                console.warn('[EXIF] exifr.gps failed:', e.message);
-            }
-
-            // 시도 2: exifr.parse(file) - 전체 파싱
-            if (!lat) {
-                try {
-                    const data = await exifr.parse(file, { gps: true });
-                    if (data && data.latitude) {
-                        lat = data.latitude;
-                        lng = data.longitude;
-                        console.log("[EXIF] Success via exifr.parse");
-                    }
-                } catch (e) {
-                    console.warn("[EXIF] exifr.parse failed:", e);
-                }
-            }
-
-            // 시도 3: 수동 바이너리 검색 (JPEG 전용)
-            if (!lat && (file.type === 'image/jpeg' || file.name.toLowerCase().endsWith('.jpg'))) {
-                try {
-                    const buffer = await file.arrayBuffer();
-                    const manualGPS = extractGPSSync(buffer);
-                    if (manualGPS) {
-                        lat = manualGPS.lat;
-                        lng = manualGPS.lng;
-                        console.log("[EXIF] Success via manual parser");
-                    }
-                } catch (e) {
-                    console.warn("[EXIF] manual parser failed:", e);
-                }
-            }
-
-            document.getElementById('gps-status-badge').style.display = 'none';
-
-            if (lat && lng) {
-                processGpsData(lat, lng);
-            } else {
-                console.warn("[EXIF] No GPS tags found in metadata.");
-                restoreMapState('이미지 메타데이터(GPS)를 찾을 수 없습니다. 직접 지도에서 위치를 지정해 주세요.');
-            }
-        } catch (e) {
-            console.error("[EXIF] Critical Error during processing:", e);
-            document.getElementById('gps-status-badge').style.display = 'none';
-            restoreMapState('파일을 읽는 도중 기술적 오류가 발생했습니다. 수동 설정을 권장합니다.');
-        }
-    }
-
-    function processGpsData(lat, lng) {
-        // 이미 동일한 좌표가 설정되어 있다면 중복 처리 방지
-        const currentLat = document.getElementById('report-lat').value;
-        const currentLng = document.getElementById('report-lng').value;
-        if (currentLat && currentLng &&
-            Math.abs(parseFloat(currentLat) - lat) < 0.00001 &&
-            Math.abs(parseFloat(currentLng) - lng) < 0.00001) {
-            console.log("[EXIF] GPS Data already processed. Skipping.");
-            return;
-        }
-
-        console.log("[EXIF] GPS Data Extracted & Processing:", lat, lng);
-        document.getElementById('report-lat').value = lat;
-        document.getElementById('report-lng').value = lng;
-
-        // [수정] 메타데이터가 있을 때는 주황색 버튼만 보이고 지도 영역은 숨김
-        document.getElementById('btn-manual-location').style.display = 'flex';
-        document.getElementById('location-input-group').style.display = 'none';
-        document.getElementById('map-interaction-area').style.display = 'none';
-
-        document.getElementById('exif-success-msg').style.display = 'flex';
-
-        updateMarkerAndText(lat, lng, "위치 확인 중 (메타데이터 활용)", false);
-        reverseGeocode(lat, lng);
-    }
 
     // [추가] 크롭 모달 열기
     function openCropModal() {
@@ -638,11 +468,7 @@
     }
 
     async function submitReport() {
-        // [핵심 수정] GPS 추출이 아직 진행 중이면 완료될 때까지 대기
-        if (gpsExtractionPromise && !gpsExtractionDone) {
-            showToastMsg('위치 정보 분석 중... 잠시만 기다려주세요.');
-            await gpsExtractionPromise;
-        }
+
 
         const title = document.getElementById('report-title')?.value || '';
         const content = document.getElementById('report-content')?.value || '';
@@ -766,8 +592,11 @@
             const lat = latlng.getLat();
             const lng = latlng.getLng();
 
-            // [추가] 사용자가 지도를 직접 찍으면 메타데이터 안내 메시지를 숨김
-            document.getElementById('exif-success-msg').style.display = 'none';
+            console.log('[Map] Clicked at:', lat, lng);
+
+            // [추가] 사용자가 지도를 직접 찍으면 메타데이터 안내 메시지를 숨김 (방어 코드)
+            const exifMsg = document.getElementById('exif-success-msg');
+            if (exifMsg) exifMsg.style.display = 'none';
 
             updateMarkerOnly(lat, lng);
             reverseGeocode(lat, lng);

@@ -1,40 +1,226 @@
-<div class="spot" id="spot-2" style="width: 1900px;">
-                <h2 style="font-size: 10rem; opacity: 0.03; position: absolute; z-index: -1;">COMPOSITION</h2>
-                <h2
-                    style="font-size: 6rem; position: absolute; top: 120px; left: 0; width: 100%; text-align: center; margin: 0; z-index: 10;">
-                    프레젠테이션 <span class="point">구성</span></h2>
+<div class="spot" id="spot-2" style="width: 1900px; height: 950px; background: transparent;">
 
-                <div class="index-flow-container">
-                    <!-- 카드들 (Flexbox 기반 완벽 센터링) -->
-                    <div class="index-card">
-                        <span class="num">01</span>
-                        <i class="bi bi-lightbulb-fill" style="color: #ffca28;"></i>
-                        <span class="txt">개발 배경</span>
-                    </div>
-                    <div class="index-card">
-                        <span class="num">02</span>
-                        <i class="bi bi-people-fill" style="color: #42a5f5;"></i>
-                        <span class="txt">협업 툴</span>
-                    </div>
-                    <div class="index-card">
-                        <span class="num">03</span>
-                        <i class="bi bi-database-fill" style="color: #7986cb;"></i>
-                        <span class="txt">DB 구조</span>
-                    </div>
-                    <div class="index-card">
-                        <span class="num">04</span>
-                        <i class="bi bi-robot" style="color: #ab47bc;"></i>
-                        <span class="txt">AI 모델</span>
-                    </div>
-                    <div class="index-card">
-                        <span class="num">05</span>
-                        <i class="bi bi-play-circle-fill" style="color: #ff7043;"></i>
-                        <span class="txt">핵심 서비스 시연</span>
-                    </div>
-                    <div class="index-card">
-                        <span class="num">06</span>
-                        <i class="bi bi-flag-fill" style="color: #ef5350;"></i>
-                        <span class="txt">향후 목표</span>
-                    </div>
-                </div>
+
+    <!-- PPT Headers -->
+    <h2
+        style="font-size: 11.5rem; font-weight: 900; color: #ff9800; opacity: 0.04; position: absolute; z-index: 3; top: 30px; left: 80px; margin:0; letter-spacing: 5px;">
+        COMPOSITION</h2>
+    <h2
+        style="font-size: 6rem; font-weight: 800; color: #1e293b; position: absolute; top: 120px; left: 0; width: 100%; text-align: center; margin: 0; z-index: 10;">
+        프레젠테이션 <span style="color: #ff7a1a; text-shadow: 0 4px 15px rgba(255,122,26,0.3);">구성</span>
+    </h2>
+
+    <!-- Winding Road SVG (주황색 테마의 우아한 곡선 도로) -->
+    <svg viewBox="0 0 1900 600" style="position: absolute; top: 250px; left: 0; width: 100%; height: 600px; z-index: 5;"
+        preserveAspectRatio="none">
+        <!-- Outer soft glow (주황 그림자) -->
+        <path
+            d="M -50,150 C 50,150 100,220 150,220 S 310,300 470,300 S 630,380 790,380 S 950,400 1110,400 S 1270,320 1430,320 S 1600,240 1750,240 S 1900,180 1950,180"
+            fill="none" stroke="rgba(255, 140, 0, 0.12)" stroke-width="220" stroke-linecap="round" />
+
+        <!-- White/Cream Road Body (아스팔트를 대체하는 깨끗한 도로) -->
+        <path
+            d="M -50,150 C 50,150 100,220 150,220 S 310,300 470,300 S 630,380 790,380 S 950,400 1110,400 S 1270,320 1430,320 S 1600,240 1750,240 S 1900,180 1950,180"
+            fill="none" stroke="#fff" stroke-width="170" stroke-linecap="round"
+            filter="drop-shadow(0 15px 30px rgba(255,140,0,0.15))" />
+
+        <!-- Orange Dashed Center Line (주황색 중앙 점선) -->
+        <path
+            d="M -50,150 C 50,150 100,220 150,220 S 310,300 470,300 S 630,380 790,380 S 950,400 1110,400 S 1270,320 1430,320 S 1600,240 1750,240 S 1900,180 1950,180"
+            fill="none" stroke="#ff9800" stroke-width="6" stroke-dasharray="35 25" stroke-linecap="round" />
+    </svg>
+
+    <!-- Flex Container for Potholes (도로를 따라 배치) -->
+    <div
+        style="position: absolute; top: 250px; left: 0; width: 100%; height: 600px; z-index: 10; display: flex; align-items: center; justify-content: space-evenly; padding: 0 40px;">
+
+        <!-- 01 -->
+        <div class="ph-w1" style="transform: translateY(-80px);">
+            <div class="ph-hole">
+                <span class="num" style="color:#ffca28;">01</span>
+                <i class="bi bi-lightbulb-fill" style="color: #ffca28;"></i>
+                <span class="txt">개발 배경</span>
             </div>
+        </div>
+
+        <!-- 02 -->
+        <div class="ph-w2" style="transform: translateY(0px);">
+            <div class="ph-hole">
+                <span class="num" style="color:#42a5f5;">02</span>
+                <i class="bi bi-stack" style="color: #42a5f5;"></i>
+                <span class="txt">기술 스택</span>
+            </div>
+        </div>
+
+        <!-- 03 -->
+        <div class="ph-w3" style="transform: translateY(80px);">
+            <div class="ph-hole">
+                <span class="num" style="color:#7986cb;">03</span>
+                <i class="bi bi-diagram-3-fill" style="color: #7986cb;"></i>
+                <span class="txt">아키텍쳐</span>
+            </div>
+        </div>
+
+        <!-- 04 -->
+        <div class="ph-w4" style="transform: translateY(100px);">
+            <div class="ph-hole">
+                <span class="num" style="color:#ab47bc;">04</span>
+                <i class="bi bi-robot" style="color: #ab47bc;"></i>
+                <span class="txt">AI 모델</span>
+            </div>
+        </div>
+
+        <!-- 05 -->
+        <div class="ph-w5" style="transform: translateY(20px);">
+            <div class="ph-hole">
+                <span class="num" style="color:#ff7043;">05</span>
+                <i class="bi bi-play-circle-fill" style="color: #ff7043;"></i>
+                <span class="txt">서비스 시연</span>
+            </div>
+        </div>
+
+        <!-- 06 -->
+        <div class="ph-w6" style="transform: translateY(-60px);">
+            <div class="ph-hole">
+                <span class="num" style="color:#ef5350;">06</span>
+                <i class="bi bi-flag-fill" style="color: #ef5350;"></i>
+                <span class="txt">향후 목표</span>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* Pothole Base */
+    .ph-hole {
+        width: 220px;
+        height: 220px;
+        background: #1e293b;
+        border-radius: 43% 57% 49% 51% / 54% 46% 54% 46%;
+        border: 5px solid #334155;
+        box-shadow: inset 0 15px 30px rgba(0, 0, 0, 0.7), 0 8px 15px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+
+        /* 애니메이션 공통 설정: 이름만 none이고 나머지는 정의함 */
+        animation-name: none;
+        animation-duration: 12s;
+        animation-iteration-count: infinite;
+        animation-timing-function: ease-in-out;
+    }
+
+    /* 슬라이드 활성화(.active) 시점에만 애니메이션 이름 부여하여 가동 시작 */
+    .active .ph-hole,
+    #spot-2.active .ph-hole {
+        animation-name: pothole-seq;
+    }
+
+    /* Contents inside */
+    .ph-hole .num {
+        font-size: 1.5rem;
+        font-weight: 900;
+        margin-bottom: 8px;
+        opacity: 0.8;
+    }
+
+    .ph-hole i {
+        font-size: 4.5rem;
+        margin-bottom: 12px;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+        /* 아이콘 전용 애니메이션 공통 설정 */
+        animation-name: none;
+        animation-duration: 12s;
+        animation-iteration-count: infinite;
+        animation-timing-function: ease-in-out;
+    }
+
+    .active .ph-hole i,
+    #spot-2.active .ph-hole i {
+        animation-name: icon-pop;
+    }
+
+    .ph-hole .txt {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #e2e8f0;
+        text-align: center;
+        word-break: keep-all;
+        line-height: 1.3;
+    }
+
+    /* Sequential Delays (이제 animation 숏핸드에 의해 0s로 덮어씌워지지 않음) */
+    .ph-w1 .ph-hole,
+    .ph-w1 .ph-hole i {
+        animation-delay: 0s;
+    }
+
+    .ph-w2 .ph-hole,
+    .ph-w2 .ph-hole i {
+        animation-delay: 2s;
+    }
+
+    .ph-w3 .ph-hole,
+    .ph-w3 .ph-hole i {
+        animation-delay: 4s;
+    }
+
+    .ph-w4 .ph-hole,
+    .ph-w4 .ph-hole i {
+        animation-delay: 6s;
+    }
+
+    .ph-w5 .ph-hole,
+    .ph-w5 .ph-hole i {
+        animation-delay: 8s;
+    }
+
+    .ph-w6 .ph-hole,
+    .ph-w6 .ph-hole i {
+        animation-delay: 10s;
+    }
+
+    /* The Expanding Pop Animation */
+    @keyframes pothole-seq {
+
+        /* 0~2초 구간(16.66%)에만 활성화되고, 나머지는 기본 상태 */
+        0%,
+        16.66%,
+        100% {
+            transform: scale(1) translateY(0);
+            border-color: #334155;
+            box-shadow: inset 0 15px 30px rgba(0, 0, 0, 0.7), 0 8px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 43% 57% 49% 51% / 54% 46% 54% 46%;
+            /* 불규칙한 포트홀 */
+        }
+
+        8.33% {
+            /* 딱 정중앙 1초일 때 최고조 */
+            transform: scale(1.3) translateY(-20px);
+            background: #0f172a;
+            border-color: #ff9800;
+            /* 활성화 시 주황색 빛 발산 */
+            box-shadow: inset 0 10px 20px rgba(0, 0, 0, 0.8), 0 25px 45px rgba(255, 140, 0, 0.35);
+            border-radius: 50% 50% 48% 52% / 50% 50% 50% 50%;
+            /* 활발해지면서 둥글어짐 */
+        }
+    }
+
+    @keyframes icon-pop {
+
+        0%,
+        16.66%,
+        100% {
+            transform: scale(1);
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+        }
+
+        8.33% {
+            transform: scale(1.15) translateY(-5px);
+            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.8));
+        }
+    }
+</style>

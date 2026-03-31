@@ -38,6 +38,9 @@ else:
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key_12345')
 
+# [용어 정의] 상단바와 하단바를 제외한 실질적인 본문 영역을 '메인 콘텐츠 영역' 또는 '메인 영역'으로 정의합니다.
+MAIN_CONTENT_AREA = "메인 콘텐츠 영역 (Main Content Area)"
+
 # DB 설정 (TiDB Cloud 연결 지원)
 db_user = os.getenv('DB_USER')
 db_password = os.getenv('DB_PASSWORD')
@@ -255,7 +258,7 @@ def run_ai_analysis(report_id, file_path, file_type):
             name, ext = os.path.splitext(os.path.basename(abs_path))
             output_filename = f"res_{name}.mp4"
             output_abs_path = os.path.join(os.path.dirname(abs_path), output_filename)
-            fourcc = cv2.VideoWriter_fourcc(*'avc1')
+            fourcc = cv2.VideoWriter_fourcc(*'avc1') # 웹 표준 H.264 (Chrome/Safari 필수)
             out = cv2.VideoWriter(output_abs_path, fourcc, fps, (width, height))
             
             best_frame = None
@@ -430,4 +433,5 @@ if __name__ == '__main__':
     print("🚀  CRACK SERVER v1.2.8  READY")
     print("📈  Smart Road Safety Platform")
     print("="*50 + "\n")
+    # [RELOAD] PPT 8페이지 모달 UI 개선 및 기술 설명 정확도(Pillow/YOLO) 반영을 위한 서버 재시작
     app.run(host='0.0.0.0', port=8012, debug=True)

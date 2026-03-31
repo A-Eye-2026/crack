@@ -9,6 +9,9 @@ from utils import allowed_file, extract_gps_from_exif, haversine, reverse_geocod
 
 report_bp = Blueprint('report', __name__)
 
+# [용어 정의] 상단바와 하단바를 제외한 실질적인 본문 영역을 '메인 콘텐츠 영역' 또는 '메인 영역'으로 정의합니다.
+MAIN_CONTENT_AREA = "메인 콘텐츠 영역 (Main Content Area)"
+
 # 허용된 확장자 (HEIC/HEIF 추가)
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'heic', 'heif'}
 ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'avi', 'm4v'}

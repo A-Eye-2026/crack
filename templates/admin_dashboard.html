@@ -1,10 +1,9 @@
-{% extends "admin_layout.html" %}
+﻿{% extends "admin_layout.html" %}
 
 {% block title %}CRACK 관리자 대시보드{% endblock %}
 
 {% block quick_actions %}
 <div class="header-quick-actions">
-  <a href="/alert" class="quick-btn alert-btn" title="알림">🔔</a>
   <a href="/admin/ppt" class="quick-btn ppt-btn" title="리포트">📊</a>
 </div>
 {% endblock %}
@@ -32,6 +31,48 @@
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 10px;
     margin-bottom: 10px;
+  }
+
+  /* PPT 모드 전용 간격 압축 */
+  body.ppt-mode .summary-grid {
+    margin-bottom: 5px !important;
+  }
+
+  body.ppt-mode .summary-card {
+    min-height: 65px !important;
+    padding: 8px 12px 10px !important;
+  }
+
+  body.ppt-mode .section {
+    padding: 12px 14px !important;
+    border-radius: 15px !important;
+  }
+
+  body.ppt-mode .section-header {
+    margin-bottom: 8px !important;
+  }
+
+  body.ppt-mode .urgent-card-list {
+    gap: 8px !important;
+  }
+
+  body.ppt-mode .urgent-item {
+    padding: 8px 10px 8px !important;
+  }
+
+  body.ppt-mode .urgent-item-top {
+    margin-bottom: 6px !important;
+  }
+
+  body.ppt-mode .dashboard-pagination {
+    margin-top: 8px !important;
+  }
+
+  body.ppt-mode .pagination-btn,
+  body.ppt-mode .pagination-info {
+    height: 32px !important;
+    min-width: 50px !important;
+    font-size: 11px !important;
   }
 
   .summary-card {
@@ -468,37 +509,52 @@
   }
 
   .detail-modal-card {
-    width: 100%;
-    max-width: 410px;
-    background: #ffffff;
-    border-radius: 30px;
-    overflow: hidden;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.20);
-    border: 1px solid #dbe3ec;
+    width: min(92vw, 440px);
+    max-height: 92vh;
+    background: #fff;
+    border-radius: 32px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.25);
+    position: relative;
+    /* overflow: hidden 삭제하여 드롭다운 허용 */
+  }
+
+  /* 상태바 전용 헤더 스타일 (alert.html과 동기화) */
+  .detail-modal-header {
+    padding: 18px 20px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 1000;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background: #fff;
+    border-top-left-radius: 32px;
+    border-top-right-radius: 32px;
   }
 
   .detail-thumb-box {
-    position: relative;
-    width: 100%;
-    background: #ffffff;
-    padding: 18px 18px 10px;
+    padding: 0 18px 8px;
+    background: #fff;
   }
 
   .detail-photo-frame {
-    position: relative;
     width: 100%;
-    height: 380px;
-    border: 1px solid #cfd8e3;
-    border-radius: 26px;
-    background: #f3f4f6;
+    aspect-ratio: 16 / 10;
+    max-height: 400px;
+    border-radius: 20px;
+    background: #f1f5f9;
     overflow: hidden;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 1px 2px rgba(15, 23, 42, 0.04);
+    position: relative;
+    border: 1px solid #eef2f7;
   }
 
   .detail-thumb-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    background: #000;
     display: none;
   }
 
@@ -1041,24 +1097,24 @@
 
   <div class="dashboard-list-area">
     <div class="urgent-card-list {{ 'is-empty' if dashboard_items|default([], true)|length == 0 else '' }}">
-      {% for incident in dashboard_items|default([], true) %}
-      {% set score = incident.risk_score|default(0)|float %}
-      {% set report_count = incident.group_reporter_count|default(1)|int %}
+      {% for item in dashboard_items|default([], true) %}
+      {% set score = item.risk_score|default(0)|float %}
+      {% set report_count = item.group_reporter_count|default(1)|int %}
       <div class="urgent-item">
         <div class="urgent-item-top">
-          <div class="urgent-location">{{ incident.location|default('-', true) }}</div>
+          <div class="urgent-location">{{ item.location|default('-', true) }}</div>
 
           <div class="urgent-meta">
-            {% if incident.status == '접수완료' %}
+            {% if item.status == '접수완료' %}
             <span class="badge status-received">접수완료</span>
-            {% elif incident.status == '처리중' %}
+            {% elif item.status == '처리중' %}
             <span class="badge status-processing">처리중</span>
-            {% elif incident.status == '처리완료' %}
+            {% elif item.status == '처리완료' %}
             <span class="badge status-done">처리완료</span>
-            {% elif incident.status == '반려' %}
+            {% elif item.status == '반려' %}
             <span class="badge status-rejected">반려</span>
             {% else %}
-            <span class="badge">{{ incident.status|default('-', true) }}</span>
+            <span class="badge">{{ item.status|default('-', true) }}</span>
             {% endif %}
 
             {% if score >= 80 %}
@@ -1074,7 +1130,7 @@
         <div class="urgent-item-bottom">
           <div class="urgent-subinfo">
             <div class="urgent-reason-text">
-              {{ incident.urgent_reason.replace(',', ' ·') if incident.urgent_reason else '확인 필요' }}
+              {{ item.urgent_reason.replace(',', ' ·') if item.urgent_reason else '확인 필요' }}
             </div>
 
             <div class="urgent-count-badge">
@@ -1088,20 +1144,14 @@
 
           <div class="urgent-actions">
             <div class="urgent-time">
-              {% if incident.first_created_at %}
-              {{ incident.first_created_at.strftime('%m-%d %H:%M') }}
+              {% if item.first_created_at %}
+              {{ item.first_created_at.strftime('%m-%d %H:%M') }}
               {% else %}
               -
               {% endif %}
             </div>
 
-            <button class="mini-btn" type="button" onclick="openDashboardDetailModal(
-                '{{ incident.id|default('', true) }}',
-                '{{ incident.title|default(" 신고 상세")|e }}', '{{ incident.location|default("-", true)|e }}'
-              , '{{ incident.status|default("-", true)|e }}' , '{{ incident.first_created_at.strftime(' %m-%d %H:%M') if
-              incident.first_created_at else '-' }}', '{{ incident.risk_score|default(0) }}'
-              , '{{ incident.group_reporter_count|default(1) }}' , '{{ incident.image_path|default('', true)|e }}'
-              , '{{ incident.latitude|default('', true) }}' , '{{ incident.longitude|default('', true) }}' )">
+            <button class="mini-btn" type="button" onclick="window.location.href='/alert/view/{{ item.id }}'">
               상세보기
             </button>
           </div>
@@ -1135,129 +1185,7 @@
   </div>
 </section>
 
-<div class="detail-modal-backdrop" id="dashboardDetailModal">
-  <div class="detail-modal-card">
-    <div class="detail-thumb-box">
-      <div class="detail-photo-frame">
-        <img id="dashboardDetailImage" class="detail-thumb-img" src="" alt="신고 이미지">
-        <div id="dashboardDetailPlaceholder" class="detail-thumb-placeholder">사진</div>
-      </div>
-    </div>
-
-    <div class="detail-content-box">
-      <div class="detail-meta-row">
-        <div class="detail-status-change-wrap">
-          <div class="detail-inline-status-wrap" id="dashboardInlineStatusWrap">
-            <button type="button" id="dashboardDetailStatus" class="detail-chip detail-chip-button"
-              onclick="toggleInlineStatusMenu()">
-              접수완료
-            </button>
-
-            <div class="detail-inline-status-menu" id="dashboardInlineStatusMenu">
-              <button type="button" class="detail-inline-status-option"
-                onclick="selectInlineDashboardStatus('처리중')">처리중</button>
-              <button type="button" class="detail-inline-status-option"
-                onclick="selectInlineDashboardStatus('처리완료')">처리완료</button>
-              <button type="button" class="detail-inline-status-option danger"
-                onclick="selectInlineDashboardStatus('반려')">반려</button>
-            </div>
-          </div>
-
-          <button class="detail-inline-apply-btn" type="button" onclick="applyInlineDashboardStatus()">변경</button>
-        </div>
-
-        <div class="detail-time-risk-wrap">
-          <span id="dashboardDetailTime" class="detail-time-text">00-00 00:00</span>
-          <span id="dashboardDetailRisk" class="detail-risk-badge">Ai 0%</span>
-        </div>
-      </div>
-
-      <div class="detail-info-card">
-        <div id="dashboardDetailTitle" class="detail-content-title">신고 제목</div>
-
-        <div class="detail-location-row">
-          <div id="dashboardDetailLocation" class="detail-content-text">위치 정보</div>
-          <button class="detail-map-inline-btn" type="button" onclick="openDashboardMap()" title="지도 보기"
-            aria-label="지도 보기">
-            <svg class="detail-map-inline-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true">
-              <path
-                d="M9 18L3.8 20.5C3.47 20.66 3.08 20.42 3.08 20.05V5.95C3.08 5.7 3.22 5.47 3.44 5.36L9 2.5M9 18L15 21.5M9 18V2.5M15 21.5L20.2 19C20.53 18.84 20.92 19.08 20.92 19.45V3.55C20.92 3.3 20.78 3.07 20.56 2.96L15 0.5M15 21.5V0.5M15 0.5L9 2.5"
-                stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </button>
-        </div>
-
-        <div id="dashboardDetailReporter" class="detail-content-text" style="margin-top:8px;">반복 제보 1건</div>
-      </div>
-
-      <button class="detail-close-btn" type="button" onclick="closeDashboardDetailModal()">닫기</button>
-    </div>
-  </div>
-</div>
-
-<div class="detail-modal-backdrop" id="dashboardRejectModal">
-  <div class="detail-modal-card" style="max-width:420px;">
-    <div class="detail-content-box">
-      <div class="section-title" style="font-size:22px; margin-bottom:8px;">반려 사유 입력</div>
-      <div class="section-subtitle" style="font-size:14px; margin-bottom:14px;">반려 처리 사유를 입력해주세요.</div>
-
-      <div class="detail-info-card">
-        <textarea id="dashboardRejectReasonText" placeholder="예: 중복 신고, 위험도 기준 미달, 사진 불명확"
-          style="width:100%; min-height:110px; border:1px solid #d7dde5; border-radius:12px; padding:12px; font-size:14px; resize:none; outline:none;"></textarea>
-      </div>
-
-      <div style="display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
-        <button class="mini-btn" type="button" onclick="closeRejectReasonModal()">취소</button>
-        <button class="mini-btn" type="button" onclick="submitRejectStatus()">반려 확인</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<form id="dashboardStatusForm" action="/incident/update-status" method="POST" style="display:none;">
-  <input type="hidden" name="incident_id" id="dashboardIncidentIdInput">
-  <input type="hidden" name="new_status" id="dashboardNewStatusInput">
-  <input type="hidden" name="reject_reason" id="dashboardRejectReasonInput" value="">
-</form>
-
 <div class="custom-alert-backdrop" id="customAlertModal">
-  <div class="custom-alert-box">
-    <div class="custom-alert-header">
-      <div class="custom-alert-title" id="customAlertTitle">알림</div>
-    </div>
-    <div class="custom-alert-body" id="customAlertMessage">메시지 내용</div>
-    <div class="custom-alert-actions">
-      <button type="button" class="custom-alert-btn" onclick="closeCustomAlert()">확인</button>
-    </div>
-  </div>
-</div>
-
-<div class="detail-modal-backdrop" id="dashboardMapModal">
-  <div class="map-modal-card">
-    <div class="map-modal-header">
-      <div class="map-modal-title">신고 위치</div>
-      <button type="button" class="map-modal-close-x" onclick="closeDashboardMapModal()">✕</button>
-    </div>
-
-    <div class="map-modal-body">
-      <div id="dashboardMapCanvas" class="map-canvas"></div>
-    </div>
-
-    <div class="map-modal-footer">
-      <button type="button" class="detail-close-btn" onclick="closeDashboardMapModal()">닫기</button>
-    </div>
-  </div>
-</div>
-
-<div id="pageTransitionOverlay" class="page-transition-overlay"></div>
-{% endblock %}
-
-{% block extra_script %}
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ KAKAO_JS_KEY|default('', true) }}"></script>
-<script>
-  let dashboardDetailLat = '';
-  let dashboardDetailLng = '';
   let dashboardDetailIncidentId = '';
   let dashboardSelectedStatus = '';
   let dashboardCurrentStatus = '';
@@ -1265,329 +1193,138 @@
   let dashboardMapMarker = null;
   let dashboardTabLoading = false;
   let pageTransitionRunning = false;
-
-  function getDashboardStatusClass(status) {
-    if (status === '접수완료') return 'status-received';
-    if (status === '처리중') return 'status-processing';
-    if (status === '처리완료') return 'status-done';
-    if (status === '반려') return 'status-rejected';
-    return '';
-  }
-
-  function toggleInlineStatusMenu() {
-    const wrap = document.getElementById('dashboardInlineStatusWrap');
-    if (wrap) wrap.classList.toggle('open');
-  }
-
-  function selectInlineDashboardStatus(value) {
-    dashboardSelectedStatus = value;
-    const statusEl = document.getElementById('dashboardDetailStatus');
-    if (!statusEl) return;
-    statusEl.textContent = value;
-    statusEl.className = 'detail-chip detail-chip-button ' + getDashboardStatusClass(value);
-    document.getElementById('dashboardInlineStatusWrap')?.classList.remove('open');
-  }
-
-  function applyInlineDashboardStatus() {
-    if (!dashboardDetailIncidentId) {
-      openCustomAlert('사건 정보가 없습니다.');
-      return;
-    }
-    if (!dashboardSelectedStatus) {
-      openCustomAlert('변경할 상태를 선택해주세요.');
-      return;
-    }
-    if (dashboardSelectedStatus === dashboardCurrentStatus) {
-      openCustomAlert('현재 상태와 동일합니다.');
-      return;
-    }
-    if (dashboardSelectedStatus === '반려') {
-      openRejectReasonModal();
-      return;
-    }
-    submitDashboardStatus(dashboardSelectedStatus);
-  }
-
-  function openDashboardDetailModal(incidentId, title, location, status, time, riskScore, reporterCount, imagePath, lat, lng) {
-    document.getElementById('dashboardDetailTitle').textContent = title || '신고 상세';
-    document.getElementById('dashboardDetailLocation').textContent = location || '위치 정보 없음';
-    document.getElementById('dashboardDetailTime').textContent = time || '-';
-    document.getElementById('dashboardDetailReporter').textContent = `반복 제보 ${reporterCount || 1}건`;
-
-    dashboardDetailIncidentId = incidentId || '';
-    dashboardDetailLat = lat || '';
-    dashboardDetailLng = lng || '';
-    dashboardCurrentStatus = status || '';
-    dashboardSelectedStatus = status || '';
-
-    document.getElementById('dashboardInlineStatusWrap')?.classList.remove('open');
-
-    const statusEl = document.getElementById('dashboardDetailStatus');
-    statusEl.textContent = status || '-';
-    statusEl.className = 'detail-chip detail-chip-button ' + getDashboardStatusClass(status);
-
-    const score = Number(riskScore || 0);
-    const riskEl = document.getElementById('dashboardDetailRisk');
-    riskEl.textContent = `Ai ${Math.round(score)}%`;
-    if (score >= 80) riskEl.className = 'detail-risk-badge detail-risk-high';
-    else if (score >= 50) riskEl.className = 'detail-risk-badge detail-risk-medium';
-    else riskEl.className = 'detail-risk-badge detail-risk-low';
-
-    const imgEl = document.getElementById('dashboardDetailImage');
-    const placeholderEl = document.getElementById('dashboardDetailPlaceholder');
-
-    if (imagePath && imagePath.trim() !== '') {
-      let finalImagePath = imagePath.trim();
-      if (!finalImagePath.startsWith('/')) finalImagePath = '/uploads/' + finalImagePath;
-      imgEl.src = finalImagePath;
-      imgEl.style.display = 'block';
-      placeholderEl.style.display = 'none';
-      imgEl.onerror = function () {
-        imgEl.src = '';
-        imgEl.style.display = 'none';
-        placeholderEl.textContent = '이미지를 불러올 수 없습니다.';
-        placeholderEl.style.display = 'flex';
-      };
-    } else {
-      imgEl.src = '';
-      imgEl.style.display = 'none';
-      placeholderEl.textContent = '사진';
-      placeholderEl.style.display = 'flex';
-    }
-
-    document.getElementById('dashboardDetailModal').classList.add('show');
-  }
-
-  function closeDashboardDetailModal() {
-    document.getElementById('dashboardDetailModal')?.classList.remove('show');
-  }
-
-  function openCustomAlert(message, title = '알림') {
-    document.getElementById('customAlertTitle').textContent = title;
-    document.getElementById('customAlertMessage').textContent = message;
-    document.getElementById('customAlertModal').classList.add('show');
-  }
-
-  function closeCustomAlert() {
-    document.getElementById('customAlertModal')?.classList.remove('show');
-  }
-
-  function openDashboardMap() {
-    if (!dashboardDetailLat || !dashboardDetailLng) {
-      openCustomAlert('지도에 표시할 좌표 정보가 없습니다.');
-      return;
-    }
-    if (typeof kakao === 'undefined' || !kakao.maps) {
-      openCustomAlert('카카오 지도 스크립트가 로드되지 않았습니다. JavaScript 키를 확인해주세요.');
-      return;
-    }
-
-    const lat = Number(dashboardDetailLat);
-    const lng = Number(dashboardDetailLng);
-    if (Number.isNaN(lat) || Number.isNaN(lng)) {
-      openCustomAlert('좌표 값이 올바르지 않습니다.');
-      return;
-    }
-
-    const modal = document.getElementById('dashboardMapModal');
-    const container = document.getElementById('dashboardMapCanvas');
-    modal.classList.add('show');
-
-    const position = new kakao.maps.LatLng(lat, lng);
-    setTimeout(() => {
-      if (!dashboardMapInstance) {
-        dashboardMapInstance = new kakao.maps.Map(container, { center: position, level: 3 });
-        dashboardMapMarker = new kakao.maps.Marker({ position });
-        dashboardMapMarker.setMap(dashboardMapInstance);
-      } else {
-        dashboardMapInstance.relayout();
-        dashboardMapInstance.setCenter(position);
-        if (dashboardMapMarker) dashboardMapMarker.setPosition(position);
-      }
-      dashboardMapInstance.relayout();
-      dashboardMapInstance.setCenter(position);
-    }, 50);
-  }
-
-  function closeDashboardMapModal() {
-    document.getElementById('dashboardMapModal')?.classList.remove('show');
-  }
-
-  function submitDashboardStatus(newStatus) {
-    if (!dashboardDetailIncidentId) {
-      openCustomAlert('사건 정보가 없습니다.');
-      return;
-    }
-    sessionStorage.setItem('adminDashboardScrollY', String(window.scrollY));
-    closeDashboardDetailModal();
-    document.getElementById('dashboardIncidentIdInput').value = dashboardDetailIncidentId;
-    document.getElementById('dashboardNewStatusInput').value = newStatus;
-    document.getElementById('dashboardRejectReasonInput').value = '';
-    setTimeout(() => document.getElementById('dashboardStatusForm').submit(), 100);
-  }
-
-  function openRejectReasonModal() {
-    document.getElementById('dashboardRejectReasonText').value = '';
-    document.getElementById('dashboardRejectModal').classList.add('show');
-  }
-
-  function closeRejectReasonModal() {
-    document.getElementById('dashboardRejectModal')?.classList.remove('show');
-  }
-
-  function submitRejectStatus() {
-    if (!dashboardDetailIncidentId) {
-      openCustomAlert('사건 정보가 없습니다.');
-      return;
-    }
-    const reason = document.getElementById('dashboardRejectReasonText').value.trim();
-    if (!reason) {
-      openCustomAlert('반려 사유를 입력해주세요.');
-      document.getElementById('dashboardRejectReasonText').focus();
-      return;
-    }
-    sessionStorage.setItem('adminDashboardScrollY', String(window.scrollY));
-    closeRejectReasonModal();
-    closeDashboardDetailModal();
-    document.getElementById('dashboardIncidentIdInput').value = dashboardDetailIncidentId;
-    document.getElementById('dashboardNewStatusInput').value = '반려';
-    document.getElementById('dashboardRejectReasonInput').value = reason;
-    setTimeout(() => document.getElementById('dashboardStatusForm').submit(), 100);
-  }
-
-  function restoreDashboardScrollPosition() {
-    const savedScrollY = sessionStorage.getItem('adminDashboardScrollY');
-    if (!savedScrollY) return;
-    const y = parseInt(savedScrollY, 10);
-    if (!Number.isNaN(y)) window.scrollTo({ top: y, behavior: 'auto' });
-    sessionStorage.removeItem('adminDashboardScrollY');
+  const savedScrollY = sessionStorage.getItem('adminDashboardScrollY');
+  if (!savedScrollY) return;
+  const y = parseInt(savedScrollY, 10);
+  if (!Number.isNaN(y)) window.scrollTo({ top: y, behavior: 'auto' });
+  sessionStorage.removeItem('adminDashboardScrollY');
   }
 
   async function switchDashboardTab(href, updateHistory = true) {
-    const panel = document.getElementById('dashboardPanel');
-    const summaryGrid = document.getElementById('dashboardSummaryGrid');
-    if (!panel || !summaryGrid || dashboardTabLoading) return;
+  const panel = document.getElementById('dashboardPanel');
+  const summaryGrid = document.getElementById('dashboardSummaryGrid');
+  if (!panel || !summaryGrid || dashboardTabLoading) return;
 
-    dashboardTabLoading = true;
-    summaryGrid.classList.add('is-loading');
-    panel.classList.add('is-switching', 'fade-out');
+  dashboardTabLoading = true;
+  summaryGrid.classList.add('is-loading');
+  panel.classList.add('is-switching', 'fade-out');
 
-    try {
-      const response = await fetch(href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      const html = await response.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const nextPanel = doc.getElementById('dashboardPanel');
-      const nextSummaryGrid = doc.getElementById('dashboardSummaryGrid');
+  try {
+  const response = await fetch(href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+  const html = await response.text();
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const nextPanel = doc.getElementById('dashboardPanel');
+  const nextSummaryGrid = doc.getElementById('dashboardSummaryGrid');
 
-      if (!nextPanel || !nextSummaryGrid) {
-        window.location.href = href;
-        return;
-      }
+  if (!nextPanel || !nextSummaryGrid) {
+  window.location.href = href;
+  return;
+  }
 
-      setTimeout(() => {
-        summaryGrid.innerHTML = nextSummaryGrid.innerHTML;
-        panel.innerHTML = nextPanel.innerHTML;
-        panel.classList.remove('fade-out');
-        panel.classList.add('fade-in');
-        if (updateHistory) history.pushState({}, '', href);
-        setTimeout(() => {
-          panel.classList.remove('fade-in', 'is-switching');
-          summaryGrid.classList.remove('is-loading');
-          dashboardTabLoading = false;
-        }, 180);
-      }, 140);
-    } catch (error) {
-      console.error('대시보드 탭 전환 오류:', error);
-      window.location.href = href;
-    }
+  setTimeout(() => {
+  summaryGrid.innerHTML = nextSummaryGrid.innerHTML;
+  panel.innerHTML = nextPanel.innerHTML;
+  panel.classList.remove('fade-out');
+  panel.classList.add('fade-in');
+  if (updateHistory) history.pushState({}, '', href);
+  setTimeout(() => {
+  panel.classList.remove('fade-in', 'is-switching');
+  summaryGrid.classList.remove('is-loading');
+  dashboardTabLoading = false;
+  }, 180);
+  }, 140);
+  } catch (error) {
+  console.error('대시보드 탭 전환 오류:', error);
+  window.location.href = href;
+  }
   }
 
   function moveDashboardPage(page) {
-    const url = new URL(window.location.href);
-    url.searchParams.set('page', page);
-    const currentTab = url.searchParams.get('tab');
-    if (!currentTab) url.searchParams.set('tab', '{{ selected_tab|default("pending") }}');
-    window.location.href = url.toString();
+  const url = new URL(window.location.href);
+  url.searchParams.set('page', page);
+  const currentTab = url.searchParams.get('tab');
+  if (!currentTab) url.searchParams.set('tab', '{{ selected_tab|default("pending") }}');
+  window.location.href = url.toString();
   }
 
   function runPageTransition(href) {
-    if (!href || pageTransitionRunning) return;
-    pageTransitionRunning = true;
-    const shell = document.querySelector('.dashboard-shell');
-    const overlay = document.getElementById('pageTransitionOverlay');
-    if (overlay) overlay.classList.add('show');
-    if (shell) shell.classList.add('page-leaving');
-    setTimeout(() => { window.location.href = href; }, 160);
+  if (!href || pageTransitionRunning) return;
+  pageTransitionRunning = true;
+  const shell = document.querySelector('.dashboard-shell');
+  const overlay = document.getElementById('pageTransitionOverlay');
+  if (overlay) overlay.classList.add('show');
+  if (shell) shell.classList.add('page-leaving');
+  setTimeout(() => { window.location.href = href; }, 160);
   }
 
   document.addEventListener('click', function (e) {
-    const card = e.target.closest('.js-summary-card');
-    if (!card) return;
-    const href = card.getAttribute('href');
-    if (!href) return;
-    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
-    if (card.classList.contains('active')) {
-      e.preventDefault();
-      return;
-    }
-    e.preventDefault();
-    switchDashboardTab(href, true);
+  const card = e.target.closest('.js-summary-card');
+  if (!card) return;
+  const href = card.getAttribute('href');
+  if (!href) return;
+  if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
+  if (card.classList.contains('active')) {
+  e.preventDefault();
+  return;
+  }
+  e.preventDefault();
+  switchDashboardTab(href, true);
   });
 
   document.addEventListener('click', function (e) {
-    const link = e.target.closest('.js-page-transition-link');
-    if (!link) return;
-    const href = link.getAttribute('href');
-    if (!href) return;
-    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
-    const currentUrl = new URL(window.location.href);
-    const nextUrl = new URL(href, window.location.origin);
-    if (currentUrl.pathname === nextUrl.pathname && currentUrl.search === nextUrl.search) return;
-    e.preventDefault();
-    runPageTransition(href);
+  const link = e.target.closest('.js-page-transition-link');
+  if (!link) return;
+  const href = link.getAttribute('href');
+  if (!href) return;
+  if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
+  const currentUrl = new URL(window.location.href);
+  const nextUrl = new URL(href, window.location.origin);
+  if (currentUrl.pathname === nextUrl.pathname && currentUrl.search === nextUrl.search) return;
+  e.preventDefault();
+  runPageTransition(href);
   });
 
   window.addEventListener('popstate', function () {
-    switchDashboardTab(window.location.href, false);
+  switchDashboardTab(window.location.href, false);
   });
 
   document.addEventListener('click', function (e) {
-    const wrap = document.getElementById('dashboardInlineStatusWrap');
-    if (wrap && !wrap.contains(e.target)) wrap.classList.remove('open');
+  const wrap = document.getElementById('dashboardInlineStatusWrap');
+  if (wrap && !wrap.contains(e.target)) wrap.classList.remove('open');
   });
 
   document.addEventListener('DOMContentLoaded', function () {
-    restoreDashboardScrollPosition();
+  restoreDashboardScrollPosition();
 
-    document.getElementById('dashboardDetailModal')?.addEventListener('click', function (e) {
-      if (e.target.id === 'dashboardDetailModal') closeDashboardDetailModal();
-    });
-    document.getElementById('customAlertModal')?.addEventListener('click', function (e) {
-      if (e.target.id === 'customAlertModal') closeCustomAlert();
-    });
-    document.getElementById('dashboardRejectModal')?.addEventListener('click', function (e) {
-      if (e.target.id === 'dashboardRejectModal') closeRejectReasonModal();
-    });
-    document.getElementById('dashboardMapModal')?.addEventListener('click', function (e) {
-      if (e.target.id === 'dashboardMapModal') closeDashboardMapModal();
-    });
-
-    const shouldAnimate = sessionStorage.getItem('admin_transition') === 'dashboard_enter';
-    if (!shouldAnimate) return;
-
-    document.body.classList.add('dashboard-enter');
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        document.body.classList.add('dashboard-enter-active');
-      });
-    });
-
-    setTimeout(function () {
-      document.body.classList.remove('dashboard-enter');
-      document.body.classList.remove('dashboard-enter-active');
-      sessionStorage.removeItem('admin_transition');
-    }, 900);
+  document.getElementById('dashboardDetailModal')?.addEventListener('click', function (e) {
+  if (e.target.id === 'dashboardDetailModal') closeDashboardDetailModal();
   });
-</script>
-{% endblock %}
+  document.getElementById('customAlertModal')?.addEventListener('click', function (e) {
+  if (e.target.id === 'customAlertModal') closeCustomAlert();
+  });
+  document.getElementById('dashboardRejectModal')?.addEventListener('click', function (e) {
+  if (e.target.id === 'dashboardRejectModal') closeRejectReasonModal();
+  });
+  document.getElementById('dashboardMapModal')?.addEventListener('click', function (e) {
+  if (e.target.id === 'dashboardMapModal') closeDashboardMapModal();
+  });
+
+  const shouldAnimate = sessionStorage.getItem('admin_transition') === 'dashboard_enter';
+  if (!shouldAnimate) return;
+
+  document.body.classList.add('dashboard-enter');
+  requestAnimationFrame(function () {
+  requestAnimationFrame(function () {
+  document.body.classList.add('dashboard-enter-active');
+  });
+  });
+
+  setTimeout(function () {
+  document.body.classList.remove('dashboard-enter');
+  document.body.classList.remove('dashboard-enter-active');
+  sessionStorage.removeItem('admin_transition');
+  }, 900);
+  });
+  </script>
+  {% endblock %}

@@ -426,8 +426,9 @@
         {% endif %}
     </div>
 
+    {% if is_admin %}
     {% if detail.file_type == 'video' and detail.file_path %}
-    <!-- 동영상 CV 오버레이 모드 -->
+    <!-- 동영상 CV 오버레이 모드 (관리자 전용) -->
     <div class="video-cv-container" id="video-cv-container">
         <span class="status-floating 
             {% if detail.status == '처리 완료' %}status-done
@@ -439,12 +440,18 @@
         ">
             {{ detail.status }}
         </span>
-        <video id="cv-video" src="{{ detail.file_path }}" poster="{{ detail.thumbnail_path }}" controls playsinline
-            style="width:100%; height:100%; object-fit:contain; border-radius:16px;"></video>
+        <video id="cv-video" poster="{{ detail.thumbnail_path }}" controls playsinline
+            style="width:100%; height:100%; object-fit:contain; border-radius:16px;">
+            <source src="{{ detail.file_path }}" type="video/mp4">
+            브라우저가 동영상 재생을 지원하지 않습니다.
+        </video>
+        <canvas id="cv-canvas"></canvas>
     </div>
     {% else %}
-    <!-- 이미지 모드 (기존) -->
-    <div class="media-hero" onclick="openEnlargeModal('{{ detail.file_path }}')" style="cursor: pointer;">
+    <!-- 이미지 모드 (AI 분석 결과 우선 노출) -->
+    <div class="media-hero"
+        onclick="openEnlargeModal('{{ detail.thumbnail_path if detail.thumbnail_path else detail.file_path }}')"
+        style="cursor: pointer;">
         <span class="status-floating 
             {% if detail.status == '처리 완료' %}status-done
             {% elif detail.status == '신고 처리중' %}status-processing
@@ -455,8 +462,8 @@
         ">
             {{ detail.status }}
         </span>
-        {% if detail.file_path %}
-        <img src="{{ detail.file_path }}" alt="신고 사진">
+        {% if detail.file_path or detail.thumbnail_path %}
+        <img src="{{ detail.thumbnail_path if detail.thumbnail_path else detail.file_path }}" alt="신고 사진">
         {% else %}
         <div
             style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#f0f0f0;">
@@ -465,10 +472,11 @@
         {% endif %}
     </div>
     {% endif %}
+    {% endif %}
 
     <!-- 이미지 확대 모달 -->
     <div id="enlarge-modal" onclick="closeEnlargeModal()"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+        style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; padding:20px;">
         <img id="enlarge-img" src=""
             style="max-width:100%; max-height:100%; object-fit:contain; border-radius:8px; box-shadow:0 0 30px rgba(0,0,0,0.5);">
         <button type="button"
@@ -479,10 +487,12 @@
 
     <div class="info-card">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            {% if is_admin %}
             <div class="ai-badge" style="margin-bottom: 0;">
                 <i class="bi bi-robot"></i>
                 AI 판독: {{ detail.damage_type }} ({{ detail.confidence }}%)
             </div>
+            {% endif %}
 
             {% if is_admin %}
             <div class="status-dropdown-wrap">
@@ -514,8 +524,8 @@
             </div>
         </div>
 
-        {% if detail.file_type == 'video' %}
-        <!-- 검출 히스토리 버튼 -->
+        {% if is_admin and detail.file_type == 'video' %}
+        <!-- 검출 히스토리 버튼 (관리자 전용) -->
         <button class="history-toggle-btn" onclick="toggleHistory()">
             <i class="bi bi-clock-history"></i> AI 검출 히스토리
         </button>
@@ -531,7 +541,7 @@
             </label>
             <p style="font-size: 1rem; font-weight: 700; margin: 0; margin-bottom: 12px;">{{ detail.address or '주소 정보
                 없음' }}</p>
-            <div id="view-map"></div>
+            <div id="view-map" style="width:100%; height:200px; border-radius:20px; background:#f0f0f0;"></div>
         </div>
     </div>
 
@@ -544,31 +554,41 @@
 
     function ensureMapReady(callback) {
         if (window.kakaoSdkLoaded === false) {
-            console.error("SDK 로드 실패");
-            return;
-        }
-        if (typeof kakao === 'undefined' || !kakao.maps) {
-            setTimeout(function () { ensureMapReady(callback); }, 100);
+            console.error("[Map] SDK Load Failed");
             return;
         }
 
-        kakao.maps.load(function () {
+        // [FIX] autoload=false 제거에 따른 직접 호출
+        if (typeof kakao !== 'undefined' && kakao.maps && kakao.maps.LatLng) {
             initMapView();
-            if (callback) setTimeout(callback, 300);
-        });
+            if (callback) callback();
+        } else {
+            setTimeout(function () { ensureMapReady(callback); }, 300);
+        }
     }
 
     function initMapView() {
-        var lat = Number('{{ detail.lat or 37.5665 }}');
-        var lng = Number('{{ detail.lng or 126.9780 }}');
+        var latStr = '{{ detail.lat or 37.5665 }}';
+        var lngStr = '{{ detail.lng or 126.9780 }}';
+        var lat = parseFloat(latStr);
+        var lng = parseFloat(lngStr);
+
         var mapContainer = document.getElementById('view-map');
         if (!mapContainer) return;
-        mapContainer.innerHTML = '';
+
+        console.log('[Map] Init with:', lat, lng);
         var mapOption = { center: new kakao.maps.LatLng(lat, lng), level: 3 };
         var map = new kakao.maps.Map(mapContainer, mapOption);
         var marker = new kakao.maps.Marker({ position: new kakao.maps.LatLng(lat, lng) });
         marker.setMap(map);
-        setTimeout(function () { if (map) map.relayout(); }, 300);
+
+        // 지연 레이아웃 재계산
+        setTimeout(function () {
+            if (map) {
+                map.relayout();
+                map.setCenter(new kakao.maps.LatLng(lat, lng));
+            }
+        }, 500);
     }
 
     // 이미지 확대 모달 관련
@@ -603,17 +623,85 @@
         var video = document.getElementById('cv-video');
         if (!video || !REPORT_ID) return;
 
-        // 검출 데이터 로드
+        // 검출 데이터 로드 및 렌더링 루프 시작
         fetch('/api/report/' + REPORT_ID + '/detections')
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 allDetections = data;
                 historyLoaded = true;
                 renderHistory(data);
+                startCVRenderLoop();
                 console.log('[CV] Loaded ' + data.length + ' detections');
             })
             .catch(function (e) { console.error('[CV] Error loading detections:', e); });
     })();
+
+    function startCVRenderLoop() {
+        var video = document.getElementById('cv-video');
+        var canvas = document.getElementById('cv-canvas');
+        if (!video || !canvas) return;
+        var ctx = canvas.getContext('2d');
+
+        function render() {
+            if (!video.paused && !video.ended) {
+                drawDetections(video, canvas, ctx);
+            }
+            requestAnimationFrame(render);
+        }
+
+        // 비디오 상태와 무관하게 시간 이동 시에도 그림
+        video.addEventListener('timeupdate', function () {
+            drawDetections(video, canvas, ctx);
+        });
+
+        requestAnimationFrame(render);
+    }
+
+    function drawDetections(video, canvas, ctx) {
+        if (!allDetections || allDetections.length === 0) return;
+
+        // 캔버스 크기를 비디오 표시 크기에 맞춤
+        canvas.width = video.clientWidth;
+        canvas.height = video.clientHeight;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        var currentTime = video.currentTime;
+        // 현재 시간 근처의 검출 결과 찾기 (오차범위 0.2초)
+        var currentDets = allDetections.filter(function (d) {
+            return Math.abs(d.time - currentTime) < 0.2;
+        });
+
+        if (currentDets.length === 0) return;
+
+        // 원본 비디오 해상도 대비 스케일 계산
+        // HTML5 Video의 videoWidth, videoHeight를 사용
+        var vw = video.videoWidth;
+        var vh = video.videoHeight;
+        if (!vw || !vh) return;
+
+        var scaleX = canvas.width / vw;
+        var scaleY = canvas.height / vh;
+
+        ctx.strokeStyle = '#007AFF';
+        ctx.lineWidth = 3;
+        ctx.font = 'bold 14px Arial';
+        ctx.fillStyle = '#007AFF';
+
+        currentDets.forEach(function (d) {
+            var x = d.x1 * scaleX;
+            var y = d.y1 * scaleY;
+            var w = (d.x2 - d.x1) * scaleX;
+            var h = (d.y2 - d.y1) * scaleY;
+
+            ctx.strokeRect(x, y, w, h);
+            ctx.fillText(d.class + ' ' + d.conf + '%', x, y > 20 ? y - 5 : y + 20);
+
+            // 박스 배경 살짝 채우기
+            ctx.fillStyle = 'rgba(0, 122, 255, 0.1)';
+            ctx.fillRect(x, y, w, h);
+            ctx.fillStyle = '#007AFF';
+        });
+    }
     {% endif %}
 
     function formatTime(sec) {

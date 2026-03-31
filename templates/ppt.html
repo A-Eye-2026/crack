@@ -210,6 +210,81 @@
             pointer-events: auto;
         }
 
+        /* Defense Logic Hover Overlay */
+        .defense-hover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 250, 250, 0.99) 100%);
+            padding: 30px 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            z-index: 5;
+            text-align: left;
+            border-radius: 20px;
+            box-shadow: inset 0 0 0 3px var(--defense-color);
+        }
+
+        .risk-card:hover .defense-hover {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .defense-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--defense-color);
+            color: white;
+            font-size: 1.05rem;
+            font-weight: 800;
+            padding: 6px 16px;
+            border-radius: 30px;
+            margin-bottom: 14px;
+            width: fit-content;
+        }
+
+        .defense-hover h4 {
+            font-size: 1.9rem;
+            font-weight: 900;
+            color: var(--defense-color);
+            margin-bottom: 12px;
+        }
+
+        .defense-hover>p {
+            font-size: 1.25rem;
+            color: #444;
+            line-height: 1.65;
+            word-break: keep-all;
+            margin-bottom: 18px;
+            font-weight: 500;
+        }
+
+        .defense-hover>p strong {
+            color: #222;
+            font-weight: 800;
+        }
+
+        .defense-code {
+            background: rgba(20, 20, 20, 0.96);
+            border-radius: 14px;
+            padding: 18px 20px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+        }
+
+        .defense-code code {
+            font-size: 1rem;
+            line-height: 1.55;
+            color: #DCDCDC;
+        }
+
+
         /* Flip Card Base */
         .flip-card {
             background-color: transparent;
@@ -683,17 +758,9 @@
             display: flex;
         }
 
+        /* [NOTCH REMOVED] 상단 아이콘 가림 방지 */
         .phone-frame::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 120px;
-            height: 25px;
-            background: #333;
-            border-radius: 0 0 16px 16px;
-            z-index: 10;
+            display: none;
         }
 
         .phone-frame iframe {
@@ -1457,21 +1524,18 @@
             {% include 'ppt/spot-3c.html' %}
 
 
-            <!-- spot-5: 크랙팀 협업 툴 (완격 복원 버전) -->
+            <!-- spot-5: 크랙팀 기술 스택 -->
             {% include 'ppt/spot-5.html' %}
 
+            <!-- spot-5b: TiDB ERD (Entity Relationship Diagram) -->
+            {% include 'ppt/spot-5b.html' %}
+
             {% include 'ppt/spot-6.html' %}
-
-
-            {% include 'ppt/spot-14.html' %}
 
 
 
             <!-- spot-6a: 법적/운영 리스크 방어 -->
             {% include 'ppt/spot-6a.html' %}
-
-            <!-- spot-6b: 민간 포트홀 앱의 한계와 CRACK의 해결책 -->
-            {% include 'ppt/spot-6b.html' %}
 
 
             <!-- Phase 1: 1차 모델 학습 (v5) -->
@@ -1528,12 +1592,11 @@
             { x: 4000, y: 4000, scale: 1, rot: 0 },     // 3: 왜 포트홀? + 통계
             { x: 0, y: 7000, scale: 0.7, rot: -2 },     // 3b: 골목길 통계
             { x: -3000, y: 5500, scale: 0.9, rot: 3 },  // 3c: 결론 빌드업
-            { x: -2000, y: 3000, scale: 1.1, rot: 5 },  // 5: 협협 툴
-            { x: -5000, y: -2000, scale: 1, rot: 0 },    // 6: DB
-            { x: 18000, y: 1500, scale: 1.0, rot: -2 },  // 14: Portable Runtime (MOVED)
+            { x: -2000, y: 3000, scale: 1.1, rot: 5 },  // 5: 기술 스택
+            { x: -4500, y: 1000, scale: 1, rot: -3 },    // 5b: TiDB ERD
+            { x: -5000, y: -2000, scale: 1, rot: 0 },    // 6: 아키텍쳐
 
             { x: -3000, y: -3000, scale: 0.9, rot: -2 }, // 6a: 리스크 방어
-            { x: -2000, y: -2000, scale: 0.8, rot: 2 },  // 6b: 민간 한계 극복
             // { x: -1000, y: -4000, scale: 1.1, rot: 3 },  // 7: 스택 (DELETED)
 
             { x: 4000, y: -7000, scale: 1.1, rot: 2 },   // 8a: Phase 1 (v1~v4) (New Index 12)
@@ -1544,7 +1607,7 @@
             { x: 12000, y: -2000, scale: 1, rot: 3 },    // 10: 서비스로직2
             { x: 12000, y: 2000, scale: 1, rot: -3 },    // 11: 서비스로직3
             { x: 16000, y: 2000, scale: 1, rot: 0 },     // 12: 서비스로직4
-            { x: 16000, y: -2000, scale: 1.0, rot: 0 },  // 13: 서비스로직5 (Admin Dashboard)
+            { x: 16000, y: -2000, scale: 0.93, rot: 0 },  // 13: 서비스로직5 (Admin Dashboard)
             { x: 10000, y: 500, scale: 0.12, rot: 0 }    // 16: Q&A
         ];
 
@@ -1631,6 +1694,7 @@
                 activeIdx = active;
                 dots.forEach((dot, i) => {
                     dot.classList.toggle('active', i === activeIdx);
+                    spots[i].classList.toggle('active', i === activeIdx); // 활성화 슬라이드에 .active 클래스 추가
                     spots[i].style.opacity = (i === activeIdx) ? '1' : '0.2';
                 });
                 if (activeIdx !== 1) document.querySelectorAll('.avatar-3d.active').forEach(c => c.classList.remove('active'));

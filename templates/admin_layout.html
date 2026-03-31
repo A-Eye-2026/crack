@@ -526,18 +526,48 @@
       cursor: default;
       background: #f8fafc;
     }
+
+    /* --- PPT Mode Overrides --- */
+    body.ppt-mode {
+      background: transparent !important;
+    }
+
+    body.ppt-mode .layout {
+      padding: 0 !important;
+      background: transparent !important;
+    }
+
+    body.ppt-mode .main {
+      max-width: 100% !important;
+    }
+
+    body.ppt-mode .dashboard-shell {
+      background: var(--surface) !important;
+      border: 1px solid var(--border) !important;
+      box-shadow: var(--shadow-lg) !important;
+      border-radius: var(--radius-xl) !important;
+      padding: 10px 15px !important;
+      backdrop-filter: blur(6px) !important;
+      height: 100% !important;
+      min-height: 0 !important;
+    }
+
+    body.ppt-mode .page-body {
+      padding: 0 !important;
+      margin: 0 !important;
+    }
   </style>
 
   {% block extra_style %}{% endblock %}
 </head>
 
-<body class="{% block body_class %}{% endblock %}">
+<body class="{% block body_class %}{% endblock %} {% if request.args.get('ppt') == '1' %}ppt-mode{% endif %}">
   <div class="layout">
     <main class="main">
       <div class="dashboard-shell">
         <header class="topbar">
           <div class="topbar-left">
-            <a href="/admin/dashboard" class="header-brand">
+            <a href="/" class="header-brand">
               <div class="header-brand-row">
                 <span class="logo-icon">⚡</span>
                 <span class="header-brand-main">CRACK</span>
