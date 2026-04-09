@@ -135,6 +135,10 @@ def serve_sw():
 def serve_uploads(filename):
     return send_from_directory(UPLOAD_BASE_DIR, filename)
 
+@app.route('/ppt/images/<path:filename>')
+def serve_ppt_images(filename):
+    return send_from_directory(os.path.join(base_dir, 'templates', 'ppt', 'images'), filename)
+
 # 메인 및 공통 라우트
 @app.route('/')
 def index():

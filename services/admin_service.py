@@ -1031,3 +1031,17 @@ def admin_statistics():
         total_pages=1,
         total_count=total_reports,
     )
+
+@admin_bp.route('/admin/ppt')
+def admin_ppt():
+    denied = _require_admin()
+    if denied:
+        return denied
+    return render_template('ppt.html')
+
+@admin_bp.route('/admin/ppt/spot-<int:num>')
+def admin_ppt_spot(num):
+    denied = _require_admin()
+    if denied:
+        return denied
+    return render_template(f'ppt/spot-{num}.html')
