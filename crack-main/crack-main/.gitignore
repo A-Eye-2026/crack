@@ -1,0 +1,18 @@
+secrets/
+.env
+__pycache__/
+*.pyc
+
+# [추가] 대용량 및 불필요 파일 제외
+*.zip
+*.7z
+*.rar
+.venv/
+venv/
+node_modules/
+uploads/images/
+uploads/videos/
+tmp/
+.idea/
+.vscode/
+*.log
